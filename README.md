@@ -52,7 +52,7 @@ The application will be available at `http://localhost:8000`
 
 
 ## 🔒 WIP
-- Feedback/suggestions: Please open a github Issue or mail me: romain@coderamp.io
+- Feedback/suggestions: Please open a GitHub Issue or mail me: romain@coderamp.io
 - Repository cloning is limited to GitHub repositories only
 - Processing timeouts are implemented (10s for cloning, 15s for processing)
 - Request size limits are in place to prevent abuse
