@@ -126,7 +126,7 @@ def get_all_files(node: Dict, max_file_size: int, files: List = None) -> List[Di
 def create_file_content_string(files: List[Dict]) -> str:
     """Creates a formatted string of file contents with separators."""
     output = ""
-    separator = "=" * 50 + "\n"
+    separator = "=" * 48 + "\n"
     
     for file in files:
         output += separator
