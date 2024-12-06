@@ -14,7 +14,17 @@ DEFAULT_IGNORE_PATTERNS = [
     'Thumbs.db',                             # Windows
     'build', 'dist',                         # Build directories
     '*.egg-info',                           # Python egg info
-    '*.so', '*.dylib', '*.dll'              # Compiled libraries
+    '*.so', '*.dylib', '*.dll',             # Compiled libraries
+    'package-lock.json', 'yarn.lock',        # Package lock files
+    'pnpm-lock.yaml', 'npm-shrinkwrap.json', # More package lock files
+    'LICENSE', 'LICENSE.*', 'COPYING',       # License files
+    'LICENCE', 'LICENCE.*',                  # Alternative spelling
+    'COPYING.*', 'COPYRIGHT',                # More license-related files
+    'AUTHORS', 'AUTHORS.*',                  # Author files
+    'CONTRIBUTORS', 'CONTRIBUTORS.*',        # Contributor files
+    'THANKS', 'THANKS.*',                    # Acknowledgment files
+    'CHANGELOG', 'CHANGELOG.*',              # Change logs
+    'CONTRIBUTING', 'CONTRIBUTING.*'         # Contribution guidelines
 ]
 
 def should_ignore(path: str, base_path: str, ignore_patterns: List[str]) -> bool:
