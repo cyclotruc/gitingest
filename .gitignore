@@ -164,3 +164,6 @@ cython_debug/
 #.idea/
 .vscode/settings.json
 history.txt
+
+# ignore default output directory
+output/
