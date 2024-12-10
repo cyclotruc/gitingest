@@ -156,9 +156,9 @@ def create_tree_structure(query: dict, node: Dict, prefix: str = "", is_last: bo
 def ingest_from_query(query: dict, ignore_patterns: List[str] = DEFAULT_IGNORE_PATTERNS, max_file_size: int = MAX_FILE_SIZE) -> Dict:
     """Main entry point for analyzing a codebase directory or single file."""
     
-    path = f"{query['local_path']}{query['subpath']}"
+    path = f"{query['local_path'].strip()}{query['subpath'].strip()}"
     if not os.path.exists(path):
-        raise ValueError(f"{query['slug']} cannot be found, make sure the repository is public")
+        raise ValueError(f"{path} cannot be found, make sure the repository is public")
     
     if query.get('type') == 'blob':
         if not os.path.isfile(path):
