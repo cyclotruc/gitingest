@@ -6,18 +6,22 @@ from ingest import ingest_from_query
 def cli():
     pass
 
+
 @click.command()
-@click.option("--local_path", prompt="Root directory", help="Parent directory for repository.")
-@click.option("--sub_path", prompt="Sub-path beneath root directory", help="The sub-directory of the local repository.")
-@click.option("--branch", prompt="Branch to ingest from.  Defaults to 'main'.", default="main", help="The branch to use.")
-@click.option("--user_name", prompt="User name attributed to the codebase", help="The user name of the repository owner.")
-@click.option("--repo_name", prompt="Logical name of the repository", help="The logical name of the repository.")
-@click.option("--slug", prompt="URL-friendly repository slug", help="A slug for the repo.")
-@click.option("--output", prompt="The output directory to put artifacts into, defaults to 'output'.", 
+@click.option("--local_path", help="Parent directory for repository.")
+@click.option("--sub_path", help="The sub-directory of the local repository.")
+@click.option("--branch", default="main", help="The branch to use.")
+@click.option("--user_name", help="The user name of the repository owner.")
+@click.option("--repo_name", help="The logical name of the repository.")
+@click.option("--slug", help="A slug for the repo.")
+@click.option("--output", 
               default="output",
               help="The directory containing the output artifacts.")
 def ingest(local_path, sub_path, branch, user_name, repo_name, output, slug):
     """Ingest a repository to create LLM-friendly ingestible data."""
+    _do_ingest(local_path, sub_path, branch, user_name, repo_name, output, slug)
+
+def _do_ingest(local_path, sub_path, branch, user_name, repo_name, output, slug):
     qry = {
         "branch": branch,
         "local_path": local_path,
@@ -49,5 +53,6 @@ def ingest(local_path, sub_path, branch, user_name, repo_name, output, slug):
 
 
 cli.add_command(ingest)
+
 if __name__ == '__main__':
     cli()
