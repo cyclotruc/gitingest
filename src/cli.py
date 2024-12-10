@@ -1,3 +1,4 @@
+"""Command line interface for the ingestion behavior."""
 import os
 import click
 from ingest import ingest_from_query
