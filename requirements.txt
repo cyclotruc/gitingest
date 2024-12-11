@@ -1,5 +1,4 @@
 fastapi[standard]
 uvicorn
 fastapi-analytics
-click
 slowapi
