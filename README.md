@@ -41,6 +41,20 @@ cd src
 uvicorn main:app --reload
 ```
 
+
+The application will be available at `http://localhost:8000`
+
+### Docker
+
+1. Build the image:
+```
+docker build -t gitingest .
+```
+
+2. Run the container:
+```
+docker run -d --name gitingest -p 8000:8000 gitingest
+```
 The application will be available at `http://localhost:8000`
 
 ## ✔️ Contributions are welcome!

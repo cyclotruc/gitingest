@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from utils.parse_url import parse_url
+from utils.limiter import limiter
 from process_query import process_query
 from config import MAX_DISPLAY_SIZE, EXAMPLE_REPOS
 
@@ -23,6 +24,7 @@ async def home(request: Request):
 
 
 @router.post("/", response_class=HTMLResponse)
+@limiter.limit("1/20second") 
 async def index_post(request: Request, input_text: str = Form(...)):
 
     try:

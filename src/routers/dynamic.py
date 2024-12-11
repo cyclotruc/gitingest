@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Request, Form
+from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from utils.parse_url import parse_url   
 from process_query import process_query
 from config import MAX_DISPLAY_SIZE
+from utils.limiter import limiter
 
 
 router = APIRouter()
@@ -24,6 +25,7 @@ async def catch_all(request: Request, full_path: str):
     )
 
 @router.post("/{full_path:path}", response_class=HTMLResponse)
+@limiter.limit("1/20second") 
 async def process_catch_all(request: Request, input_text: str = Form(...)):
     try:
         parsed_url = parse_url(input_text)

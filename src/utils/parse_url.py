@@ -10,6 +10,7 @@ def parse_url(url: str) -> dict:
         "repo_name": None,
         "type": None,
         "branch": None,
+        "commit": None,
         "subpath": "/",
         "local_path": None,
         "url": None,
@@ -40,5 +41,8 @@ def parse_url(url: str) -> dict:
     if len(path_parts) > 3:
         parsed["type"] = path_parts[2]
         parsed["branch"] = path_parts[3]
+        if len(parsed['branch']) == 40 and all(c in '0123456789abcdefABCDEF' for c in parsed['branch']):
+            parsed["commit"] = parsed['branch']
+            
         parsed["subpath"] = "/" + "/".join(path_parts[4:])
     return parsed

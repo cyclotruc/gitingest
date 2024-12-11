@@ -8,7 +8,7 @@
 </div>
 {% endif %}
 
-{% with is_index=false, show_examples=false %}
+{% with is_index=true, show_examples=false %}
     {% include 'components/github_form.html' %}
 {% endwith %}
 
@@ -31,16 +31,33 @@
         const urlInput = document.getElementById('input_text');
         const form = document.getElementById('ingestForm');
         if (urlInput && urlInput.value.trim() && form) {
-            const submitEvent = new SubmitEvent('submit', { 
-                cancelable: true,
-                bubbles: true
+            // Wait for stars to be loaded before submitting
+            waitForStars().then(() => {
+                const submitEvent = new SubmitEvent('submit', { 
+                    cancelable: true,
+                    bubbles: true
+                });
+                Object.defineProperty(submitEvent, 'target', {
+                    value: form,
+                    enumerable: true
+                });
+                handleSubmit(submitEvent, false);
             });
-            Object.defineProperty(submitEvent, 'target', {
-                value: form,
-                enumerable: true
-            });
-            handleSubmit(submitEvent, false);
         }
     });
+
+    function waitForStars() {
+        return new Promise((resolve) => {
+            const checkStars = () => {
+                const stars = document.getElementById('github-stars');
+                if (stars && stars.textContent !== '0') {
+                    resolve();
+                } else {
+                    setTimeout(checkStars, 10);
+                }
+            };
+            checkStars();
+        });
+    }
 </script>
 {% endblock extra_scripts %}

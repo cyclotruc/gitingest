@@ -1,6 +1,5 @@
-from utils.clone import clone_repo, delete_repo
 from ingest import ingest_from_query
-
+from utils.clone import clone_repo
 
 async def process_query(query: dict) -> str:
     
@@ -10,7 +9,6 @@ async def process_query(query: dict) -> str:
     txt_dump = result[1] + "\n" + result[2]
     with open(f"{query['local_path']}.txt", "w") as f:
         f.write(txt_dump)
-        
-    delete_repo(query['slug'])
+
         
     return result

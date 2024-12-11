@@ -117,23 +117,19 @@ def create_summary_string(query: dict, nodes: Dict, files: List[Dict], ) -> str:
     """Creates a summary string with file counts and content size."""
     total_lines = sum(len(file["content"].splitlines()) for file in files)
 
-    if query['branch']:
-        if len(query['branch']) > 20:
-            branch = query['branch'][:20] + '...'
-        else:
-            branch = query['branch']
-    else:
-        branch = "main"
+    summary = f"Repository: {query['user_name']}/{query['repo_name']}\n"
+    summary += f"Files analyzed: {nodes['file_count']}\n"
+    summary += f"Directories analyzed: {nodes['dir_count']}\n"
+    summary += f"Total lines of content: {total_lines:,}\n"
+    if query['subpath'] != '/':
+        summary += f"Subpath: {query['subpath']}\n"
+    if query['commit']:
+        summary += f"Commit: {query['commit']}\n"
+    elif query['branch'] != 'main' and query['branch'] != 'master' and query['branch']:
+        summary += f"Branch: {query['branch']}\n"
+    return summary
+        
 
-    
-    return (
-        f"Repository: {query['user_name']}/{query['repo_name']}\n"
-        f"Files analyzed: {nodes['file_count']}\n"
-        f"Directories analyzed: {nodes['dir_count']}\n"
-        f"Total lines of content: {total_lines:,}\n"
-        f"Subpath: {query['subpath']}\n"
-        # f"branch: {branch}\n"
-    )
 
 def create_tree_structure(query: dict, node: Dict, prefix: str = "", is_last: bool = True) -> str:
     """Creates a tree-like string representation of the file structure."""
