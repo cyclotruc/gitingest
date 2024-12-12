@@ -2,3 +2,4 @@ fastapi[standard]
 uvicorn
 fastapi-analytics
 slowapi
+tokencost
