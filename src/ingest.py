@@ -15,6 +15,19 @@ def should_ignore(path: str, base_path: str, ignore_patterns: List[str]) -> bool
             return True
     return False
 
+def is_safe_symlink(symlink_path: str, base_path: str) -> bool:
+    """Check if a symlink points to a location within the base directory."""
+    try:
+        # Get the absolute path of the symlink target
+        target_path = os.path.realpath(symlink_path)
+        # Get the absolute path of the base directory
+        base_path = os.path.realpath(base_path)
+        # Check if the target path starts with the base path
+        return os.path.commonpath([target_path]) == os.path.commonpath([target_path, base_path])
+    except (OSError, ValueError):
+        # If there's any error resolving the paths, consider it unsafe
+        return False
+
 def is_text_file(file_path: str) -> bool:
     """Determines if a file is likely a text file based on its content."""
     try:
@@ -49,6 +62,41 @@ def scan_directory(path: str, ignore_patterns: List[str], base_path: str) -> Dic
             item_path = os.path.join(path, item)
             
             if should_ignore(item_path, base_path, ignore_patterns):
+                continue
+
+            # Handle symlinks
+            if os.path.islink(item_path):
+                if not is_safe_symlink(item_path, base_path):
+                    print(f"Skipping symlink that points outside base directory: {item_path}")
+                    continue
+                # Get the real path for further checks
+                real_path = os.path.realpath(item_path)
+                # Use the real path for file operations but keep original path for display
+                if os.path.isfile(real_path):
+                    file_size = os.path.getsize(real_path)
+                    is_text = is_text_file(real_path)
+                    content = read_file_content(real_path) if is_text else "[Non-text file]"
+                    
+                    child = {
+                        "name": item,
+                        "type": "file",
+                        "size": file_size,
+                        "content": content,
+                        "path": item_path  # Keep the original path
+                    }
+                    result["children"].append(child)
+                    result["size"] += file_size
+                    result["file_count"] += 1
+                    
+                elif os.path.isdir(real_path):
+                    subdir = scan_directory(real_path, ignore_patterns, base_path)
+                    if subdir:
+                        subdir["name"] = item  # Keep the original name
+                        subdir["path"] = item_path  # Keep the original path
+                        result["children"].append(subdir)
+                        result["size"] += subdir["size"]
+                        result["file_count"] += subdir["file_count"]
+                        result["dir_count"] += 1 + subdir["dir_count"]
                 continue
 
             if os.path.isfile(item_path):
