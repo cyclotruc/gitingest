@@ -1,11 +1,9 @@
-
 import uuid
 
 from config import TMP_BASE_PATH
 
 def parse_url(url: str) -> dict:
     parsed = {
-        
         "user_name": None,
         "repo_name": None,
         "type": None,
@@ -17,10 +15,12 @@ def parse_url(url: str) -> dict:
     }
     
     
+    # Normalize URL by adding https:// if missing
+    if not url.startswith("https://"):
+        url = "https://" + url
+    
     if not url.startswith("https://github.com/"):
         raise ValueError("Invalid GitHub URL. Please provide a valid GitHub repository URL.")
-    
-    
     
     # Remove anything after the first space
     url = url.split(" ")[0]

@@ -28,6 +28,17 @@ function copyText(className) {
         });
 }
 
+function validateGithubUrl(url) {
+    // Add https:// if missing
+    if (!url.startsWith('https://')) {
+        url = 'https://' + url;
+    }
+    
+    // Check if it's a valid GitHub URL
+    const githubPattern = /^https:\/\/github\.com\/[^\/]+\/[^\/]+/;
+    return githubPattern.test(url);
+}
+
 function handleSubmit(event, showLoading = false) {
     event.preventDefault();
     // Get the form either from event.target or by ID if event.target is null
@@ -36,6 +47,23 @@ function handleSubmit(event, showLoading = false) {
 
     const submitButton = form.querySelector('button[type="submit"]');
     if (!submitButton) return;  // Guard clause in case button isn't found
+
+    // Get the input URL
+    const formData = new FormData(form);
+    const inputUrl = formData.get('input_text');
+    
+    // Validate URL
+    if (!validateGithubUrl(inputUrl)) {
+        const errorMessage = document.getElementById('error-message') || (() => {
+            const div = document.createElement('div');
+            div.id = 'error-message';
+            div.className = 'text-red-500 text-sm mt-2';
+            form.appendChild(div);
+            return div;
+        })();
+        errorMessage.textContent = 'Please enter a valid GitHub repository URL (e.g., github.com/user/repo)';
+        return;
+    }
 
     const originalContent = submitButton.innerHTML;
     const currentStars = document.getElementById('github-stars')?.textContent;
@@ -112,4 +140,4 @@ function copyFullDigest() {
 
 // Export functions if using modules
 window.copyText = copyText;
-window.handleSubmit = handleSubmit; 
+window.handleSubmit = handleSubmit;
