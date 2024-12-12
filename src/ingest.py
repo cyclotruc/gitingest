@@ -45,8 +45,17 @@ def read_file_content(file_path: str) -> str:
     except Exception as e:
         return f"Error reading file: {str(e)}"
     
-def scan_directory(path: str, ignore_patterns: List[str], base_path: str) -> Dict:
+def scan_directory(path: str, ignore_patterns: List[str], base_path: str, seen_paths: set = None) -> Dict:
     """Recursively analyzes a directory and its contents."""
+    if seen_paths is None:
+        seen_paths = set()
+        
+    real_path = os.path.realpath(path)
+    if real_path in seen_paths:
+        print(f"Skipping already visited path: {path}")
+        return None
+    seen_paths.add(real_path)
+    
     result = {
         "name": os.path.basename(path),
         "type": "directory",
@@ -71,6 +80,9 @@ def scan_directory(path: str, ignore_patterns: List[str], base_path: str) -> Dic
                     continue
                 # Get the real path for further checks
                 real_path = os.path.realpath(item_path)
+                if real_path in seen_paths:
+                    print(f"Skipping already visited symlink target: {item_path}")
+                    continue
                 # Use the real path for file operations but keep original path for display
                 if os.path.isfile(real_path):
                     file_size = os.path.getsize(real_path)
@@ -89,7 +101,7 @@ def scan_directory(path: str, ignore_patterns: List[str], base_path: str) -> Dic
                     result["file_count"] += 1
                     
                 elif os.path.isdir(real_path):
-                    subdir = scan_directory(real_path, ignore_patterns, base_path)
+                    subdir = scan_directory(real_path, ignore_patterns, base_path, seen_paths)
                     if subdir:
                         subdir["name"] = item  # Keep the original name
                         subdir["path"] = item_path  # Keep the original path
@@ -116,7 +128,7 @@ def scan_directory(path: str, ignore_patterns: List[str], base_path: str) -> Dic
                 result["file_count"] += 1
                 
             elif os.path.isdir(item_path):
-                subdir = scan_directory(item_path, ignore_patterns, base_path)
+                subdir = scan_directory(item_path, ignore_patterns, base_path, seen_paths)
                 if subdir:
                     result["children"].append(subdir)
                     result["size"] += subdir["size"]
