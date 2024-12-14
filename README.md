@@ -26,7 +26,7 @@ You can also replace `hub` with `ingest` in any github url to access the corespo
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/gitingest.git
+git clone https://github.com/cyclotruc/gitingest.git
 cd gitingest
 ```
 

@@ -2,7 +2,7 @@ import uuid
 
 from config import TMP_BASE_PATH
 
-def parse_url(url: str) -> dict:
+def parse_url(url: str, max_file_size: int) -> dict:
     parsed = {
         "user_name": None,
         "repo_name": None,
@@ -12,10 +12,12 @@ def parse_url(url: str) -> dict:
         "subpath": "/",
         "local_path": None,
         "url": None,
+        "max_file_size": int(max_file_size) * 1024
     }
     
+
     
-    # Normalize URL by adding https:// if missing
+    
     if not url.startswith("https://"):
         url = "https://" + url
     

@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base.jinja.html" %}
 
 {% block content %}
 {% if error_message %}
@@ -9,7 +9,7 @@
 {% endif %}
 
 {% with is_index=true, show_examples=false %}
-    {% include 'components/github_form.html' %}
+    {% include 'components/github_form.jinja.html' %}
 {% endwith %}
 
 {% if loading %}
@@ -22,7 +22,7 @@
 </div>
 {% endif %}
 
-{% include 'components/result.html' %}
+{% include 'components/result.jinja.html' %}
 {% endblock content %}
 
 {% block extra_scripts %}

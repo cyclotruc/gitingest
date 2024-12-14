@@ -166,6 +166,5 @@ cython_debug/
 history.txt
 
 # ignore default output directory
-output/
 cleanup.py
 Caddyfile

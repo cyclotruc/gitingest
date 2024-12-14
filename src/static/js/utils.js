@@ -41,12 +41,21 @@ function validateGithubUrl(url) {
 
 function handleSubmit(event, showLoading = false) {
     event.preventDefault();
-    // Get the form either from event.target or by ID if event.target is null
     const form = event.target || document.getElementById('ingestForm');
-    if (!form) return;  // Guard clause in case form isn't found
+    if (!form) return;
 
     const submitButton = form.querySelector('button[type="submit"]');
-    if (!submitButton) return;  // Guard clause in case button isn't found
+    if (!submitButton) return;
+
+    // Create new FormData from the form
+    const formData = new FormData(form);
+
+    // Get the slider value and update formData with the converted value
+    const slider = document.getElementById('file_size');
+    if (slider) {
+        formData.delete('max_file_size');
+        formData.append('max_file_size', slider.value);
+    }
 
     // Get the input URL
     const formData = new FormData(form);
@@ -86,7 +95,7 @@ function handleSubmit(event, showLoading = false) {
     // Submit the form
     fetch(form.action, {
         method: 'POST',
-        body: new FormData(form)
+        body: formData
     })
         .then(response => response.text())
         .then(html => {
@@ -97,6 +106,9 @@ function handleSubmit(event, showLoading = false) {
 
             // Wait for next tick to ensure DOM is updated
             setTimeout(() => {
+                // Reinitialize slider functionality
+                initializeSlider();
+
                 const starsElement = document.getElementById('github-stars');
                 if (starsElement && starCount) {
                     starsElement.textContent = starCount;
@@ -138,6 +150,51 @@ function copyFullDigest() {
     });
 }
 
-// Export functions if using modules
+// Add the logSliderToSize helper function
+function logSliderToSize(position) {
+    const minp = 0;
+    const maxp = 500;
+    const minv = Math.log(1);
+    const maxv = Math.log(102400);
+
+    const value = Math.exp(minv + (maxv - minv) * Math.pow(position / maxp, 1.5));
+    return Math.round(value);
+}
+
+// Move slider initialization to a separate function
+function initializeSlider() {
+    const slider = document.getElementById('file_size');
+    const sizeValue = document.getElementById('size_value');
+
+    if (!slider || !sizeValue) return;
+
+    function updateSlider() {
+        const value = logSliderToSize(slider.value);
+        sizeValue.textContent = formatSize(value);
+        slider.style.backgroundSize = `${(slider.value / slider.max) * 100}% 100%`;
+    }
+
+    // Update on slider change
+    slider.addEventListener('input', updateSlider);
+
+    // Initialize slider position
+    updateSlider();
+}
+
+// Add helper function for formatting size
+function formatSize(sizeInKB) {
+    if (sizeInKB >= 1024) {
+        return Math.round(sizeInKB / 1024) + 'mb';
+    }
+    return Math.round(sizeInKB) + 'kb';
+}
+
+// Initialize slider on page load
+document.addEventListener('DOMContentLoaded', initializeSlider);
+
+// Make sure these are available globally
 window.copyText = copyText;
+
 window.handleSubmit = handleSubmit;
+window.initializeSlider = initializeSlider;
+window.formatSize = formatSize; 

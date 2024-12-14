@@ -20,7 +20,7 @@
 </head>
 
 <body class="bg-[#FFFDF8] min-h-screen flex flex-col">
-    {% include 'components/navbar.html' %}
+    {% include 'components/navbar.jinja.html' %}
 
     <!-- Main content wrapper -->
     <main class="flex-1 w-full">
@@ -29,7 +29,7 @@
         </div>
     </main>
 
-    {% include 'components/footer.html' %}
+    {% include 'components/footer.jinja.html' %}
     
     {% block extra_scripts %}{% endblock %}
 </body>
