@@ -3,3 +3,6 @@ uvicorn
 fastapi-analytics
 slowapi
 tokencost
+pytest
+pytest-asyncio
+pytest-cov

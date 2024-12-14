@@ -22,6 +22,25 @@ You can also replace `hub` with `ingest` in any github url to access the corespo
 - FastAPI - Backend framework
 - [apianalytics.dev](https://www.apianalytics.dev/) - Usage tracking
 
+## 📦 Running Tests
+
+To run the tests, first install the test dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+Then run the tests with coverage:
+```bash
+cd src
+pytest --cov
+```
+
+To generate a coverage HTML report:
+```bash
+pytest --cov --cov-report=html
+```
+The report will be available in `htmlcov/index.html`
+
 ## 📦 Installation
 
 1. Clone the repository:
