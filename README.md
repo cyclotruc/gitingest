@@ -76,6 +76,20 @@ docker run -d --name gitingest -p 8000:8000 gitingest
 ```
 The application will be available at `http://localhost:8000`
 
+### 🌐 Environment Configuration
+
+You can configure the application using the following environment variables:
+
+- **`ALLOWED_HOSTS`**: Specify allowed hostnames for the application. Default: `"gitingest.com,*.gitingest.com,gitdigest.dev,localhost"`.
+
+Example:
+
+```bash
+ALLOWED_HOSTS="gitingest.lan.coronado.io,localhost"
+```
+
+Ensure these variables are set before running the application or deploying it via Docker.
+
 ## ✔️ Contributions are welcome!
 Create a pull request or open an Issue about anything you'd like to see in gitingest
 
