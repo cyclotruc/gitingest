@@ -20,7 +20,18 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.add_middleware(Analytics, api_key=os.getenv('API_ANALYTICS_KEY'))
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=["gitingest.com", "*.gitingest.com", "gitdigest.dev", "localhost"])
+
+# Define the default allowed hosts
+default_allowed_hosts = ["gitingest.com", "*.gitingest.com", "gitdigest.dev", "localhost"]
+
+# Fetch allowed hosts from the environment variable or use the default
+allowed_hosts = os.getenv("ALLOWED_HOSTS")
+if allowed_hosts:
+    allowed_hosts = allowed_hosts.split(",")
+else:
+    allowed_hosts = default_allowed_hosts
+
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
 templates = Jinja2Templates(directory="templates")
 
 @app.get("/health")
