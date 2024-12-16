@@ -85,7 +85,7 @@ You can configure the application using the following environment variables:
 Example:
 
 ```bash
-ALLOWED_HOSTS="gitingest.lan.coronado.io,localhost"
+ALLOWED_HOSTS="gitingest.local,localhost"
 ```
 
 Ensure these variables are set before running the application or deploying it via Docker.
