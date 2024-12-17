@@ -4,12 +4,12 @@
 
 [![Image](./docs/frontpage.png)](https://gitingest.com/)
 
-[gitingest.com](https://gitingest.com/) - Turn any GitHub repository into a prompt-friendly text ingest for LLMs.
+[gitingest.com](https://gitingest.com/) - Turn any Git repository into a prompt-friendly text ingest for LLMs.
 You can also replace `hub` with `ingest` in any github url to access the coresponding digest
 
 ## 🚀 Features
 
-- **One-Click Analysis**: Simply paste a GitHub repository URL and get instant pastable context
+- **One-Click Analysis**: Simply paste a Git repository URL and get instant pastable context
 - **Smart Formatting**: Optimized output format for LLM prompts
 - **Statistics about**: :
   - File and directory structure
