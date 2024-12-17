@@ -6,13 +6,6 @@ from typing import List
 
 from config import TMP_BASE_PATH, DEFAULT_IGNORE_PATTERNS
 
-def validate_github_url(url: str) -> bool:
-    if not url.startswith('https://'):
-        url = 'https://' + url
-        
-    github_pattern = r'^https://github\.com/[^/]+/[^/]+'
-    return bool(re.match(github_pattern, url))
-
 def parse_url(url: str) -> dict:
     parsed = {
         "user_name": None,
@@ -25,22 +18,26 @@ def parse_url(url: str) -> dict:
         "url": None,
     }
     
-    if not validate_github_url(url):
-        raise ValueError("Invalid GitHub URL. Please provide a valid GitHub repository URL.")
-    
     url = url.split(" ")[0]
-    url = url.replace("https://github.com/", "")
-    path_parts = url.split('/')
-
+    if not url.startswith('https://'):
+        url = 'https://' + url
+        
+    # Extract domain and path
+    url_parts = url.split('/')
+    domain = url_parts[2]
+    path_parts = url_parts[3:]
+    
+    if len(path_parts) < 2:
+        raise ValueError("Invalid repository URL. Please provide a valid Git repository URL.")
+        
     parsed["user_name"] = path_parts[0]
     parsed["repo_name"] = path_parts[1]
     
-
-    parsed["url"] = f"https://github.com/{parsed['user_name']}/{parsed['repo_name']}"
-    parsed['slug'] = parsed["url"].replace("https://github.com/", "").replace("/", "-")
+    # Keep original URL format
+    parsed["url"] = f"https://{domain}/{parsed['user_name']}/{parsed['repo_name']}"
+    parsed['slug'] = f"{domain}-{parsed['user_name']}-{parsed['repo_name']}"
     parsed["id"] = str(uuid.uuid4())
     parsed["local_path"] = f"{TMP_BASE_PATH}/{parsed['id']}/{parsed['slug']}"
-    
 
     if len(path_parts) > 3:
         parsed["type"] = path_parts[2]
@@ -50,7 +47,6 @@ def parse_url(url: str) -> dict:
             
         parsed["subpath"] = "/" + "/".join(path_parts[4:])
     return parsed
-
 
 def normalize_pattern(pattern: str) -> str:
     pattern = pattern.strip()
