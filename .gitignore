@@ -163,8 +163,12 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 .vscode/settings.json
-history.txt
+.DS_Store
 
-# ignore default output directory
+# Project specific
+history.txt
 cleanup.py
 Caddyfile
+
+# ignore default output directory
+tmp/*

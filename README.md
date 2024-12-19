@@ -98,3 +98,59 @@ Create a pull request or open an Issue about anything you'd like to see in gitin
 - Repository cloning is limited to public GitHub repositories only
 - Too big repos will probably timeout (if longer than 20 secondes to clone)
 
+
+## Command Line Global Installation
+
+```bash
+pip install -e .
+```
+
+## Command Line Usage
+
+The `gitingest` command line tool allows you to analyze any directory and create a text dump of its contents.
+
+### Basic Usage
+
+```bash
+gitingest /path/to/directory
+```
+
+This will create a text file named after your directory (e.g., `directory.txt`) in your current working directory.
+
+### Specifying Output Location
+
+```bash
+gitingest /path/to/directory -o /path/to/output.txt
+```
+
+### Options
+
+- `-o, --output`: Specify the output file path (default: `<directory_name>.txt` in current directory)
+- `-s, --max-size`: Maximum file size to process in bytes (default: 10MB)
+- `-i, --ignore-pattern`: Additional patterns to ignore (can be used multiple times)
+
+### Examples
+
+```bash
+# Basic usage
+gitingest ~/projects/myproject
+
+# Custom output location
+gitingest ~/projects/myproject -o ~/Desktop/analysis.txt
+
+# Ignore specific file patterns
+gitingest ~/projects/myproject -i "*.csv" -i "*.json"
+
+# Set maximum file size (e.g., 5MB)
+gitingest ~/projects/myproject -s 5000000
+```
+
+### Output Format
+
+The generated text file contains:
+1. Summary statistics (file count, directory count, content size)
+2. Directory tree structure
+3. Contents of all text files
+
+Files and directories that are commonly ignored (like `.git`, `node_modules`, cache directories, etc.) are automatically excluded. You can add additional patterns to ignore using the `-i` flag.
+
