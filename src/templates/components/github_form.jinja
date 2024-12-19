@@ -8,7 +8,7 @@
             id="ingestForm" onsubmit="handleSubmit(event{% if is_index %}, true{% endif %})">
             <div class="relative w-full h-full">
                 <div class="w-full h-full rounded bg-gray-900 translate-y-1 translate-x-1 absolute inset-0 z-10"></div>
-                <input type="text" name="input_text" id="input_text" placeholder="https://github.com/..., https://gitlab.com/..."
+                <input type="text" name="input_text" id="input_text" placeholder="https://github.com/..."
                     value="{{ github_url if github_url else '' }}"
                     required
                     class="border-[3px] w-full relative z-20 border-gray-900 placeholder-gray-600 text-lg font-medium focus:outline-none py-3.5 px-6 rounded">
