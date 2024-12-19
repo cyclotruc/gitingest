@@ -35,7 +35,7 @@ def parse_url(url: str) -> dict:
     
     # Keep original URL format
     parsed["url"] = f"https://{domain}/{parsed['user_name']}/{parsed['repo_name']}"
-    parsed['slug'] = f"{domain}-{parsed['user_name']}-{parsed['repo_name']}"
+    parsed['slug'] = f"{parsed['user_name']}-{parsed['repo_name']}"
     parsed["id"] = str(uuid.uuid4())
     parsed["local_path"] = f"{TMP_BASE_PATH}/{parsed['id']}/{parsed['slug']}"
 
