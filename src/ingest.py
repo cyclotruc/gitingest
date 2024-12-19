@@ -1,12 +1,56 @@
 import os
 from fnmatch import fnmatch
-from config import DEFAULT_IGNORE_PATTERNS, MAX_FILE_SIZE
-from tokencost import count_string_tokens
 from typing import Dict, List, Union
 
+# Configuration
+MAX_FILE_SIZE = 10000000  # 10MB
 MAX_DIRECTORY_DEPTH = 20  # Maximum depth of directory traversal
 MAX_FILES = 10000  # Maximum number of files to process
 MAX_TOTAL_SIZE_BYTES = 500 * 1024 * 1024  # Total size limit
+
+DEFAULT_IGNORE_PATTERNS = [
+    # Python
+    '*.pyc', '*.pyo', '*.pyd', '__pycache__', '.pytest_cache', '.coverage',
+    '.tox', '.nox', '.mypy_cache', '.ruff_cache', '.hypothesis',
+    'poetry.lock', 'Pipfile.lock',
+    
+    # JavaScript/Node
+    'node_modules', 'bower_components', 'package-lock.json', 'yarn.lock',
+    '.npm', '.yarn', '.pnpm-store',
+    
+    # Version control
+    '.git', '.svn', '.hg', '.gitignore', '.gitattributes', '.gitmodules',
+    
+    # Images and media
+    '*.svg', '*.png', '*.jpg', '*.jpeg', '*.gif', '*.ico', '*.pdf',
+    '*.mov', '*.mp4', '*.mp3', '*.wav',
+    
+    # Virtual environments
+    'venv', '.venv', 'env', '.env', 'virtualenv',
+    
+    # IDEs and editors
+    '.idea', '.vscode', '.vs', '*.swp', '*.swo', '*.swn',
+    '.settings', '.project', '.classpath', '*.sublime-*',
+    
+    # Temporary and cache files
+    '*.log', '*.bak', '*.swp', '*.tmp', '*.temp',
+    '.cache', '.sass-cache', '.eslintcache',
+    '.DS_Store', 'Thumbs.db', 'desktop.ini',
+    
+    # Build directories and artifacts
+    'build', 'dist', 'target', 'out',
+    '*.egg-info', '*.egg', '*.whl',
+    '*.so', '*.dylib', '*.dll', '*.class',
+    
+    # Documentation
+    'site-packages', '.docusaurus', '.next', '.nuxt',
+    
+    # Other common patterns
+    '*.min.js', '*.min.css',  # Minified files
+    '*.map',  # Source maps
+    '.terraform', '*.tfstate*',  # Terraform
+    'vendor/',  # Dependencies in various languages
+]
 
 def should_include(path: str, base_path: str, include_patterns: List[str]) -> bool:
     rel_path = path.replace(base_path, "").lstrip(os.sep)
@@ -329,3 +373,6 @@ def ingest_from_query(query: dict) -> Dict:
         return ingest_single_file(path, query)
     else:
         return ingest_directory(path, query)
+
+# Alias for CLI compatibility
+analyze_codebase = ingest_from_query
