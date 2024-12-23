@@ -24,7 +24,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.add_middleware(Analytics, api_key=os.getenv('API_ANALYTICS_KEY'))
 
 # Define the default allowed hosts
-default_allowed_hosts = ["gitingest.com", "*.gitingest.com", "localhost"]
+default_allowed_hosts = ["gitingest.com", "*.gitingest.com", "localhost", "127.0.0.1"]
 
 # Fetch allowed hosts from the environment variable or use the default
 allowed_hosts = os.getenv("ALLOWED_HOSTS")
