@@ -1,25 +1,17 @@
-// Copy functionality
 function copyText(className) {
     const textarea = document.querySelector('.' + className);
     const button = document.querySelector(`button[onclick="copyText('${className}')"]`);
     if (!textarea || !button) return;
 
-    // Copy text
     navigator.clipboard.writeText(textarea.value)
         .then(() => {
-            // Store original content
             const originalContent = button.innerHTML;
-
-            // Change button content
             button.innerHTML = 'Copied!';
-
-            // Reset after 1 second
             setTimeout(() => {
                 button.innerHTML = originalContent;
             }, 1000);
         })
         .catch(err => {
-            // Show error in button
             const originalContent = button.innerHTML;
             button.innerHTML = 'Failed to copy';
             setTimeout(() => {
@@ -27,7 +19,6 @@ function copyText(className) {
             }, 1000);
         });
 }
-
 
 function handleSubmit(event, showLoading = false) {
     event.preventDefault();
@@ -39,14 +30,12 @@ function handleSubmit(event, showLoading = false) {
 
     const formData = new FormData(form);
 
-    // Update file size
     const slider = document.getElementById('file_size');
     if (slider) {
         formData.delete('max_file_size');
         formData.append('max_file_size', slider.value);
     }
 
-    // Update pattern type and pattern
     const patternType = document.getElementById('pattern_type');
     const pattern = document.getElementById('pattern');
     if (patternType && pattern) {
@@ -73,18 +62,14 @@ function handleSubmit(event, showLoading = false) {
         submitButton.classList.add('bg-[#ffb14d]');
     }
 
-    // Submit the form
     fetch(form.action, {
         method: 'POST',
         body: formData
     })
         .then(response => response.text())
         .then(html => {
-            // Store the star count before updating the DOM
             const starCount = currentStars;
 
-
-            // TEMPORARY SNOW LOGIC //
             const parser = new DOMParser();
             const newDoc = parser.parseFromString(html, 'text/html');
 
@@ -93,11 +78,8 @@ function handleSubmit(event, showLoading = false) {
             if (existingCanvas) {
                 document.body.insertBefore(existingCanvas, document.body.firstChild);
             }
-            // END TEMPORARY SNOW LOGIC //
 
-            // Wait for next tick to ensure DOM is updated
             setTimeout(() => {
-                // Reinitialize slider functionality
                 initializeSlider();
 
                 const starsElement = document.getElementById('github-stars');
@@ -105,7 +87,6 @@ function handleSubmit(event, showLoading = false) {
                     starsElement.textContent = starCount;
                 }
 
-                // Scroll to results if they exist
                 const resultsSection = document.querySelector('[data-results]');
                 if (resultsSection) {
                     resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -141,7 +122,6 @@ function copyFullDigest() {
     });
 }
 
-// Add the logSliderToSize helper function
 function logSliderToSize(position) {
     const minp = 0;
     const maxp = 500;
@@ -152,7 +132,6 @@ function logSliderToSize(position) {
     return Math.round(value);
 }
 
-// Move slider initialization to a separate function
 function initializeSlider() {
     const slider = document.getElementById('file_size');
     const sizeValue = document.getElementById('size_value');
@@ -165,14 +144,11 @@ function initializeSlider() {
         slider.style.backgroundSize = `${(slider.value / slider.max) * 100}% 100%`;
     }
 
-    // Update on slider change
     slider.addEventListener('input', updateSlider);
 
-    // Initialize slider position
     updateSlider();
 }
 
-// Add helper function for formatting size
 function formatSize(sizeInKB) {
     if (sizeInKB >= 1024) {
         return Math.round(sizeInKB / 1024) + 'mb';
@@ -180,17 +156,13 @@ function formatSize(sizeInKB) {
     return Math.round(sizeInKB) + 'kb';
 }
 
-// Initialize slider on page load
 document.addEventListener('DOMContentLoaded', initializeSlider);
 
-// Make sure these are available globally
 window.copyText = copyText;
-
 window.handleSubmit = handleSubmit;
 window.initializeSlider = initializeSlider;
 window.formatSize = formatSize;
 
-// Add this new function
 function setupGlobalEnterHandler() {
     document.addEventListener('keydown', function (event) {
         if (event.key === 'Enter' && !event.target.matches('textarea')) {
@@ -202,8 +174,38 @@ function setupGlobalEnterHandler() {
     });
 }
 
-// Add to the DOMContentLoaded event listener
 document.addEventListener('DOMContentLoaded', () => {
     initializeSlider();
     setupGlobalEnterHandler();
 });
+
+function toggleSuggestion(suggestion) {
+    const patternInput = document.getElementById('pattern');
+    if (!patternInput) return;
+
+    const patterns = patternInput.value.split(',').map(p => p.trim());
+    const index = patterns.indexOf(suggestion);
+
+    if (index === -1) {
+        patterns.push(suggestion);
+    } else {
+        patterns.splice(index, 1);
+    }
+
+    patternInput.value = patterns.filter(p => p).join(', ');
+}
+
+function displaySuggestions(suggestions) {
+    const suggestionsContainer = document.getElementById('suggestions-container');
+    if (!suggestionsContainer) return;
+
+    suggestionsContainer.innerHTML = '';
+
+    suggestions.forEach(suggestion => {
+        const suggestionElement = document.createElement('button');
+        suggestionElement.textContent = suggestion;
+        suggestionElement.classList.add('suggestion-button');
+        suggestionElement.addEventListener('click', () => toggleSuggestion(suggestion));
+        suggestionsContainer.appendChild(suggestionElement);
+    });
+}

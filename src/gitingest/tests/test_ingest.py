@@ -2,6 +2,9 @@ import pytest
 from src.gitingest.ingest_from_query import (
     scan_directory,
     extract_files_content,
+    generate_suggestions,
+    check_relevance,
+    sort_suggestions
 )
 
 # Test fixtures
@@ -100,11 +103,38 @@ def test_extract_files_content(temp_directory, sample_query):
     assert any('file_dir1.txt' in p for p in paths)
     assert any('file_dir2.txt' in p for p in paths)
 
+def test_generate_suggestions(temp_directory, sample_query):
+    sample_query['local_path'] = str(temp_directory)
+    suggestions = generate_suggestions(sample_query)
+    assert "*.md" in suggestions
+    assert "*.py" in suggestions
+    assert "*.json" in suggestions
+    assert ".gitignore" in suggestions
+    assert "*.docs" in suggestions
+    assert "*.css" in suggestions
+    assert "*.html" in suggestions
+    assert "tests/*" in suggestions
 
+def test_check_relevance(temp_directory, sample_query):
+    sample_query['local_path'] = str(temp_directory)
+    assert check_relevance(sample_query, "*.py") == True
+    assert check_relevance(sample_query, "*.md") == False
+
+def test_sort_suggestions(temp_directory, sample_query):
+    sample_query['local_path'] = str(temp_directory)
+    suggestions = generate_suggestions(sample_query)
+    sorted_suggestions = sort_suggestions(sample_query, suggestions)
+    assert sorted_suggestions[0] == "*.py"
+    assert sorted_suggestions[1] == "*.md"
+    assert sorted_suggestions[2] == "*.json"
+    assert sorted_suggestions[3] == ".gitignore"
+    assert sorted_suggestions[4] == "*.docs"
+    assert sorted_suggestions[5] == "*.css"
+    assert sorted_suggestions[6] == "*.html"
+    assert sorted_suggestions[7] == "tests/*"
 
 # TODO: test with include patterns: ['*.txt']
 # TODO: test with wrong include patterns: ['*.qwerty']
-
 
 #single folder patterns
 # TODO: test with include patterns: ['src/*']
@@ -116,7 +146,3 @@ def test_extract_files_content(temp_directory, sample_query):
 # TODO: test with multiple include patterns: ['*.txt', '*.py']
 # TODO: test with multiple include patterns: ['/src/*', '*.txt']
 # TODO: test with multiple include patterns: ['/src*', '*.txt']
-
-
-
-

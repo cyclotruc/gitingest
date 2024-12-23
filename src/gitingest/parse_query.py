@@ -154,3 +154,11 @@ def parse_query(source: str, max_file_size: int, from_web: bool, include_pattern
     
     return query
 
+def normalize_user_added_patterns(patterns: Union[List[str], str]) -> List[str]:
+    if isinstance(patterns, str):
+        patterns = patterns.split(',')
+    return [normalize_pattern(pattern) for pattern in patterns]
+
+def check_user_added_matches_suggestions(user_patterns: List[str], suggestions: List[str]) -> List[str]:
+    normalized_user_patterns = normalize_user_added_patterns(user_patterns)
+    return [pattern for pattern in normalized_user_patterns if pattern in suggestions]

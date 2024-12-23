@@ -339,3 +339,38 @@ def ingest_from_query(query: dict) -> Dict:
     else:
         return ingest_directory(path, query)
 
+def generate_suggestions(query: dict) -> List[str]:
+    """Generate suggestions for include/exclude patterns based on repository content."""
+    suggestions = [
+        "*.md", "*.json", "*.py", ".gitignore", "*.docs", "*.css", "*.html", "tests/*"
+    ]
+    relevant_suggestions = []
+    base_path = query['local_path']
+    for suggestion in suggestions:
+        if should_include(base_path, base_path, [suggestion]):
+            relevant_suggestions.append(suggestion)
+    return relevant_suggestions
+
+def check_relevance(query: dict, suggestion: str) -> bool:
+    """Check the relevance of a suggestion by appending it to the current filter."""
+    base_path = query['local_path']
+    if should_include(base_path, base_path, [suggestion]):
+        return True
+    return False
+
+def sort_suggestions(query: dict, suggestions: List[str]) -> List[str]:
+    """Sort suggestions based on the number of files or total lines affected."""
+    suggestion_stats = []
+    base_path = query['local_path']
+    for suggestion in suggestions:
+        file_count = 0
+        total_lines = 0
+        for root, _, files in os.walk(base_path):
+            for file in files:
+                file_path = os.path.join(root, file)
+                if should_include(file_path, base_path, [suggestion]):
+                    file_count += 1
+                    total_lines += sum(1 for _ in open(file_path, 'r', encoding='utf-8', errors='ignore'))
+        suggestion_stats.append((suggestion, file_count, total_lines))
+    sorted_suggestions = sorted(suggestion_stats, key=lambda x: (x[1], x[2]), reverse=True)
+    return [s[0] for s in sorted_suggestions]
