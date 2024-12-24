@@ -85,12 +85,26 @@ def parse_url(url: str) -> dict:
     parsed["local_path"] = f"{TMP_BASE_PATH}/{parsed['id']}/{parsed['slug']}"
 
     if len(path_parts) > 3:
-        parsed["type"] = path_parts[2]
-        parsed["branch"] = path_parts[3]
-        if len(parsed['branch']) == 40 and all(c in '0123456789abcdefABCDEF' for c in parsed['branch']):
-            parsed["commit"] = parsed['branch']
-            
-        parsed["subpath"] = "/" + "/".join(path_parts[4:])
+        parsed["type"] = path_parts[2]  # Usually 'tree' or 'blob'
+        
+        # Find the commit hash or reconstruct the branch name
+        remaining_parts = path_parts[3:]
+        if remaining_parts[0] and len(remaining_parts[0]) == 40 and all(c in '0123456789abcdefABCDEF' for c in remaining_parts[0]):
+            parsed["commit"] = remaining_parts[0]
+            parsed["subpath"] = "/" + "/".join(remaining_parts[1:]) if len(remaining_parts) > 1 else "/"
+        else:
+            # Handle branch names with slashes
+            for i, part in enumerate(remaining_parts):
+                if part in ('tree', 'blob'):
+                    # Found another type indicator, everything before this was the branch name
+                    parsed["branch"] = "/".join(remaining_parts[:i])
+                    parsed["subpath"] = "/" + "/".join(remaining_parts[i+2:]) if len(remaining_parts) > i+2 else "/"
+                    break
+            else:
+                # No additional type indicator found, assume everything is part of the branch name
+                parsed["branch"] = "/".join(remaining_parts)
+                parsed["subpath"] = "/"
+
     return parsed
 
 def normalize_pattern(pattern: str) -> str:
