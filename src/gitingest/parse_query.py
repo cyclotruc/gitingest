@@ -1,6 +1,7 @@
 from typing import List, Union
 import uuid
 import os 
+from urllib.parse import unquote
 
 
 DEFAULT_IGNORE_PATTERNS = [
@@ -64,6 +65,8 @@ def parse_url(url: str) -> dict:
     }
     
     url = url.split(" ")[0]
+    url = unquote(url)  # Decode URL-encoded characters
+    
     if not url.startswith('https://'):
         url = 'https://' + url
         
@@ -78,7 +81,7 @@ def parse_url(url: str) -> dict:
     parsed["user_name"] = path_parts[0]
     parsed["repo_name"] = path_parts[1]
     
-    # Keep original URL format
+    # Keep original URL format but with decoded components
     parsed["url"] = f"https://{domain}/{parsed['user_name']}/{parsed['repo_name']}"
     parsed['slug'] = f"{parsed['user_name']}-{parsed['repo_name']}"
     parsed["id"] = str(uuid.uuid4())
@@ -93,7 +96,7 @@ def parse_url(url: str) -> dict:
             parsed["commit"] = remaining_parts[0]
             parsed["subpath"] = "/" + "/".join(remaining_parts[1:]) if len(remaining_parts) > 1 else "/"
         else:
-            # Handle branch names with slashes
+            # Handle branch names with slashes and special characters
             for i, part in enumerate(remaining_parts):
                 if part in ('tree', 'blob'):
                     # Found another type indicator, everything before this was the branch name
