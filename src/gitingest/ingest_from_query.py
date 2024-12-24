@@ -219,8 +219,20 @@ def create_file_content_string(files: List[Dict]) -> str:
     output = ""
     separator = "=" * 48 + "\n"
 
+    # First add README.md if it exists
     for file in files:
         if not file['content']:
+            continue
+        if file['path'].lower() == '/readme.md':
+            output += separator
+            output += f"File: {file['path']}\n"
+            output += separator
+            output += f"{file['content']}\n\n"
+            break
+
+    # Then add all other files in their original order
+    for file in files:
+        if not file['content'] or file['path'].lower() == '/readme.md':
             continue
         output += separator
         output += f"File: {file['path']}\n"
