@@ -6,3 +6,7 @@ tiktoken
 pytest
 pytest-asyncio
 click>=8.0.0
+sentence-transformers
+openai
+langchain
+faiss-cpu

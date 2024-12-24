@@ -60,4 +60,100 @@
         });
     }
 </script>
+
+<!-- Chatbot UI -->
+<div class="chatbot-container">
+    <div class="chatbot-header">
+        <h2>Chat with our RAG-based Bot</h2>
+    </div>
+    <div class="chatbot-messages" id="chatbot-messages"></div>
+    <div class="chatbot-input">
+        <input type="text" id="chatbot-input" placeholder="Type your message here...">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+</div>
+
+<script>
+    async function sendMessage() {
+        const input = document.getElementById('chatbot-input');
+        const messages = document.getElementById('chatbot-messages');
+        const userMessage = input.value;
+        if (!userMessage) return;
+
+        // Display user message
+        const userMessageElement = document.createElement('div');
+        userMessageElement.className = 'user-message';
+        userMessageElement.textContent = userMessage;
+        messages.appendChild(userMessageElement);
+
+        // Clear input
+        input.value = '';
+
+        // Send message to chatbot API
+        try {
+            const response = await fetch('/chatbot/query', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ query: userMessage })
+            });
+            const data = await response.json();
+
+            // Display chatbot response
+            const botMessageElement = document.createElement('div');
+            botMessageElement.className = 'bot-message';
+            botMessageElement.textContent = data.response;
+            messages.appendChild(botMessageElement);
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+</script>
+
+<style>
+    .chatbot-container {
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        padding: 10px;
+        max-width: 400px;
+        margin: 20px auto;
+    }
+
+    .chatbot-header {
+        text-align: center;
+        font-weight: bold;
+    }
+
+    .chatbot-messages {
+        height: 200px;
+        overflow-y: auto;
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+
+    .chatbot-input {
+        display: flex;
+    }
+
+    .chatbot-input input {
+        flex: 1;
+        padding: 5px;
+    }
+
+    .chatbot-input button {
+        padding: 5px 10px;
+    }
+
+    .user-message {
+        text-align: right;
+        color: blue;
+    }
+
+    .bot-message {
+        text-align: left;
+        color: green;
+    }
+</style>
 {% endblock extra_scripts %}
