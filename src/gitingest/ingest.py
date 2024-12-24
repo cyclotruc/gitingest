@@ -26,3 +26,6 @@ def ingest(source: str, max_file_size: int = 10 * 1024 * 1024, include_patterns:
             # Get parent directory two levels up from local_path (../tmp)
             cleanup_path = str(Path(query['local_path']).parents[1])
             shutil.rmtree(cleanup_path, ignore_errors=True)
+        elif Path(source).is_dir():
+            # If the source is a local directory, no need to clean up
+            pass

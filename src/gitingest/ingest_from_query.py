@@ -338,4 +338,3 @@ def ingest_from_query(query: dict) -> Dict:
         return ingest_single_file(path, query)
     else:
         return ingest_directory(path, query)
-

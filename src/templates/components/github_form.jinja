@@ -86,6 +86,52 @@
             </div>
         </div>
 
+        <div class="mt-4 relative z-20 flex flex-wrap gap-4 items-start">
+            <!-- File input for local directories -->
+            <div class="w-[200px] sm:w-[250px] mr-9 mt-4">
+                <div class="relative">
+                    <div class="w-full h-full rounded bg-gray-900 translate-y-1 translate-x-1 absolute inset-0 z-10"></div>
+                    <div class="flex relative z-20 border-[3px] border-gray-900 rounded bg-white">
+                        <input type="file" 
+                               id="local_directory"
+                               name="local_directory" 
+                               webkitdirectory
+                               directory
+                               class="py-2 px-2 bg-[#E8F0FE] focus:outline-none w-full">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4 relative z-20 flex flex-wrap gap-4 items-start">
+            <!-- Checkbox to select between local directory and remote repo -->
+            <div class="w-[200px] sm:w-[250px] mr-9 mt-4">
+                <div class="relative">
+                    <div class="w-full h-full rounded bg-gray-900 translate-y-1 translate-x-1 absolute inset-0 z-10"></div>
+                    <div class="flex relative z-20 border-[3px] border-gray-900 rounded bg-white">
+                        <input type="checkbox" 
+                               id="local_directory_checkbox"
+                               name="local_directory_checkbox" 
+                               class="py-2 px-2 bg-[#E8F0FE] focus:outline-none w-full">
+                        <label for="local_directory_checkbox" class="py-2 px-2 bg-[#E8F0FE] focus:outline-none w-full">Local Directory</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="w-[200px] sm:w-[250px] mr-9 mt-4">
+                <div class="relative">
+                    <div class="w-full h-full rounded bg-gray-900 translate-y-1 translate-x-1 absolute inset-0 z-10"></div>
+                    <div class="flex relative z-20 border-[3px] border-gray-900 rounded bg-white">
+                        <input type="checkbox" 
+                               id="remote_repo_checkbox"
+                               name="remote_repo_checkbox" 
+                               class="py-2 px-2 bg-[#E8F0FE] focus:outline-none w-full">
+                        <label for="remote_repo_checkbox" class="py-2 px-2 bg-[#E8F0FE] focus:outline-none w-full">Remote Repo</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {% if show_examples %}
         <!-- Example repositories section -->
         <div class="mt-4">

@@ -127,4 +127,27 @@ uvicorn main:app --reload
 
 The frontend will be available at `localhost:8000` 
 
+## 🗂️ Using Local Directories
 
+In addition to GitHub Public repo URLs, you can now use local directories with the CLI and Python package.
+
+### CLI usage with local directories
+
+```bash
+# Basic usage with local directory
+gitingest /path/to/local/directory
+
+# See more options
+gitingest --help
+```
+
+### Python package usage with local directories
+
+```python
+from gitingest import ingest
+
+# Ingest from a local directory
+summary, tree, content = ingest("/path/to/local/directory")
+```
+
+By default, this won't write a file but can be enabled with the `output` argument.
