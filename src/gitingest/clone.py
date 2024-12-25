@@ -7,14 +7,18 @@ CLONE_TIMEOUT = 20
 
 async def check_repo_exists(url: str) -> bool:
     proc = await asyncio.create_subprocess_exec(
-        "git",
-        "ls-remote",
+        "curl",
+        "-I",
         url,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
-    await proc.communicate()
-    return proc.returncode == 0
+    stdout, stderr = await proc.communicate()
+    if proc.returncode != 0:
+        return False
+    # Check if stdout contains "404" status code
+    stdout_str = stdout.decode()
+    return "HTTP/1.1 404" not in stdout_str and "HTTP/2 404" not in stdout_str
 
 @async_timeout(CLONE_TIMEOUT)
 async def clone_repo(query: dict) -> str:
