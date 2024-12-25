@@ -1,6 +1,6 @@
 <div class="relative">
-    <div class="w-full h-full absolute inset-0 bg-gray-900 rounded-xl translate-y-2 translate-x-2"></div>
-    <div class="rounded-xl relative z-20 pl-8 sm:pl-10 pr-8 sm:pr-16 py-8 border-[3px] border-gray-900 bg-[#fff4da]">
+    <div class="w-full h-full absolute inset-0 bg-gray-900 dark:bg-[#111111] rounded-xl translate-y-2 translate-x-2"></div>
+    <div class="rounded-xl relative z-20 pl-8 sm:pl-10 pr-8 sm:pr-16 py-8 border-[3px] border-gray-900 bg-[#fff4da] dark:bg-dark-secondary shadow-sm">
         <img src="https://cdn.devdojo.com/images/january2023/shape-1.png"
             class="absolute md:block hidden left-0 h-[4.5rem] w-[4.5rem] bottom-0 -translate-x-full ml-3">
 
@@ -11,12 +11,12 @@
                 <input type="text" name="input_text" id="input_text" placeholder="https://github.com/..."
                     value="{{ github_url if github_url else '' }}"
                     required
-                    class="border-[3px] w-full relative z-20 border-gray-900 placeholder-gray-600 text-lg font-medium focus:outline-none py-3.5 px-6 rounded">
+                    class="border-[3px] w-full relative z-20 border-gray-900 placeholder-gray-600 dark:placeholder-dark-text-secondary text-lg font-medium focus:outline-none py-3.5 px-6 rounded bg-white dark:bg-dark-primary dark:text-dark-text-primary shadow-dark transition-all duration-200 focus:border-dark-accent-hover">
             </div>
             <div class="relative w-auto flex-shrink-0 h-full group">
                 <div class="w-full h-full rounded bg-gray-800 translate-y-1 translate-x-1 absolute inset-0 z-10"></div>
                 <button type="submit"
-                    class="py-3.5 rounded px-6 group-hover:-translate-y-px group-hover:-translate-x-px ease-out duration-300 z-20 relative w-full border-[3px] border-gray-900 font-medium bg-[#ffc480] tracking-wide text-lg flex-shrink-0 text-gray-900">
+                    class="py-3.5 rounded px-6 group-hover:-translate-y-px group-hover:-translate-x-px ease-out duration-300 z-20 relative w-full border-[3px] border-gray-900 font-medium bg-[#ffc480] dark:bg-[#ffc480] tracking-wide text-lg flex-shrink-0 text-gray-900 hover:brightness-110 transition-all duration-200">
                     Ingest
                 </button>
             </div>
@@ -29,11 +29,11 @@
             <div class="w-[200px] sm:w-[250px] mr-9 mt-4">
                 <div class="relative">
                     <div class="w-full h-full rounded bg-gray-900 translate-y-1 translate-x-1 absolute inset-0 z-10"></div>
-                    <div class="flex relative z-20 border-[3px] border-gray-900 rounded bg-white">
+                    <div class="flex relative z-20 border-[3px] border-gray-900 rounded bg-white dark:bg-gray-700">
                         <div class="relative flex items-center">
                             <select id="pattern_type" 
                                     name="pattern_type"
-                                    class="w-21 py-2 pl-2 pr-6 appearance-none bg-[#e6e8eb] focus:outline-none border-r-[3px] border-gray-900">
+                                    class="w-21 py-2 pl-2 pr-6 appearance-none bg-[#e6e8eb] dark:bg-gray-800 dark:text-gray-100 focus:outline-none border-r-[3px] border-gray-900">
                                 <option value="exclude" {% if pattern_type == 'exclude' or not pattern_type %}selected{% endif %}>Exclude</option>
                                 <option value="include" {% if pattern_type == 'include' %}selected{% endif %}>Include</option>
                             </select>
@@ -46,13 +46,13 @@
                                name="pattern" 
                                placeholder="*.md, src/ "
                                value="{{ pattern if pattern else '' }}"
-                               class=" py-2 px-2 bg-[#E8F0FE] focus:outline-none w-full">
+                               class=" py-2 px-2 bg-[#E8F0FE] dark:bg-gray-700 dark:text-gray-100 focus:outline-none w-full">
                     </div>
                 </div>
             </div>
 
             <div class="w-[200px] sm:w-[200px] mt-3">
-                <label for="file_size" class="block text-gray-700 mb-1">Include files under: <span id="size_value" class="font-bold">50kb</span></label>
+                <label for="file_size" class="block text-gray-700 dark:text-dark-text-secondary mb-1 font-medium tracking-wide">Include files under: <span class="font-bold dark:text-dark-text-primary">50kb</span></label>
                 <input type="range" 
                     id="file_size" 
                     name="max_file_size"
@@ -65,6 +65,7 @@
                            bg-no-repeat 
                            bg-[length:50%_100%] 
                            bg-[#ebdbb7]
+                           dark:bg-gray-700
                            appearance-none 
                            border-[3px] 
                            border-gray-900 
@@ -75,13 +76,14 @@
                            [&::-webkit-slider-thumb]:h-7 
                            [&::-webkit-slider-thumb]:appearance-none 
                            [&::-webkit-slider-thumb]:bg-white 
+                           dark:[&::-webkit-slider-thumb]:bg-[##ffc480]
                            [&::-webkit-slider-thumb]:rounded-sm 
                            [&::-webkit-slider-thumb]:cursor-pointer 
                            [&::-webkit-slider-thumb]:border-solid
                            [&::-webkit-slider-thumb]:border-[3px]
                            [&::-webkit-slider-thumb]:border-gray-900
                            [&::-webkit-slider-thumb]:shadow-[3px_3px_0_#000]
-                           
+                           dark:[&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(230,126,34,0.3)]
                            ">
             </div>
         </div>
@@ -89,7 +91,7 @@
         {% if show_examples %}
         <!-- Example repositories section -->
         <div class="mt-4">
-            <p class="opacity-70 mb-1">Try these example repositories:</p>
+            <p class="opacity-70 mb-1 text-gray-900 dark:text-dark-text-primary">Try these example repositories:</p>
             <div class="flex flex-wrap gap-2">
                 {% for example in examples %}
                 <button onclick="submitExample('{{ example.url }}')"
