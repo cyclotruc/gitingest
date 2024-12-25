@@ -60,13 +60,18 @@ async def test_check_repo_exists():
     
     with patch('asyncio.create_subprocess_exec', new_callable=AsyncMock) as mock_exec:
         mock_process = AsyncMock()
+        mock_process.communicate.return_value = (b'HTTP/1.1 200 OK\n', b'')
+        mock_exec.return_value = mock_process
         
         # Test existing repository
         mock_process.returncode = 0
-        mock_exec.return_value = mock_process
         assert await check_repo_exists(url) is True
         
-        # Test non-existing repository
+        # Test non-existing repository (404 response)
+        mock_process.communicate.return_value = (b'HTTP/1.1 404 Not Found\n', b'')
+        mock_process.returncode = 0
+        assert await check_repo_exists(url) is False
+
+        # Test failed request
         mock_process.returncode = 1
-        mock_exec.return_value = mock_process
         assert await check_repo_exists(url) is False

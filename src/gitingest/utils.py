@@ -17,6 +17,6 @@ def async_timeout(seconds: int = 10):
             try:
                 return await asyncio.wait_for(func(*args, **kwargs), timeout=seconds)
             except asyncio.TimeoutError:
-                raise AsyncTimeoutError(f"Operation timed out after {seconds} seconds")
+                raise AsyncTimeoutError(f"Clone timed out after {seconds} seconds")
         return wrapper
     return decorator
