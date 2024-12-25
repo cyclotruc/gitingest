@@ -32,9 +32,48 @@
     
     <title>{% block title %}Git ingest{% endblock %}</title>
 
+    <!-- Prevent flash of unstyled content -->
+    <script>
+        // Immediately set the theme before page loads
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="/static/js/utils.js"></script>
     <script src="/static/js/snow.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            primary: '#1E1E1E',
+                            secondary: '#282828',
+                            accent: {
+                                DEFAULT: '#ffc480',
+                                hover: '#ffb366'
+                            },
+                            text: {
+                                primary: '#f5f5f5',
+                                secondary: '#a0a0a0'
+                            }
+                        }
+                    },
+                    boxShadow: {
+                        'dark': '0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.4)',
+                    }
+                }
+            }
+        }
+    </script>
     <style>
         #snow-canvas {
             position: fixed;
@@ -45,11 +84,81 @@
             width: 100%;
             height: 100%;
         }
+        
+        /* Add dark mode transition styles */
+        body {
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        /* Dark mode specific styles */
+        html.dark body {
+            background-color: #1E1E1E;
+            color: var(--dark-text-primary);
+        }
+        
+        html.dark .bg-[#fff4da] {
+            background-color: #282828;
+        }
+        
+        html.dark .bg-[#FFFDF8] {
+            background-color: #111827;
+        }
+        
+        html.dark .text-gray-600 {
+            color: #d1d5db;
+        }
+        
+        html.dark .bg-[#ffc480] {
+            background-color: #d97706;
+        }
+
+        /* Add smooth transitions for all color changes */
+        * {
+            transition-property: background-color, border-color, color, fill, stroke;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            transition-duration: 200ms;
+        }
+
+        /* Add custom scrollbar for dark mode */
+        html.dark ::-webkit-scrollbar {
+            width: 12px;
+        }
+        
+        html.dark ::-webkit-scrollbar-track {
+            background: #1E1E1E;
+            border-left: 1px solid #383838;
+        }
+        
+        html.dark ::-webkit-scrollbar-thumb {
+            background: #484848;
+            border-radius: 4px;
+            border: 2px solid #1E1E1E;
+        }
+        
+        html.dark ::-webkit-scrollbar-thumb:hover {
+            background: #585858;
+        }
+
+        /* Improved text hierarchy */
+        html.dark .text-secondary {
+            color: var(--dark-text-secondary);
+        }
+
+        /* Enhanced border visibility */
+        html.dark .border-dark {
+            border-color: #383838;
+        }
+
+        /* Consistent button styling */
+        html.dark .btn-primary {
+            @apply bg-dark-accent text-gray-900 border-gray-900 hover:brightness-110;
+            box-shadow: var(--shadow-dark);
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
 
-<body class="bg-[#FFFDF8] min-h-screen flex flex-col">
+<body class="bg-[#FFFDF8] dark:bg-dark-primary min-h-screen flex flex-col transition-colors duration-200">
     <canvas id="snow-canvas"></canvas>
     {% include 'components/navbar.jinja' %}
 
