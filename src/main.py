@@ -57,10 +57,6 @@ async def api_docs(request: Request):
         "api.jinja", {"request": request}
     )
 
-@app.get('/favicon.ico')
-async def favicon():
-    return FileResponse('static/favicon.ico')
-
 @app.get("/robots.txt")
 async def robots():
     return FileResponse('static/robots.txt')
