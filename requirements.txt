@@ -1,8 +1,11 @@
-fastapi[standard]
-uvicorn
+black
+click>=8.0.0
+djlint
 fastapi-analytics
-slowapi
-tiktoken
+fastapi[standard]
+pre-commit
 pytest
 pytest-asyncio
-click>=8.0.0
+slowapi
+tiktoken
+uvicorn

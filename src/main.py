@@ -1,18 +1,18 @@
 import os
-from dotenv import load_dotenv
+from typing import Dict
 
-from fastapi import FastAPI, Request
-from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, FileResponse, Response
-from fastapi.staticfiles import StaticFiles
-from starlette.middleware.trustedhost import TrustedHostMiddleware
 from api_analytics.fastapi import Analytics
+from dotenv import load_dotenv
+from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse, HTMLResponse, Response
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from server_utils import limiter
 from routers import download, dynamic, index
-
+from server_utils import limiter
 
 load_dotenv()
 
@@ -36,30 +36,28 @@ else:
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
 templates = Jinja2Templates(directory="templates")
 
+
 @app.get("/health")
-async def health_check():
+async def health_check() -> Dict[str, str]:
     return {"status": "healthy"}
 
+
 @app.head("/")
-async def head_root():
+async def head_root() -> HTMLResponse:
     """Mirror the headers and status code of the index page"""
-    return HTMLResponse(
-        content=None,
-        headers={
-            "content-type": "text/html; charset=utf-8"
-        }
-    )
-    
+    return HTMLResponse(content=None, headers={"content-type": "text/html; charset=utf-8"})
+
+
 @app.get("/api/", response_class=HTMLResponse)
 @app.get("/api", response_class=HTMLResponse)
-async def api_docs(request: Request):
-    return templates.TemplateResponse(
-        "api.jinja", {"request": request}
-    )
+async def api_docs(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse("api.jinja", {"request": request})
+
 
 @app.get("/robots.txt")
-async def robots():
+async def robots() -> FileResponse:
     return FileResponse('static/robots.txt')
+
 
 app.include_router(index)
 app.include_router(download)
