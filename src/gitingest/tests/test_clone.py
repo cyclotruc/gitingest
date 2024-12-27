@@ -1,7 +1,8 @@
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from clone import check_repo_exists, clone_repo
+
+from gitingest.clone import check_repo_exists, clone_repo
 
 
 @pytest.mark.asyncio

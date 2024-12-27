@@ -1,6 +1,6 @@
 import os
 from fnmatch import fnmatch
-from typing import Dict, List, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import tiktoken
 
@@ -335,10 +335,10 @@ def generate_token_string(context_string: str) -> Optional[str]:
         print(e)
         return None
 
-    if total_tokens > 1000000:
-        formatted_tokens = f"{total_tokens/1000000:.1f}M"
-    elif total_tokens > 1000:
-        formatted_tokens = f"{total_tokens/1000:.1f}k"
+    if total_tokens > 1_000_000:
+        formatted_tokens = f"{total_tokens / 1_000_000:.1f}M"
+    elif total_tokens > 1_000:
+        formatted_tokens = f"{total_tokens / 1_000:.1f}k"
     else:
         formatted_tokens = f"{total_tokens}"
 
@@ -383,6 +383,8 @@ def ingest_single_file(path: str, query: Dict[str, Any]) -> Tuple[str, str, str]
 
 def ingest_directory(path: str, query: Dict[str, Any]) -> Tuple[str, str, str]:
     nodes = scan_directory(path=path, query=query)
+    if not nodes:
+        raise ValueError(f"No files found in {path}")
     files = extract_files_content(query=query, node=nodes, max_file_size=query['max_file_size'])
     summary = create_summary_string(query, nodes, files)
     tree = "Directory structure:\n" + create_tree_structure(query, nodes)

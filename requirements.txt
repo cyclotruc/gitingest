@@ -1,11 +1,13 @@
 black
 click>=8.0.0
 djlint
+dotenv
 fastapi-analytics
 fastapi[standard]
 pre-commit
 pytest
 pytest-asyncio
 slowapi
+starlette
 tiktoken
 uvicorn

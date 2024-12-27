@@ -18,10 +18,24 @@ load_dotenv()
 
 app = FastAPI()
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+# Define a wrapper handler with the correct signature
+async def rate_limit_exception_handler(request: Request, exc: Exception) -> Response:
+    if isinstance(exc, RateLimitExceeded):
+        # Delegate to the actual handler
+        return _rate_limit_exceeded_handler(request, exc)
+    # Optionally, handle other exceptions or re-raise
+    raise exc
+
+
+# Register the wrapper handler
+app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
-app.add_middleware(Analytics, api_key=os.getenv('API_ANALYTICS_KEY'))
+app_analytics_key = os.getenv('API_ANALYTICS_KEY')
+if app_analytics_key:
+    app.add_middleware(Analytics, api_key=app_analytics_key)
 
 # Define the default allowed hosts
 default_allowed_hosts = ["gitingest.com", "*.gitingest.com", "localhost", "127.0.0.1"]

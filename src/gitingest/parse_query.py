@@ -7,7 +7,7 @@ from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
 TMP_BASE_PATH = "../tmp"
 
 
-def parse_url(url: str) -> Dict[str, Optional[str]]:
+def parse_url(url: str) -> Dict[str, Any]:
     parsed = {
         "user_name": None,
         "repo_name": None,
@@ -97,8 +97,8 @@ def parse_query(
     source: str,
     max_file_size: int,
     from_web: bool,
-    include_patterns: Union[List[str], str] = None,
-    ignore_patterns: Union[List[str], str] = None,
+    include_patterns: Optional[Union[List[str], str]] = None,
+    ignore_patterns: Optional[Union[List[str], str]] = None,
 ) -> Dict[str, Any]:
     if from_web:
         query = parse_url(source)
@@ -107,6 +107,7 @@ def parse_query(
             query = parse_url(source)
         else:
             query = parse_path(source)
+
     query['max_file_size'] = max_file_size
 
     if ignore_patterns and ignore_patterns != "":

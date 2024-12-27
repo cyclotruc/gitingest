@@ -75,6 +75,8 @@ def temp_directory(tmp_path: Path) -> Path:
 
 def test_scan_directory(temp_directory: Path, sample_query: Dict[str, Any]) -> None:
     result = scan_directory(str(temp_directory), query=sample_query)
+    if result is None:
+        assert False, "Result is None"
 
     assert result['type'] == 'directory'
     assert result['file_count'] == 8  # All .txt and .py files
@@ -84,6 +86,8 @@ def test_scan_directory(temp_directory: Path, sample_query: Dict[str, Any]) -> N
 
 def test_extract_files_content(temp_directory: Path, sample_query: Dict[str, Any]) -> None:
     nodes = scan_directory(str(temp_directory), query=sample_query)
+    if nodes is None:
+        assert False, "Nodes is None"
     files = extract_files_content(query=sample_query, node=nodes, max_file_size=1_000_000)
     assert len(files) == 8  # All .txt and .py files
 

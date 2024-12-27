@@ -1,5 +1,5 @@
 import asyncio
-from typing import Dict, Tuple
+from typing import Any, Dict, Tuple
 
 from gitingest.utils import async_timeout
 

@@ -1,7 +1,8 @@
 import asyncio
+import inspect
 import shutil
 from pathlib import Path
-from typing import List, Union
+from typing import List, Optional, Tuple, Union
 
 from gitingest.clone import clone_repo
 from gitingest.ingest_from_query import ingest_from_query
@@ -16,9 +17,19 @@ def ingest(
     output: Optional[str] = None,
 ) -> Tuple[str, str, str]:
     try:
-        query = parse_query(source, max_file_size, False, include_patterns, exclude_patterns)
+        query = parse_query(
+            source=source,
+            max_file_size=max_file_size,
+            from_web=False,
+            include_patterns=include_patterns,
+            ignore_patterns=exclude_patterns,
+        )
         if query['url']:
-            asyncio.run(clone_repo(query))
+            clone_result = clone_repo(query)
+            if inspect.iscoroutine(clone_result):
+                asyncio.run(clone_result)
+            else:
+                raise TypeError("clone_repo did not return a coroutine as expected.")
 
         summary, tree, content = ingest_from_query(query)
 

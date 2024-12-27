@@ -1,7 +1,8 @@
-from typing import Dict
+from typing import Any, Dict
 
 from fastapi import Request
 from fastapi.templating import Jinja2Templates
+from starlette.templating import _TemplateResponse
 
 from config import EXAMPLE_REPOS, MAX_DISPLAY_SIZE
 from gitingest import clone_repo, ingest_from_query, parse_query
@@ -60,7 +61,7 @@ async def process_query(
     pattern_type: str = "exclude",
     pattern: str = "",
     is_index: bool = False,
-) -> HTMLResponse:
+) -> _TemplateResponse:
     template = "index.jinja" if is_index else "github.jinja"
     max_file_size = logSliderToSize(slider_position)
 
@@ -107,7 +108,7 @@ async def process_query(
 
     if len(content) > MAX_DISPLAY_SIZE:
         content = (
-            f"(Files content cropped to {int(MAX_DISPLAY_SIZE/1000)}k characters, "
+            f"(Files content cropped to {int(MAX_DISPLAY_SIZE / 1_000)}k characters, "
             "download full ingest to see more)\n" + content[:MAX_DISPLAY_SIZE]
         )
 
