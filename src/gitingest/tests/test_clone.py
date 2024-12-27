@@ -14,7 +14,7 @@ async def test_clone_repo_with_commit() -> None:
         'local_path': '/tmp/repo',
     }
 
-    with patch('clone.check_repo_exists', return_value=True) as mock_check:
+    with patch('gitingest.clone.check_repo_exists', return_value=True) as mock_check:
         with patch('asyncio.create_subprocess_exec', new_callable=AsyncMock) as mock_exec:
             mock_process = AsyncMock()
             mock_process.communicate.return_value = (b'output', b'error')
@@ -34,7 +34,7 @@ async def test_clone_repo_without_commit() -> None:
         'local_path': '/tmp/repo',
     }
 
-    with patch('clone.check_repo_exists', return_value=True) as mock_check:
+    with patch('gitingest.clone.check_repo_exists', return_value=True) as mock_check:
         with patch('asyncio.create_subprocess_exec', new_callable=AsyncMock) as mock_exec:
             mock_process = AsyncMock()
             mock_process.communicate.return_value = (b'output', b'error')

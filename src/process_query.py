@@ -5,7 +5,9 @@ from fastapi.templating import Jinja2Templates
 from starlette.templating import _TemplateResponse
 
 from config import EXAMPLE_REPOS, MAX_DISPLAY_SIZE
-from gitingest import clone_repo, ingest_from_query, parse_query
+from gitingest.clone import clone_repo
+from gitingest.ingest_from_query import ingest_from_query
+from gitingest.parse_query import parse_query
 from server_utils import Colors, logSliderToSize
 
 templates = Jinja2Templates(directory="templates")
