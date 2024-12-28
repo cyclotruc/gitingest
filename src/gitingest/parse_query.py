@@ -2,6 +2,7 @@ import os
 import string
 import uuid
 from typing import Any, Dict, List, Optional, Union
+from urllib.parse import unquote
 
 from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
 
@@ -25,7 +26,7 @@ def parse_url(url: str) -> Dict[str, Any]:
 
     url = url.split(" ")[0]
     url = unquote(url)  # Decode URL-encoded characters
-    
+
     if not url.startswith('https://'):
         url = 'https://' + url
 
@@ -49,7 +50,7 @@ def parse_url(url: str) -> Dict[str, Any]:
     if len(path_parts) > 3:
 
         parsed["type"] = path_parts[2]  # Usually 'tree' or 'blob'
-        
+
         # Find the commit hash or reconstruct the branch name
         remaining_parts = path_parts[3:]
         if remaining_parts[0] and len(remaining_parts[0]) == 40 and all(c in HEX_DIGITS for c in remaining_parts[0]):
@@ -61,13 +62,14 @@ def parse_url(url: str) -> Dict[str, Any]:
                 if part in ('tree', 'blob'):
                     # Found another type indicator, everything before this was the branch name
                     parsed["branch"] = "/".join(remaining_parts[:i])
-                    parsed["subpath"] = "/" + "/".join(remaining_parts[i+2:]) if len(remaining_parts) > i+2 else "/"
+                    parsed["subpath"] = (
+                        "/" + "/".join(remaining_parts[i + 2 :]) if len(remaining_parts) > i + 2 else "/"
+                    )
                     break
             else:
                 # No additional type indicator found, assume everything is part of the branch name
                 parsed["branch"] = "/".join(remaining_parts)
                 parsed["subpath"] = "/"
-
 
     return parsed
 
@@ -130,7 +132,6 @@ def parse_query(
     include_patterns: Optional[Union[List[str], str]] = None,
     ignore_patterns: Optional[Union[List[str], str]] = None,
 ) -> Dict[str, Any]:
-
     """
     Parses the input source to construct a query dictionary with specified parameters.
 
