@@ -23,14 +23,14 @@ def ingest(
             include_patterns=include_patterns,
             ignore_patterns=exclude_patterns,
         )
-        if query['url']:
+        if query["url"]:
 
             # Extract relevant fields for CloneConfig
             clone_config = CloneConfig(
                 url=f"https://github.com/{query['slug']}.git",
-                local_path=query['local_path'],
-                commit=query.get('commit'),
-                branch=query.get('branch'),
+                local_path=query["local_path"],
+                commit=query.get("commit"),
+                branch=query.get("branch"),
             )
             clone_result = clone_repo(clone_config)
 
@@ -49,7 +49,7 @@ def ingest(
 
     finally:
         # Clean up the temporary directory if it was created
-        if query['url']:
+        if query["url"]:
             # Get parent directory two levels up from local_path (../tmp)
-            cleanup_path = str(Path(query['local_path']).parents[1])
+            cleanup_path = str(Path(query["local_path"]).parents[1])
             shutil.rmtree(cleanup_path, ignore_errors=True)

@@ -62,9 +62,9 @@ async def process_query(
         )
         clone_config = CloneConfig(
             url=f"https://github.com/{query['slug']}.git",
-            local_path=query['local_path'],
-            commit=query.get('commit'),
-            branch=query.get('branch'),
+            local_path=query["local_path"],
+            commit=query.get("commit"),
+            branch=query.get("branch"),
         )
         await clone_repo(clone_config)
         summary, tree, content = ingest_from_query(query)
@@ -73,8 +73,8 @@ async def process_query(
 
     except Exception as e:
         # hack to print error message when query is not defined
-        if 'query' in locals() and query is not None and isinstance(query, dict):
-            print_error(query['url'], e, max_file_size, pattern_type, pattern)
+        if "query" in locals() and query is not None and isinstance(query, dict):
+            print_error(query["url"], e, max_file_size, pattern_type, pattern)
         else:
             print(f"{Colors.BROWN}WARN{Colors.END}: {Colors.RED}<-  {Colors.END}", end="")
             print(f"{Colors.RED}{e}{Colors.END}")
@@ -99,7 +99,7 @@ async def process_query(
         )
 
     print_success(
-        url=query['url'],
+        url=query["url"],
         max_file_size=max_file_size,
         pattern_type=pattern_type,
         pattern=pattern,
@@ -116,7 +116,7 @@ async def process_query(
             "tree": tree,
             "content": content,
             "examples": EXAMPLE_REPOS if is_index else [],
-            "ingest_id": query['id'],
+            "ingest_id": query["id"],
             "default_file_size": slider_position,
             "pattern_type": pattern_type,
             "pattern": pattern,

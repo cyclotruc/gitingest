@@ -130,7 +130,7 @@ async def clone_repo(config: CloneConfig) -> tuple[bytes, bytes]:
             checkout_cmd = ["git", "-C", local_path, "checkout", commit]
             return await run_git_command(*checkout_cmd)
 
-        if branch and branch.lower() not in ('main', 'master'):
+        if branch and branch.lower() not in ("main", "master"):
             # Scenario 2: Clone a specific branch with shallow depth
             clone_cmd = ["git", "clone", "--depth=1", "--single-branch", "--branch", branch, url, local_path]
             return await run_git_command(*clone_cmd)

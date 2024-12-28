@@ -13,7 +13,7 @@ async def download_ingest(digest_id: str) -> Response:
     try:
         # Find the first .txt file in the directory
         directory = f"{TMP_BASE_PATH}/{digest_id}"
-        txt_files = [f for f in os.listdir(directory) if f.endswith('.txt')]
+        txt_files = [f for f in os.listdir(directory) if f.endswith(".txt")]
 
         if not txt_files:
             raise FileNotFoundError("No .txt file found")

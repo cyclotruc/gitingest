@@ -14,4 +14,3 @@ filter_files = true
 
 [tool.black]
 line-length = 119
-skip-string-normalization = true

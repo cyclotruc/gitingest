@@ -14,11 +14,11 @@ def parse_url(url: str) -> dict[str, Any]:
     url = url.split(" ")[0]
     url = unquote(url)  # Decode URL-encoded characters
 
-    if not url.startswith('https://'):
-        url = 'https://' + url
+    if not url.startswith("https://"):
+        url = "https://" + url
 
     # Extract domain and path
-    url_parts = url.split('/')
+    url_parts = url.split("/")
     domain = url_parts[2]
     path_parts = url_parts[3:]
 
@@ -62,7 +62,7 @@ def parse_url(url: str) -> dict[str, Any]:
     # Handle branch names with slashes and special characters
 
     # Find the index of the first type indicator ('tree' or 'blob'), if any
-    type_indicator_index = next((i for i, part in enumerate(remaining_parts) if part in ('tree', 'blob')), None)
+    type_indicator_index = next((i for i, part in enumerate(remaining_parts) if part in ("tree", "blob")), None)
 
     if type_indicator_index is None:
         # No type indicator found; assume the entire input is the branch name
@@ -182,9 +182,9 @@ def parse_query(
     # Update the query dictionary with max_file_size and processed patterns
     query.update(
         {
-            'max_file_size': max_file_size,
-            'ignore_patterns': ignore_patterns_list,
-            'include_patterns': parsed_include,
+            "max_file_size": max_file_size,
+            "ignore_patterns": ignore_patterns_list,
+            "include_patterns": parsed_include,
         }
     )
     return query

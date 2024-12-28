@@ -32,7 +32,7 @@ async def rate_limit_exception_handler(request: Request, exc: Exception) -> Resp
 app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
-app_analytics_key = os.getenv('API_ANALYTICS_KEY')
+app_analytics_key = os.getenv("API_ANALYTICS_KEY")
 if app_analytics_key:
     app.add_middleware(Analytics, api_key=app_analytics_key)
 
@@ -69,7 +69,7 @@ async def api_docs(request: Request) -> HTMLResponse:
 
 @app.get("/robots.txt")
 async def robots() -> FileResponse:
-    return FileResponse('static/robots.txt')
+    return FileResponse("static/robots.txt")
 
 
 app.include_router(index)

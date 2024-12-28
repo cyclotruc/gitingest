@@ -22,7 +22,7 @@ def should_include(path: str, base_path: str, include_patterns: list[str]) -> bo
 def should_exclude(path: str, base_path: str, ignore_patterns: list[str]) -> bool:
     rel_path = path.replace(base_path, "").lstrip(os.sep)
     for pattern in ignore_patterns:
-        if pattern == '':
+        if pattern == "":
             continue
         if fnmatch(rel_path, pattern):
             return True
@@ -43,7 +43,7 @@ def is_safe_symlink(symlink_path: str, base_path: str) -> bool:
 def is_text_file(file_path: str) -> bool:
     """Determines if a file is likely a text file based on its content."""
     try:
-        with open(file_path, 'rb') as file:
+        with open(file_path, "rb") as file:
             chunk = file.read(1024)
         return not bool(chunk.translate(None, bytes([7, 8, 9, 10, 12, 13, 27] + list(range(0x20, 0x100)))))
     except OSError:
@@ -52,7 +52,7 @@ def is_text_file(file_path: str) -> bool:
 
 def read_file_content(file_path: str) -> str:
     try:
-        with open(file_path, encoding='utf-8', errors='ignore') as f:
+        with open(file_path, encoding="utf-8", errors="ignore") as f:
             return f.read()
     except Exception as e:
         return f"Error reading file: {str(e)}"
@@ -101,9 +101,9 @@ def scan_directory(
         "ignore_content": False,
     }
 
-    ignore_patterns = query['ignore_patterns']
-    base_path = query['local_path']
-    include_patterns = query['include_patterns']
+    ignore_patterns = query["ignore_patterns"]
+    base_path = query["local_path"]
+    include_patterns = query["include_patterns"]
 
     try:
         for item in os.listdir(path):
@@ -113,7 +113,7 @@ def scan_directory(
                 continue
 
             is_file = os.path.isfile(item_path)
-            if is_file and query['include_patterns']:
+            if is_file and query["include_patterns"]:
                 if not should_include(item_path, base_path, include_patterns):
                     result["ignore_content"] = True
                     continue
@@ -236,7 +236,7 @@ def extract_files_content(
 
         files.append(
             {
-                "path": node["path"].replace(query['local_path'], ""),
+                "path": node["path"].replace(query["local_path"], ""),
                 "content": content,
                 "size": node["size"],
             },
@@ -255,10 +255,10 @@ def create_file_content_string(files: list[dict[str, Any]]) -> str:
 
     # First add README.md if it exists
     for file in files:
-        if not file['content']:
+        if not file["content"]:
             continue
 
-        if file['path'].lower() == '/readme.md':
+        if file["path"].lower() == "/readme.md":
             output += separator
             output += f"File: {file['path']}\n"
             output += separator
@@ -267,7 +267,7 @@ def create_file_content_string(files: list[dict[str, Any]]) -> str:
 
     # Then add all other files in their original order
     for file in files:
-        if not file['content'] or file['path'].lower() == '/readme.md':
+        if not file["content"] or file["path"].lower() == "/readme.md":
             continue
 
         output += separator
@@ -287,11 +287,11 @@ def create_summary_string(query: dict[str, Any], nodes: dict[str, Any]) -> str:
 
     summary += f"Files analyzed: {nodes['file_count']}\n"
 
-    if 'subpath' in query and query['subpath'] != '/':
+    if "subpath" in query and query["subpath"] != "/":
         summary += f"Subpath: {query['subpath']}\n"
-    if 'commit' in query and query['commit']:
+    if "commit" in query and query["commit"]:
         summary += f"Commit: {query['commit']}\n"
-    elif 'branch' in query and query['branch'] != 'main' and query['branch'] != 'master' and query['branch']:
+    elif "branch" in query and query["branch"] != "main" and query["branch"] != "master" and query["branch"]:
         summary += f"Branch: {query['branch']}\n"
 
     return summary
@@ -302,7 +302,7 @@ def create_tree_structure(query: dict[str, Any], node: dict[str, Any], prefix: s
     tree = ""
 
     if not node["name"]:
-        node["name"] = query['slug']
+        node["name"] = query["slug"]
 
     if node["name"]:
         current_prefix = "└── " if is_last else "├── "
@@ -350,11 +350,11 @@ def ingest_single_file(path: str, query: dict[str, Any]) -> tuple[str, str, str]
         raise ValueError(f"File {path} is not a text file")
 
     content = read_file_content(path)
-    if file_size > query['max_file_size']:
+    if file_size > query["max_file_size"]:
         content = "[Content ignored: file too large]"
 
     file_info = {
-        "path": path.replace(query['local_path'], ""),
+        "path": path.replace(query["local_path"], ""),
         "content": content,
         "size": file_size,
     }
@@ -380,7 +380,7 @@ def ingest_directory(path: str, query: dict[str, Any]) -> tuple[str, str, str]:
     nodes = scan_directory(path=path, query=query)
     if not nodes:
         raise ValueError(f"No files found in {path}")
-    files = extract_files_content(query=query, node=nodes, max_file_size=query['max_file_size'])
+    files = extract_files_content(query=query, node=nodes, max_file_size=query["max_file_size"])
     summary = create_summary_string(query, nodes)
     tree = "Directory structure:\n" + create_tree_structure(query, nodes)
     files_content = create_file_content_string(files)
@@ -398,7 +398,7 @@ def ingest_from_query(query: dict[str, Any]) -> tuple[str, str, str]:
     if not os.path.exists(path):
         raise ValueError(f"{query['slug']} cannot be found")
 
-    if query.get('type') == 'blob':
+    if query.get("type") == "blob":
         return ingest_single_file(path, query)
 
     return ingest_directory(path, query)

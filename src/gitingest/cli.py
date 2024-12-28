@@ -15,11 +15,11 @@ def normalize_pattern(pattern: str) -> str:
 
 
 @click.command()
-@click.argument('source', type=str, required=True)
-@click.option('--output', '-o', default=None, help='Output file path (default: <repo_name>.txt in current directory)')
-@click.option('--max-size', '-s', default=MAX_FILE_SIZE, help='Maximum file size to process in bytes')
-@click.option('--exclude-pattern', '-e', multiple=True, help='Patterns to exclude')
-@click.option('--include-pattern', '-i', multiple=True, help='Patterns to include')
+@click.argument("source", type=str, required=True)
+@click.option("--output", "-o", default=None, help="Output file path (default: <repo_name>.txt in current directory)")
+@click.option("--max-size", "-s", default=MAX_FILE_SIZE, help="Maximum file size to process in bytes")
+@click.option("--exclude-pattern", "-e", multiple=True, help="Patterns to exclude")
+@click.option("--include-pattern", "-i", multiple=True, help="Patterns to include")
 def main(
     source: str,
     output: str | None,
@@ -46,5 +46,5 @@ def main(
         raise click.Abort()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
