@@ -10,7 +10,22 @@ HEX_DIGITS = set(string.hexdigits)
 
 
 def parse_url(url: str) -> Dict[str, Any]:
+    parsed = {
+        "user_name": None,
+        "repo_name": None,
+        "type": None,
+        "branch": None,
+        "commit": None,
+        "subpath": "/",
+        "local_path": None,
+        "url": None,
+        "slug": None,
+        "id": None,
+    }
+
     url = url.split(" ")[0]
+    url = unquote(url)  # Decode URL-encoded characters
+    
     if not url.startswith('https://'):
         url = 'https://' + url
 
@@ -22,33 +37,37 @@ def parse_url(url: str) -> Dict[str, Any]:
     if len(path_parts) < 2:
         raise ValueError("Invalid repository URL. Please provide a valid Git repository URL.")
 
-    user_name = path_parts[0]
-    repo_name = path_parts[1]
-    slug = f"{user_name}-{repo_name}"
-    _id = str(uuid.uuid4())
+    parsed["user_name"] = path_parts[0]
+    parsed["repo_name"] = path_parts[1]
 
-    parsed = {
-        "url": f"https://{domain}/{user_name}/{repo_name}",
-        "local_path": f"{TMP_BASE_PATH}/{_id}/{slug}",
-        "commit": None,
-        "branch": None,
-        "user_name": user_name,
-        "repo_name": repo_name,
-        "type": None,
-        "subpath": "/",
-        "slug": slug,
-        "id": _id,
-    }
+    # Keep original URL format but with decoded components
+    parsed["url"] = f"https://{domain}/{parsed['user_name']}/{parsed['repo_name']}"
+    parsed['slug'] = f"{parsed['user_name']}-{parsed['repo_name']}"
+    parsed["id"] = str(uuid.uuid4())
+    parsed["local_path"] = f"{TMP_BASE_PATH}/{parsed['id']}/{parsed['slug']}"
 
     if len(path_parts) > 3:
-        parsed["type"] = path_parts[2]
-        branch = path_parts[3]
 
-        parsed["branch"] = branch
-        if len(branch) == 40 and all(c in HEX_DIGITS for c in branch):
-            parsed["commit"] = branch
+        parsed["type"] = path_parts[2]  # Usually 'tree' or 'blob'
+        
+        # Find the commit hash or reconstruct the branch name
+        remaining_parts = path_parts[3:]
+        if remaining_parts[0] and len(remaining_parts[0]) == 40 and all(c in HEX_DIGITS for c in remaining_parts[0]):
+            parsed["commit"] = remaining_parts[0]
+            parsed["subpath"] = "/" + "/".join(remaining_parts[1:]) if len(remaining_parts) > 1 else "/"
+        else:
+            # Handle branch names with slashes and special characters
+            for i, part in enumerate(remaining_parts):
+                if part in ('tree', 'blob'):
+                    # Found another type indicator, everything before this was the branch name
+                    parsed["branch"] = "/".join(remaining_parts[:i])
+                    parsed["subpath"] = "/" + "/".join(remaining_parts[i+2:]) if len(remaining_parts) > i+2 else "/"
+                    break
+            else:
+                # No additional type indicator found, assume everything is part of the branch name
+                parsed["branch"] = "/".join(remaining_parts)
+                parsed["subpath"] = "/"
 
-        parsed["subpath"] += "/".join(path_parts[4:])
 
     return parsed
 
@@ -111,6 +130,7 @@ def parse_query(
     include_patterns: Optional[Union[List[str], str]] = None,
     ignore_patterns: Optional[Union[List[str], str]] = None,
 ) -> Dict[str, Any]:
+
     """
     Parses the input source to construct a query dictionary with specified parameters.
 
@@ -159,5 +179,4 @@ def parse_query(
             'include_patterns': parsed_include,
         }
     )
-
     return query

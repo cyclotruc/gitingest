@@ -116,9 +116,6 @@ async def clone_repo(config: CloneConfig) -> Tuple[bytes, bytes]:
     if not local_path:
         raise ValueError("The 'local_path' parameter is required.")
 
-    # if commit and branch:
-    #     raise ValueError("Provide either 'commit' or 'branch', not both.")
-
     # Check if the repository exists
     if not await check_repo_exists(url):
         raise ValueError("Repository not found, make sure it is public")

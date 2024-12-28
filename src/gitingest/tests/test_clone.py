@@ -19,7 +19,6 @@ async def test_clone_repo_with_commit() -> None:
             mock_process = AsyncMock()
             mock_process.communicate.return_value = (b'output', b'error')
             mock_exec.return_value = mock_process
-
             await clone_repo(clone_config)
             mock_check.assert_called_once_with(clone_config.url)
             assert mock_exec.call_count == 2  # Clone and checkout calls
@@ -43,9 +42,11 @@ async def test_clone_repo_without_commit() -> None:
 @pytest.mark.asyncio
 async def test_clone_repo_nonexistent_repository() -> None:
     clone_config = CloneConfig(
-        url='https://github.com/user/nonexistent-repo', local_path='/tmp/repo', commit=None, branch='main'
+        url='https://github.com/user/nonexistent-repo',
+        local_path='/tmp/repo',
+        commit=None,
+        branch='main',
     )
-
     with patch('gitingest.clone.check_repo_exists', return_value=False) as mock_check:
         with pytest.raises(ValueError, match="Repository not found"):
             await clone_repo(clone_config)

@@ -3,6 +3,7 @@ from typing import Optional, Tuple
 
 import click
 
+from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
 from gitingest.ingest import ingest
 from gitingest.ingest_from_query import MAX_FILE_SIZE
 

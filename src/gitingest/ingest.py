@@ -25,6 +25,7 @@ def ingest(
             ignore_patterns=exclude_patterns,
         )
         if query['url']:
+
             # Extract relevant fields for CloneConfig
             clone_config = CloneConfig(
                 url=f"https://github.com/{query['slug']}.git",
@@ -33,6 +34,7 @@ def ingest(
                 branch=query.get('branch'),
             )
             clone_result = clone_repo(clone_config)
+
             if inspect.iscoroutine(clone_result):
                 asyncio.run(clone_result)
             else:
