@@ -1,11 +1,6 @@
-black
 click>=8.0.0
-djlint
 fastapi-analytics
 fastapi[standard]
-pre-commit
-pytest
-pytest-asyncio
 python-dotenv
 slowapi
 starlette

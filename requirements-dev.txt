@@ -1,0 +1,7 @@
+-r requirements.txt
+black
+djlint
+pre-commit
+pylint
+pytest
+pytest-asyncio
