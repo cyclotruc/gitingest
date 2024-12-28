@@ -4,14 +4,14 @@ import shutil
 from pathlib import Path
 from typing import List, Optional, Tuple, Union
 
-from gitingest.clone import clone_repo
+from gitingest.clone import CloneConfig, clone_repo
 from gitingest.ingest_from_query import ingest_from_query
 from gitingest.parse_query import parse_query
 
 
 def ingest(
     source: str,
-    max_file_size: int = 10 * 1024 * 1024,
+    max_file_size: int = 10 * 1024 * 1024,  # 10 MB
     include_patterns: Union[List[str], str, None] = None,
     exclude_patterns: Union[List[str], str, None] = None,
     output: Optional[str] = None,
@@ -25,7 +25,14 @@ def ingest(
             ignore_patterns=exclude_patterns,
         )
         if query['url']:
-            clone_result = clone_repo(query)
+            # Extract relevant fields for CloneConfig
+            clone_config = CloneConfig(
+                url=f"https://github.com/{query['slug']}.git",
+                local_path=query['local_path'],
+                commit=query.get('commit'),
+                branch=query.get('branch'),
+            )
+            clone_result = clone_repo(clone_config)
             if inspect.iscoroutine(clone_result):
                 asyncio.run(clone_result)
             else:

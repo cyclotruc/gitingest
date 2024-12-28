@@ -3,7 +3,6 @@ from typing import Optional, Tuple
 
 import click
 
-from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
 from gitingest.ingest import ingest
 from gitingest.ingest_from_query import MAX_FILE_SIZE
 
@@ -37,7 +36,7 @@ def main(
 
         if not output:
             output = "digest.txt"
-        summary, tree, content = ingest(source, max_size, include_patterns, exclude_patterns, output=output)
+        summary, _, _ = ingest(source, max_size, include_patterns, exclude_patterns, output=output)
 
         click.echo(f"Analysis complete! Output written to: {output}")
         click.echo("\nSummary:")

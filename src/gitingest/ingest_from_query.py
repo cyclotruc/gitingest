@@ -278,7 +278,7 @@ def create_file_content_string(files: List[Dict[str, Any]]) -> str:
     return output
 
 
-def create_summary_string(query: Dict[str, Any], nodes: Dict[str, Any], files: List[Dict[str, Any]]) -> str:
+def create_summary_string(query: Dict[str, Any], nodes: Dict[str, Any]) -> str:
     """Creates a summary string with file counts and content size."""
     if "user_name" in query:
         summary = f"Repository: {query['user_name']}/{query['repo_name']}\n"
@@ -297,12 +297,7 @@ def create_summary_string(query: Dict[str, Any], nodes: Dict[str, Any], files: L
     return summary
 
 
-def create_tree_structure(
-    query: Dict[str, Any],
-    node: Dict[str, Any],
-    prefix: str = "",
-    is_last: bool = True,
-) -> str:
+def create_tree_structure(query: Dict[str, Any], node: Dict[str, Any], prefix: str = "", is_last: bool = True) -> str:
     """Creates a tree-like string representation of the file structure."""
     tree = ""
 
@@ -386,7 +381,7 @@ def ingest_directory(path: str, query: Dict[str, Any]) -> Tuple[str, str, str]:
     if not nodes:
         raise ValueError(f"No files found in {path}")
     files = extract_files_content(query=query, node=nodes, max_file_size=query['max_file_size'])
-    summary = create_summary_string(query, nodes, files)
+    summary = create_summary_string(query, nodes)
     tree = "Directory structure:\n" + create_tree_structure(query, nodes)
     files_content = create_file_content_string(files)
 

@@ -37,7 +37,7 @@ def test_parse_query_include_pattern() -> None:
     url = "https://github.com/user/repo"
     result = parse_query(url, max_file_size=50, from_web=True, include_patterns='*.py')
     assert result["include_patterns"] == ["*.py"]
-    assert result["ignore_patterns"] == DEFAULT_IGNORE_PATTERNS
+    assert set(result["ignore_patterns"]) == set(DEFAULT_IGNORE_PATTERNS)
 
 
 def test_parse_query_invalid_pattern() -> None:

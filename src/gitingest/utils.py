@@ -10,8 +10,6 @@ P = ParamSpec("P")
 class AsyncTimeoutError(Exception):
     """Raised when an async operation exceeds its timeout limit."""
 
-    pass
-
 
 def async_timeout(seconds: int = 10) -> Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]]:
     def decorator(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:

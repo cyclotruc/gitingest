@@ -1,11 +1,9 @@
-from typing import Any, Dict
-
 from fastapi import Request
 from fastapi.templating import Jinja2Templates
 from starlette.templating import _TemplateResponse
 
 from config import EXAMPLE_REPOS, MAX_DISPLAY_SIZE
-from gitingest.clone import clone_repo
+from gitingest.clone import CloneConfig, clone_repo
 from gitingest.ingest_from_query import ingest_from_query
 from gitingest.parse_query import parse_query
 from server_utils import Colors, logSliderToSize
@@ -13,14 +11,8 @@ from server_utils import Colors, logSliderToSize
 templates = Jinja2Templates(directory="templates")
 
 
-def print_query(
-    query: Dict[str, Any],
-    request: Request,
-    max_file_size: int,
-    pattern_type: str,
-    pattern: str,
-) -> None:
-    print(f"{Colors.WHITE}{query['url']:<20}{Colors.END}", end="")
+def print_query(url: str, max_file_size: int, pattern_type: str, pattern: str) -> None:
+    print(f"{Colors.WHITE}{url:<20}{Colors.END}", end="")
     if int(max_file_size / 1024) != 50:
         print(f" | {Colors.YELLOW}Size: {int(max_file_size/1024)}kb{Colors.END}", end="")
     if pattern_type == "include" and pattern != "":
@@ -29,30 +21,16 @@ def print_query(
         print(f" | {Colors.YELLOW}Exclude {pattern}{Colors.END}", end="")
 
 
-def print_error(
-    query: Dict[str, Any],
-    request: Request,
-    e: Exception,
-    max_file_size: int,
-    pattern_type: str,
-    pattern: str,
-) -> None:
+def print_error(url: str, e: Exception, max_file_size: int, pattern_type: str, pattern: str) -> None:
     print(f"{Colors.BROWN}WARN{Colors.END}: {Colors.RED}<-  {Colors.END}", end="")
-    print_query(query, request, max_file_size, pattern_type, pattern)
+    print_query(url, max_file_size, pattern_type, pattern)
     print(f" | {Colors.RED}{e}{Colors.END}")
 
 
-def print_success(
-    query: Dict[str, Any],
-    request: Request,
-    max_file_size: int,
-    pattern_type: str,
-    pattern: str,
-    summary: str,
-) -> None:
+def print_success(url: str, max_file_size: int, pattern_type: str, pattern: str, summary: str) -> None:
     estimated_tokens = summary[summary.index("Estimated tokens:") + len("Estimated ") :]
     print(f"{Colors.GREEN}INFO{Colors.END}: {Colors.GREEN}<-  {Colors.END}", end="")
-    print_query(query, request, max_file_size, pattern_type, pattern)
+    print_query(url, max_file_size, pattern_type, pattern)
     print(f" | {Colors.PURPLE}{estimated_tokens}{Colors.END}")
 
 
@@ -82,15 +60,21 @@ async def process_query(
             include_patterns=include_patterns,
             ignore_patterns=exclude_patterns,
         )
-        await clone_repo(query)
+        clone_config = CloneConfig(
+            url=f"https://github.com/{query['slug']}.git",
+            local_path=query['local_path'],
+            commit=query.get('commit'),
+            branch=query.get('branch'),
+        )
+        await clone_repo(clone_config)
         summary, tree, content = ingest_from_query(query)
-        with open(f"{query['local_path']}.txt", "w") as f:
+        with open(f"{clone_config.local_path}.txt", "w") as f:
             f.write(tree + "\n" + content)
 
     except Exception as e:
         # hack to print error message when query is not defined
         if 'query' in locals() and query is not None and isinstance(query, dict):
-            print_error(query, request, e, max_file_size, pattern_type, pattern)
+            print_error(query['url'], e, max_file_size, pattern_type, pattern)
         else:
             print(f"{Colors.BROWN}WARN{Colors.END}: {Colors.RED}<-  {Colors.END}", end="")
             print(f"{Colors.RED}{e}{Colors.END}")
@@ -115,8 +99,7 @@ async def process_query(
         )
 
     print_success(
-        query=query,
-        request=request,
+        url=query['url'],
         max_file_size=max_file_size,
         pattern_type=pattern_type,
         pattern=pattern,
