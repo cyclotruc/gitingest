@@ -1,18 +1,36 @@
 import asyncio
+import inspect
 import shutil
-from typing import Union, List
 from pathlib import Path
+from typing import List, Optional, Tuple, Union
 
-from .ingest_from_query import ingest_from_query
-from .clone import clone_repo
-from .parse_query import parse_query
+from gitingest.clone import clone_repo
+from gitingest.ingest_from_query import ingest_from_query
+from gitingest.parse_query import parse_query
 
-def ingest(source: str, max_file_size: int = 10 * 1024 * 1024, include_patterns: Union[List[str], str] = None, exclude_patterns: Union[List[str], str] = None, output: str = None) -> str:
+
+def ingest(
+    source: str,
+    max_file_size: int = 10 * 1024 * 1024,
+    include_patterns: Union[List[str], str, None] = None,
+    exclude_patterns: Union[List[str], str, None] = None,
+    output: Optional[str] = None,
+) -> Tuple[str, str, str]:
     try:
-        query = parse_query(source, max_file_size, False, include_patterns, exclude_patterns)        
+        query = parse_query(
+            source=source,
+            max_file_size=max_file_size,
+            from_web=False,
+            include_patterns=include_patterns,
+            ignore_patterns=exclude_patterns,
+        )
         if query['url']:
-            asyncio.run(clone_repo(query))
-        
+            clone_result = clone_repo(query)
+            if inspect.iscoroutine(clone_result):
+                asyncio.run(clone_result)
+            else:
+                raise TypeError("clone_repo did not return a coroutine as expected.")
+
         summary, tree, content = ingest_from_query(query)
 
         if output:
@@ -20,6 +38,7 @@ def ingest(source: str, max_file_size: int = 10 * 1024 * 1024, include_patterns:
                 f.write(tree + "\n" + content)
 
         return summary, tree, content
+
     finally:
         # Clean up the temporary directory if it was created
         if query['url']:

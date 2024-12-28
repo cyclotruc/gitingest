@@ -1,5 +1,4 @@
 User-agent: *
-Allow: / 
+Allow: /
 Allow: /api/
 Allow: /cyclotruc/gitingest/
-

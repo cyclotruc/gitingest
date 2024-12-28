@@ -1,41 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
-
-    <!-- Search Engine Meta Tags -->
-    <meta name="description" content="Replace 'hub' with 'ingest' in any Github Url for a prompt-friendly text">
-    <meta name="keywords" content="GitIngest, AI tools, LLM integration, Ingest, Digest, Context, Prompt, Git workflow, codebase extraction, Git repository, Git automation, Summarize, prompt-friendly">
-    <meta name="robots" content="index, follow">
-
-      <!-- Favicons -->
-    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-    <link rel="icon" type="image/png" sizes="64x64" href="/static/favicon-64.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
-
-     <!-- Web App Meta -->
-    <meta name="apple-mobile-web-app-title" content="GitIngest">
-    <meta name="application-name" content="GitIngest">
-    <meta name="theme-color" content="#FCA847">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-
-    
-    <!-- OpenGraph Meta Tags -->
-    <meta property="og:title" content="Git ingest">
-    <meta property="og:description" content="Replace 'hub' with 'ingest' in any Github Url for a prompt-friendly text">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="{{ request.url }}">
-    <meta property="og:image" content="/static/og-image.png">
-    
-    <title>{% block title %}Git ingest{% endblock %}</title>
-
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="/static/js/utils.js"></script>
-    <script src="/static/js/snow.js"></script>
-    <style>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+        <!-- Search Engine Meta Tags -->
+        <meta name="description"
+              content="Replace 'hub' with 'ingest' in any Github Url for a prompt-friendly text">
+        <meta name="keywords"
+              content="GitIngest, AI tools, LLM integration, Ingest, Digest, Context, Prompt, Git workflow, codebase extraction, Git repository, Git automation, Summarize, prompt-friendly">
+        <meta name="robots" content="index, follow">
+        <!-- Favicons -->
+        <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+        <link rel="icon"
+              type="image/png"
+              sizes="64x64"
+              href="/static/favicon-64.png">
+        <link rel="apple-touch-icon"
+              sizes="180x180"
+              href="/static/apple-touch-icon.png">
+        <!-- Web App Meta -->
+        <meta name="apple-mobile-web-app-title" content="GitIngest">
+        <meta name="application-name" content="GitIngest">
+        <meta name="theme-color" content="#FCA847">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="default">
+        <!-- OpenGraph Meta Tags -->
+        <meta property="og:title" content="Git ingest">
+        <meta property="og:description"
+              content="Replace 'hub' with 'ingest' in any Github Url for a prompt-friendly text">
+        <meta property="og:type" content="website">
+        <meta property="og:url" content="{{ request.url }}">
+        <meta property="og:image" content="/static/og-image.png">
+        <title>
+            {% block title %}Git ingest{% endblock %}
+        </title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/js/utils.js"></script>
+        <script src="/static/js/snow.js"></script>
+        <style>
         #snow-canvas {
             position: fixed;
             top: 0;
@@ -45,23 +48,19 @@
             width: 100%;
             height: 100%;
         }
-    </style>
-    {% block extra_head %}{% endblock %}
-</head>
-
-<body class="bg-[#FFFDF8] min-h-screen flex flex-col">
-    <canvas id="snow-canvas"></canvas>
-    {% include 'components/navbar.jinja' %}
-
-    <!-- Main content wrapper -->
-    <main class="flex-1 w-full">
-        <div class="max-w-4xl mx-auto px-4 py-8">
-            {% block content %}{% endblock %}
-        </div>
-    </main>
-
-    {% include 'components/footer.jinja' %}
-    
-    {% block extra_scripts %}{% endblock %}
-</body>
-</html> 
+        </style>
+        {% block extra_head %}{% endblock %}
+    </head>
+    <body class="bg-[#FFFDF8] min-h-screen flex flex-col">
+        <canvas id="snow-canvas"></canvas>
+        {% include 'components/navbar.jinja' %}
+        <!-- Main content wrapper -->
+        <main class="flex-1 w-full">
+            <div class="max-w-4xl mx-auto px-4 py-8">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+        {% include 'components/footer.jinja' %}
+        {% block extra_scripts %}{% endblock %}
+    </body>
+</html>

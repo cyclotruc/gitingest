@@ -1,9 +1,10 @@
 import asyncio
-from typing import Tuple
+from typing import Any, Dict, Tuple
 
 from gitingest.utils import async_timeout
 
 CLONE_TIMEOUT = 20
+
 
 async def check_repo_exists(url: str) -> bool:
     proc = await asyncio.create_subprocess_exec(
@@ -20,14 +21,15 @@ async def check_repo_exists(url: str) -> bool:
     stdout_str = stdout.decode()
     return "HTTP/1.1 404" not in stdout_str and "HTTP/2 404" not in stdout_str
 
+
 @async_timeout(CLONE_TIMEOUT)
-async def clone_repo(query: dict) -> str:
+async def clone_repo(query: Dict[str, Any]) -> Tuple[bytes, bytes]:
     if not await check_repo_exists(query['url']):
         raise ValueError("Repository not found, make sure it is public")
-        
+
     if query['commit']:
         proc = await asyncio.create_subprocess_exec(
-            "git", 
+            "git",
             "clone",
             "--single-branch",
             query['url'],
@@ -36,21 +38,21 @@ async def clone_repo(query: dict) -> str:
             stderr=asyncio.subprocess.PIPE,
         )
         stdout, stderr = await proc.communicate()
-        
+
         proc = await asyncio.create_subprocess_exec(
             "git",
             "-C",
             query['local_path'],
             "checkout",
             query['branch'],
-            stdout=asyncio.subprocess.PIPE, 
+            stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
         stdout, stderr = await proc.communicate()
     elif query['branch'] != 'main' and query['branch'] != 'master' and query['branch']:
         proc = await asyncio.create_subprocess_exec(
             "git",
-            "clone", 
+            "clone",
             "--depth=1",
             "--single-branch",
             "--branch",
@@ -71,7 +73,7 @@ async def clone_repo(query: dict) -> str:
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
-        
+
     stdout, stderr = await proc.communicate()
-    
-    return stdout, stderr   
+
+    return stdout, stderr
