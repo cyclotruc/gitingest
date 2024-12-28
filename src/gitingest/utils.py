@@ -1,7 +1,8 @@
 ## Async Timeout decorator
 import asyncio
 import functools
-from typing import Awaitable, Callable, ParamSpec, TypeVar
+from collections.abc import Awaitable, Callable
+from typing import ParamSpec, TypeVar
 
 T = TypeVar("T")
 P = ParamSpec("P")

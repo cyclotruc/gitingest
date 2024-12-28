@@ -1,6 +1,6 @@
 import os
 from fnmatch import fnmatch
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 import tiktoken
 
@@ -10,7 +10,7 @@ MAX_FILES = 10_000  # Maximum number of files to process
 MAX_TOTAL_SIZE_BYTES = 500 * 1024 * 1024  # 500 MB
 
 
-def should_include(path: str, base_path: str, include_patterns: List[str]) -> bool:
+def should_include(path: str, base_path: str, include_patterns: list[str]) -> bool:
     rel_path = path.replace(base_path, "").lstrip(os.sep)
     include = False
     for pattern in include_patterns:
@@ -19,7 +19,7 @@ def should_include(path: str, base_path: str, include_patterns: List[str]) -> bo
     return include
 
 
-def should_exclude(path: str, base_path: str, ignore_patterns: List[str]) -> bool:
+def should_exclude(path: str, base_path: str, ignore_patterns: list[str]) -> bool:
     rel_path = path.replace(base_path, "").lstrip(os.sep)
     for pattern in ignore_patterns:
         if pattern == '':
@@ -60,11 +60,11 @@ def read_file_content(file_path: str) -> str:
 
 def scan_directory(
     path: str,
-    query: Dict[str, Any],
-    seen_paths: Optional[Set[str]] = None,
+    query: dict[str, Any],
+    seen_paths: set[str] | None = None,
     depth: int = 0,
-    stats: Optional[Dict[str, int]] = None,
-) -> Optional[Dict[str, Any]]:
+    stats: dict[str, int] | None = None,
+) -> dict[str, Any] | None:
     """Recursively analyzes a directory and its contents with safety limits."""
     if seen_paths is None:
         seen_paths = set()
@@ -220,11 +220,11 @@ def scan_directory(
 
 
 def extract_files_content(
-    query: Dict[str, Any],
-    node: Dict[str, Any],
+    query: dict[str, Any],
+    node: dict[str, Any],
     max_file_size: int,
-    files: Optional[List[Dict[str, Any]]] = None,
-) -> List[Dict[str, Any]]:
+    files: list[dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
     """Recursively collects all text files with their contents."""
     if files is None:
         files = []
@@ -248,7 +248,7 @@ def extract_files_content(
     return files
 
 
-def create_file_content_string(files: List[Dict[str, Any]]) -> str:
+def create_file_content_string(files: list[dict[str, Any]]) -> str:
     """Creates a formatted string of file contents with separators."""
     output = ""
     separator = "=" * 48 + "\n"
@@ -278,7 +278,7 @@ def create_file_content_string(files: List[Dict[str, Any]]) -> str:
     return output
 
 
-def create_summary_string(query: Dict[str, Any], nodes: Dict[str, Any]) -> str:
+def create_summary_string(query: dict[str, Any], nodes: dict[str, Any]) -> str:
     """Creates a summary string with file counts and content size."""
     if "user_name" in query:
         summary = f"Repository: {query['user_name']}/{query['repo_name']}\n"
@@ -297,7 +297,7 @@ def create_summary_string(query: Dict[str, Any], nodes: Dict[str, Any]) -> str:
     return summary
 
 
-def create_tree_structure(query: Dict[str, Any], node: Dict[str, Any], prefix: str = "", is_last: bool = True) -> str:
+def create_tree_structure(query: dict[str, Any], node: dict[str, Any], prefix: str = "", is_last: bool = True) -> str:
     """Creates a tree-like string representation of the file structure."""
     tree = ""
 
@@ -319,7 +319,7 @@ def create_tree_structure(query: Dict[str, Any], node: Dict[str, Any], prefix: s
     return tree
 
 
-def generate_token_string(context_string: str) -> Optional[str]:
+def generate_token_string(context_string: str) -> str | None:
     """Returns the number of tokens in a text string."""
     formatted_tokens = ""
     try:
@@ -340,7 +340,7 @@ def generate_token_string(context_string: str) -> Optional[str]:
     return formatted_tokens
 
 
-def ingest_single_file(path: str, query: Dict[str, Any]) -> Tuple[str, str, str]:
+def ingest_single_file(path: str, query: dict[str, Any]) -> tuple[str, str, str]:
     if not os.path.isfile(path):
         raise ValueError(f"Path {path} is not a file")
 
@@ -376,7 +376,7 @@ def ingest_single_file(path: str, query: Dict[str, Any]) -> Tuple[str, str, str]
     return summary, tree, files_content
 
 
-def ingest_directory(path: str, query: Dict[str, Any]) -> Tuple[str, str, str]:
+def ingest_directory(path: str, query: dict[str, Any]) -> tuple[str, str, str]:
     nodes = scan_directory(path=path, query=query)
     if not nodes:
         raise ValueError(f"No files found in {path}")
@@ -392,7 +392,7 @@ def ingest_directory(path: str, query: Dict[str, Any]) -> Tuple[str, str, str]:
     return summary, tree, files_content
 
 
-def ingest_from_query(query: Dict[str, Any]) -> Tuple[str, str, str]:
+def ingest_from_query(query: dict[str, Any]) -> tuple[str, str, str]:
     """Main entry point for analyzing a codebase directory or single file."""
     path = f"{query['local_path']}{query['subpath']}"
     if not os.path.exists(path):

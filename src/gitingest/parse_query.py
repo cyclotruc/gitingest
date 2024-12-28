@@ -1,7 +1,7 @@
 import os
 import string
 import uuid
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 from urllib.parse import unquote
 
 from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
@@ -10,7 +10,7 @@ TMP_BASE_PATH = "../tmp"
 HEX_DIGITS = set(string.hexdigits)
 
 
-def parse_url(url: str) -> Dict[str, Any]:
+def parse_url(url: str) -> dict[str, Any]:
     url = url.split(" ")[0]
     url = unquote(url)  # Decode URL-encoded characters
 
@@ -88,7 +88,7 @@ def normalize_pattern(pattern: str) -> str:
     return pattern
 
 
-def parse_patterns(pattern: Union[List[str], str]) -> List[str]:
+def parse_patterns(pattern: list[str] | str) -> list[str]:
     patterns = pattern if isinstance(pattern, list) else [pattern]
     patterns = [p.strip() for p in patterns]
 
@@ -102,7 +102,7 @@ def parse_patterns(pattern: Union[List[str], str]) -> List[str]:
     return [normalize_pattern(p) for p in patterns]
 
 
-def override_ignore_patterns(ignore_patterns: List[str], include_patterns: List[str]) -> List[str]:
+def override_ignore_patterns(ignore_patterns: list[str], include_patterns: list[str]) -> list[str]:
     """
     Removes patterns from ignore_patterns that are present in include_patterns using set difference.
 
@@ -121,7 +121,7 @@ def override_ignore_patterns(ignore_patterns: List[str], include_patterns: List[
     return list(set(ignore_patterns) - set(include_patterns))
 
 
-def parse_path(path: str) -> Dict[str, Any]:
+def parse_path(path: str) -> dict[str, Any]:
     query = {
         "url": None,
         "local_path": os.path.abspath(path),
@@ -136,9 +136,9 @@ def parse_query(
     source: str,
     max_file_size: int,
     from_web: bool,
-    include_patterns: Optional[Union[List[str], str]] = None,
-    ignore_patterns: Optional[Union[List[str], str]] = None,
-) -> Dict[str, Any]:
+    include_patterns: list[str] | str | None = None,
+    ignore_patterns: list[str] | str | None = None,
+) -> dict[str, Any]:
     """
     Parses the input source to construct a query dictionary with specified parameters.
 

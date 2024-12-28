@@ -1,9 +1,7 @@
 import os
-from typing import Optional, Tuple
 
 import click
 
-from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
 from gitingest.ingest import ingest
 from gitingest.ingest_from_query import MAX_FILE_SIZE
 
@@ -24,10 +22,10 @@ def normalize_pattern(pattern: str) -> str:
 @click.option('--include-pattern', '-i', multiple=True, help='Patterns to include')
 def main(
     source: str,
-    output: Optional[str],
+    output: str | None,
     max_size: int,
-    exclude_pattern: Tuple[str, ...],
-    include_pattern: Tuple[str, ...],
+    exclude_pattern: tuple[str, ...],
+    include_pattern: tuple[str, ...],
 ) -> None:
     """Analyze a directory and create a text dump of its contents."""
     try:

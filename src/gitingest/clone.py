@@ -1,6 +1,5 @@
 import asyncio
 from dataclasses import dataclass
-from typing import Optional, Tuple
 
 from gitingest.utils import AsyncTimeoutError, async_timeout
 
@@ -11,8 +10,8 @@ CLONE_TIMEOUT = 20
 class CloneConfig:
     url: str
     local_path: str
-    commit: Optional[str] = None
-    branch: Optional[str] = None
+    commit: str | None = None
+    branch: str | None = None
 
 
 async def check_repo_exists(url: str) -> bool:
@@ -44,7 +43,7 @@ async def check_repo_exists(url: str) -> bool:
     return "HTTP/1.1 404" not in stdout_str and "HTTP/2 404" not in stdout_str
 
 
-async def run_git_command(*args: str) -> Tuple[bytes, bytes]:
+async def run_git_command(*args: str) -> tuple[bytes, bytes]:
     """
     Executes a git command asynchronously and captures its output.
 
@@ -77,7 +76,7 @@ async def run_git_command(*args: str) -> Tuple[bytes, bytes]:
 
 
 @async_timeout(CLONE_TIMEOUT)
-async def clone_repo(config: CloneConfig) -> Tuple[bytes, bytes]:
+async def clone_repo(config: CloneConfig) -> tuple[bytes, bytes]:
     """
     Clones a repository to a local path based on the provided query parameters.
 
@@ -107,8 +106,8 @@ async def clone_repo(config: CloneConfig) -> Tuple[bytes, bytes]:
     # Extract and validate query parameters
     url: str = config.url
     local_path: str = config.local_path
-    commit: Optional[str] = config.commit
-    branch: Optional[str] = config.branch
+    commit: str | None = config.commit
+    branch: str | None = config.branch
 
     if not url:
         raise ValueError("The 'url' parameter is required.")

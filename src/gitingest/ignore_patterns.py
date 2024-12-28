@@ -1,6 +1,4 @@
-from typing import List
-
-DEFAULT_IGNORE_PATTERNS: List[str] = [
+DEFAULT_IGNORE_PATTERNS: list[str] = [
     # Python
     '*.pyc',
     '*.pyo',

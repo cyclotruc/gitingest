@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import pytest
 
@@ -8,7 +8,7 @@ from gitingest.ingest_from_query import extract_files_content, scan_directory
 
 # Test fixtures
 @pytest.fixture
-def sample_query() -> Dict[str, Any]:
+def sample_query() -> dict[str, Any]:
     return {
         'user_name': 'test_user',
         'repo_name': 'test_repo',
@@ -73,7 +73,7 @@ def temp_directory(tmp_path: Path) -> Path:
     return test_dir
 
 
-def test_scan_directory(temp_directory: Path, sample_query: Dict[str, Any]) -> None:
+def test_scan_directory(temp_directory: Path, sample_query: dict[str, Any]) -> None:
     result = scan_directory(str(temp_directory), query=sample_query)
     if result is None:
         assert False, "Result is None"
@@ -84,7 +84,7 @@ def test_scan_directory(temp_directory: Path, sample_query: Dict[str, Any]) -> N
     assert len(result['children']) == 5  # file1.txt, file2.py, src, dir1, dir2
 
 
-def test_extract_files_content(temp_directory: Path, sample_query: Dict[str, Any]) -> None:
+def test_extract_files_content(temp_directory: Path, sample_query: dict[str, Any]) -> None:
     nodes = scan_directory(str(temp_directory), query=sample_query)
     if nodes is None:
         assert False, "Nodes is None"

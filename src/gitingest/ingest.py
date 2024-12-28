@@ -2,7 +2,6 @@ import asyncio
 import inspect
 import shutil
 from pathlib import Path
-from typing import List, Optional, Tuple, Union
 
 from gitingest.clone import CloneConfig, clone_repo
 from gitingest.ingest_from_query import ingest_from_query
@@ -12,10 +11,10 @@ from gitingest.parse_query import parse_query
 def ingest(
     source: str,
     max_file_size: int = 10 * 1024 * 1024,  # 10 MB
-    include_patterns: Union[List[str], str, None] = None,
-    exclude_patterns: Union[List[str], str, None] = None,
-    output: Optional[str] = None,
-) -> Tuple[str, str, str]:
+    include_patterns: list[str] | str | None = None,
+    exclude_patterns: list[str] | str | None = None,
+    output: str | None = None,
+) -> tuple[str, str, str]:
     try:
         query = parse_query(
             source=source,

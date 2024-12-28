@@ -1,5 +1,4 @@
 import os
-from typing import Dict
 
 from api_analytics.fastapi import Analytics
 from dotenv import load_dotenv
@@ -52,7 +51,7 @@ templates = Jinja2Templates(directory="templates")
 
 
 @app.get("/health")
-async def health_check() -> Dict[str, str]:
+async def health_check() -> dict[str, str]:
     return {"status": "healthy"}
 
 
