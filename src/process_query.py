@@ -40,6 +40,7 @@ async def process_query(
     slider_position: int,
     pattern_type: str = "exclude",
     pattern: str = "",
+    pat: str | None = None,
     is_index: bool = False,
 ) -> _TemplateResponse:
     template = "index.jinja" if is_index else "github.jinja"
@@ -65,6 +66,7 @@ async def process_query(
             local_path=query["local_path"],
             commit=query.get("commit"),
             branch=query.get("branch"),
+            pat=pat,
         )
         await clone_repo(clone_config)
         summary, tree, content = ingest_from_query(query)

@@ -12,9 +12,10 @@ class CloneConfig:
     local_path: str
     commit: str | None = None
     branch: str | None = None
+    pat: str | None = None
 
 
-async def check_repo_exists(url: str) -> bool:
+async def check_repo_exists(url: str, pat: str | None = None) -> bool:
     """
     Check if a repository exists at the given URL using an HTTP HEAD request.
 
@@ -22,16 +23,37 @@ async def check_repo_exists(url: str) -> bool:
     ----------
     url : str
         The URL of the repository.
+    pat : str | None
+        Personal Access Token for authentication, optional.
 
     Returns
     -------
     bool
         True if the repository exists, False otherwise.
     """
+    # Parse URL to get components
+    parts = url.split('/')
+    if len(parts) < 5:  # Need at least protocol, empty, host, username, repo
+        return False
+        
+    host = parts[2]
+    username = parts[3]
+    repo = parts[4]
+    
+    # Construct API URL based on host
+    if 'github.com' in host:
+        api_url = url
+    else:
+        # For custom Git servers, use API v1 endpoint
+        api_url = f"https://{host}/api/v1/repos/{username}/{repo}"
+
+    cmd = ["curl", "-I"]
+    if pat:
+        cmd.extend(["-H", f"Authorization: token {pat}"])
+    cmd.append(api_url)
+    
     proc = await asyncio.create_subprocess_exec(
-        "curl",
-        "-I",
-        url,
+        *cmd,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
@@ -78,16 +100,17 @@ async def run_git_command(*args: str) -> tuple[bytes, bytes]:
 @async_timeout(CLONE_TIMEOUT)
 async def clone_repo(config: CloneConfig) -> tuple[bytes, bytes]:
     """
-    Clones a repository to a local path based on the provided query parameters.
+    Clones a repository to a local path based on the provided configuration.
 
     Parameters
     ----------
     config : CloneConfig
-        A dictionary containing the following keys:
+        Configuration object containing:
             - url (str): The URL of the repository.
             - local_path (str): The local path to clone the repository to.
             - commit (Optional[str]): The specific commit hash to checkout.
-            - branch (Optional[str]): The branch to clone. Defaults to 'main' or 'master' if not provided.
+            - branch (Optional[str]): The branch to clone.
+            - pat (Optional[str]): Personal Access Token for authentication.
 
     Returns
     -------
@@ -97,17 +120,18 @@ async def clone_repo(config: CloneConfig) -> tuple[bytes, bytes]:
     Raises
     ------
     ValueError
-        If the repository does not exist or if required query parameters are missing.
+        If the repository does not exist or if required parameters are missing.
     RuntimeError
         If any git command fails during execution.
     AsyncTimeoutError
         If the cloning process exceeds the specified timeout.
     """
-    # Extract and validate query parameters
+    # Extract and validate parameters
     url: str = config.url
     local_path: str = config.local_path
     commit: str | None = config.commit
     branch: str | None = config.branch
+    pat: str | None = config.pat
 
     if not url:
         raise ValueError("The 'url' parameter is required.")
@@ -116,14 +140,17 @@ async def clone_repo(config: CloneConfig) -> tuple[bytes, bytes]:
         raise ValueError("The 'local_path' parameter is required.")
 
     # Check if the repository exists
-    if not await check_repo_exists(url):
-        raise ValueError("Repository not found, make sure it is public")
+    if not await check_repo_exists(url, pat):
+        raise ValueError("Repository not found, make sure it is public or provide valid PAT")
 
     try:
         if commit:
             # Scenario 1: Clone and checkout a specific commit
             # Clone the repository without depth to ensure full history for checkout
-            clone_cmd = ["git", "clone", "--single-branch", url, local_path]
+            clone_cmd = ["git", "clone", "--single-branch"]
+            if pat:
+                url = url.replace("https://", f"https://oauth2:{pat}@")
+            clone_cmd.extend([url, local_path])
             await run_git_command(*clone_cmd)
 
             # Checkout the specific commit
@@ -131,13 +158,18 @@ async def clone_repo(config: CloneConfig) -> tuple[bytes, bytes]:
             return await run_git_command(*checkout_cmd)
 
         if branch and branch.lower() not in ("main", "master"):
-
             # Scenario 2: Clone a specific branch with shallow depth
-            clone_cmd = ["git", "clone", "--depth=1", "--single-branch", "--branch", branch, url, local_path]
+            clone_cmd = ["git", "clone", "--depth=1", "--single-branch", "--branch", branch]
+            if pat:
+                url = url.replace("https://", f"https://oauth2:{pat}@")
+            clone_cmd.extend([url, local_path])
             return await run_git_command(*clone_cmd)
 
         # Scenario 3: Clone the default branch with shallow depth
-        clone_cmd = ["git", "clone", "--depth=1", "--single-branch", url, local_path]
+        clone_cmd = ["git", "clone", "--depth=1", "--single-branch"]
+        if pat:
+            url = url.replace("https://", f"https://oauth2:{pat}@")
+        clone_cmd.extend([url, local_path])
         return await run_git_command(*clone_cmd)
 
     except (RuntimeError, asyncio.TimeoutError, AsyncTimeoutError):
