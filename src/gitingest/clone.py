@@ -14,7 +14,7 @@ class CloneConfig:
     branch: str | None = None
 
 
-async def check_repo_exists(url: str) -> bool:
+async def _check_repo_exists(url: str) -> bool:
     """
     Check if a repository exists at the given URL using an HTTP HEAD request.
 
@@ -43,7 +43,7 @@ async def check_repo_exists(url: str) -> bool:
     return "HTTP/1.1 404" not in stdout_str and "HTTP/2 404" not in stdout_str
 
 
-async def run_git_command(*args: str) -> tuple[bytes, bytes]:
+async def _run_git_command(*args: str) -> tuple[bytes, bytes]:
     """
     Executes a git command asynchronously and captures its output.
 
@@ -116,7 +116,7 @@ async def clone_repo(config: CloneConfig) -> tuple[bytes, bytes]:
         raise ValueError("The 'local_path' parameter is required.")
 
     # Check if the repository exists
-    if not await check_repo_exists(url):
+    if not await _check_repo_exists(url):
         raise ValueError("Repository not found, make sure it is public")
 
     try:
@@ -124,21 +124,21 @@ async def clone_repo(config: CloneConfig) -> tuple[bytes, bytes]:
             # Scenario 1: Clone and checkout a specific commit
             # Clone the repository without depth to ensure full history for checkout
             clone_cmd = ["git", "clone", "--single-branch", url, local_path]
-            await run_git_command(*clone_cmd)
+            await _run_git_command(*clone_cmd)
 
             # Checkout the specific commit
             checkout_cmd = ["git", "-C", local_path, "checkout", commit]
-            return await run_git_command(*checkout_cmd)
+            return await _run_git_command(*checkout_cmd)
 
         if branch and branch.lower() not in ("main", "master"):
 
             # Scenario 2: Clone a specific branch with shallow depth
             clone_cmd = ["git", "clone", "--depth=1", "--single-branch", "--branch", branch, url, local_path]
-            return await run_git_command(*clone_cmd)
+            return await _run_git_command(*clone_cmd)
 
         # Scenario 3: Clone the default branch with shallow depth
         clone_cmd = ["git", "clone", "--depth=1", "--single-branch", url, local_path]
-        return await run_git_command(*clone_cmd)
+        return await _run_git_command(*clone_cmd)
 
     except (RuntimeError, asyncio.TimeoutError, AsyncTimeoutError):
         raise  # Re-raise the exception

@@ -3,7 +3,7 @@ from typing import Any
 
 import pytest
 
-from gitingest.ingest_from_query import extract_files_content, scan_directory
+from gitingest.ingest_from_query import _extract_files_content, _scan_directory
 
 
 # Test fixtures
@@ -74,7 +74,7 @@ def temp_directory(tmp_path: Path) -> Path:
 
 
 def test_scan_directory(temp_directory: Path, sample_query: dict[str, Any]) -> None:
-    result = scan_directory(str(temp_directory), query=sample_query)
+    result = _scan_directory(str(temp_directory), query=sample_query)
     if result is None:
         assert False, "Result is None"
 
@@ -85,10 +85,10 @@ def test_scan_directory(temp_directory: Path, sample_query: dict[str, Any]) -> N
 
 
 def test_extract_files_content(temp_directory: Path, sample_query: dict[str, Any]) -> None:
-    nodes = scan_directory(str(temp_directory), query=sample_query)
+    nodes = _scan_directory(str(temp_directory), query=sample_query)
     if nodes is None:
         assert False, "Nodes is None"
-    files = extract_files_content(query=sample_query, node=nodes, max_file_size=1_000_000)
+    files = _extract_files_content(query=sample_query, node=nodes, max_file_size=1_000_000)
     assert len(files) == 8  # All .txt and .py files
 
     # Check for presence of key files
