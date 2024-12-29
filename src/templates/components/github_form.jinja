@@ -3,9 +3,10 @@
     <div class="rounded-xl relative z-20 pl-8 sm:pl-10 pr-8 sm:pr-16 py-8 border-[3px] border-gray-900 bg-[#fff4da]">
         <img src="https://cdn.devdojo.com/images/january2023/shape-1.png"
              class="absolute md:block hidden left-0 h-[4.5rem] w-[4.5rem] bottom-0 -translate-x-full ml-3">
-        <form class="flex md:flex-row flex-col w-full h-full justify-center items-stretch space-y-5 md:space-y-0 md:space-x-5"
+        <form class="flex flex-col w-full h-full justify-center items-stretch space-y-5"
               id="ingestForm"
               onsubmit="handleSubmit(event{% if is_index %}, true{% endif %})">
+            <!-- Repository URL input -->
             <div class="relative w-full h-full">
                 <div class="w-full h-full rounded bg-gray-900 translate-y-1 translate-x-1 absolute inset-0 z-10"></div>
                 <input type="text"
@@ -16,16 +17,50 @@
                        required
                        class="border-[3px] w-full relative z-20 border-gray-900 placeholder-gray-600 text-lg font-medium focus:outline-none py-3.5 px-6 rounded">
             </div>
-            <div class="relative w-auto flex-shrink-0 h-full group">
+
+            <!-- Access Settings Checkbox -->
+            <div class="flex items-center space-x-2 ml-2">
+                <input type="checkbox"
+                       id="showAccessSettings"
+                       class="w-4 h-4 rounded border-gray-900"
+                       onchange="toggleAccessSettings()">
+                <label for="showAccessSettings" class="text-gray-900">Access Settings</label>
+            </div>
+
+            <!-- PAT input (hidden by default) -->
+            <div id="accessSettingsContainer" class="hidden">
+                <div class="relative w-full h-full">
+                    <div class="w-full h-full rounded bg-gray-900 translate-y-1 translate-x-1 absolute inset-0 z-10"></div>
+                    <input type="password"
+                           name="pat"
+                           id="pat"
+                           placeholder="Personal Access Token"
+                           value="{{ pat if pat else '' }}"
+                           class="border-[3px] w-full relative z-20 border-gray-900 placeholder-gray-600 text-lg font-medium focus:outline-none py-3.5 px-6 rounded">
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="relative w-full sm:w-auto flex-shrink-0 h-full group">
                 <div class="w-full h-full rounded bg-gray-800 translate-y-1 translate-x-1 absolute inset-0 z-10"></div>
                 <button type="submit"
                         class="py-3.5 rounded px-6 group-hover:-translate-y-px group-hover:-translate-x-px ease-out duration-300 z-20 relative w-full border-[3px] border-gray-900 font-medium bg-[#ffc480] tracking-wide text-lg flex-shrink-0 text-gray-900">
                     Ingest
                 </button>
             </div>
+
             <input type="hidden" name="pattern_type" value="exclude">
             <input type="hidden" name="pattern" value="">
         </form>
+
+        <script>
+            function toggleAccessSettings() {
+                const container = document.getElementById('accessSettingsContainer');
+                const checkbox = document.getElementById('showAccessSettings');
+                container.classList.toggle('hidden', !checkbox.checked);
+            }
+        </script>
+
         <div class="mt-4 relative z-20 flex flex-wrap gap-4 items-start">
             <!-- Pattern selector -->
             <div class="w-[200px] sm:w-[250px] mr-9 mt-4">
