@@ -1,0 +1,78 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      # Files
+      - id: check-added-large-files
+        description: "Prevent large files from being committed."
+        args: ["--maxkb=10000"]
+      - id: check-case-conflict
+        description: "Check for files that would conflict in case-insensitive filesystems."
+      - id: fix-byte-order-marker
+        description: "Remove utf-8 byte order marker."
+      - id: mixed-line-ending
+        description: "Replace mixed line ending."
+
+      # Links
+      - id: destroyed-symlinks
+        description: "Detect symlinks which are changed to regular files with a content of a path which that symlink was pointing to."
+
+      # File files for parseable syntax: python
+      - id: check-ast
+
+      # File and line endings
+      - id: end-of-file-fixer
+        description: "Ensure that a file is either empty, or ends with one newline."
+      - id: trailing-whitespace
+        description: "Trim trailing whitespace."
+
+      # Python
+      - id: check-docstring-first
+        description: "Check a common error of defining a docstring after code."
+      - id: requirements-txt-fixer
+        description: "Sort entries in requirements.txt."
+
+  - repo: https://github.com/MarcoGorelli/absolufy-imports
+    rev: v0.3.1
+    hooks:
+      - id: absolufy-imports
+        description: "Automatically convert relative imports to absolute. (Use `args: [--never]` to revert.)"
+
+  - repo: https://github.com/psf/black
+    rev: 24.10.0
+    hooks:
+      - id: black
+
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.19.1
+    hooks:
+      - id: pyupgrade
+        description: "Automatically upgrade syntax for newer versions."
+        args: [--py3-plus, --py36-plus, --py38-plus, --py39-plus, --py310-plus]
+
+  - repo: https://github.com/pre-commit/pygrep-hooks
+    rev: v1.10.0
+    hooks:
+      - id: python-check-blanket-noqa
+        description: "Enforce that `noqa` annotations always occur with specific codes. Sample annotations: `# noqa: F401`, `# noqa: F401,W203`."
+      - id: python-check-blanket-type-ignore
+        description: "Enforce that `# type: ignore` annotations always occur with specific codes. Sample annotations: `# type: ignore[attr-defined]`, `# type: ignore[attr-defined, name-defined]`."
+      - id: python-use-type-annotations
+        description: "Enforce that python3.6+ type annotations are used instead of type comments."
+
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        description: "Sort imports alphabetically, and automatically separated into sections and by type."
+
+  - repo: https://github.com/hadialqattan/pycln
+    rev: v2.4.0
+    hooks:
+      - id: pycln
+        description: "Remove unused import statements."
+
+  - repo: https://github.com/djlint/djLint
+    rev: v1.36.4
+    hooks:
+      - id: djlint-reformat-jinja

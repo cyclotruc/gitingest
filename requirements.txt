@@ -1,8 +1,8 @@
-fastapi[standard]
-uvicorn
-fastapi-analytics
-slowapi
-tiktoken
-pytest
-pytest-asyncio
 click>=8.0.0
+fastapi-analytics
+fastapi[standard]
+python-dotenv
+slowapi
+starlette
+tiktoken
+uvicorn

@@ -1,3 +1,5 @@
+from unittest.mock import AsyncMock, patch
+
 import pytest
 from clone import clone_repo, check_repo_exists
 from unittest.mock import patch, AsyncMock
@@ -24,8 +26,10 @@ async def test_clone_repo_with_commit():
             stdout, stdin = await clone_repo(query)
 
             mock_check.assert_called_once_with(query["url"])
+ 
             assert mock_exec.call_count == 2  # Clone and checkout calls
             assert b"Cloning Complete" in stdout
+
 
 
 @pytest.mark.asyncio
@@ -102,6 +106,7 @@ async def test_clone_repo_timeout():
             stdout, stderr = await clone_repo(query)
             assert stderr == "TimeoutError"
             assert stdout == "The repository cloning process timed out."
+
 
 
 @pytest.mark.asyncio

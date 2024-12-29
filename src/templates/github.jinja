@@ -1,39 +1,33 @@
 {% extends "base.jinja" %}
-
 {% block content %}
-{% if error_message %}
-<div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700" id="error-message"
-    data-message="{{ error_message }}">
-    {{ error_message }}
-</div>
-{% endif %}
-
-{% with is_index=true, show_examples=false %}
-    {% include 'components/github_form.jinja' %}
-{% endwith %}
-
-{% if loading %}
-<div class="relative mt-10">
-    <div class="w-full h-full absolute inset-0 bg-black rounded-xl translate-y-2 translate-x-2"></div>
-    <div class="bg-[#fafafa] rounded-xl border-[3px] border-gray-900 p-6 relative z-20 flex flex-col items-center space-y-4">
-        <div class="loader border-8 border-[#fff4da] border-t-8 border-t-[#ffc480] rounded-full w-16 h-16 animate-spin"></div>
-        <p class="text-lg font-bold text-gray-900">Loading...</p>
-    </div>
-</div>
-{% endif %}
-
-{% include 'components/result.jinja' %}
+    {% if error_message %}
+        <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700"
+             id="error-message"
+             data-message="{{ error_message }}">{{ error_message }}</div>
+    {% endif %}
+    {% with is_index=true, show_examples=false %}
+        {% include 'components/github_form.jinja' %}
+    {% endwith %}
+    {% if loading %}
+        <div class="relative mt-10">
+            <div class="w-full h-full absolute inset-0 bg-black rounded-xl translate-y-2 translate-x-2"></div>
+            <div class="bg-[#fafafa] rounded-xl border-[3px] border-gray-900 p-6 relative z-20 flex flex-col items-center space-y-4">
+                <div class="loader border-8 border-[#fff4da] border-t-8 border-t-[#ffc480] rounded-full w-16 h-16 animate-spin"></div>
+                <p class="text-lg font-bold text-gray-900">Loading...</p>
+            </div>
+        </div>
+    {% endif %}
+    {% include 'components/result.jinja' %}
 {% endblock content %}
-
 {% block extra_scripts %}
-<script>
+    <script>
     document.addEventListener('DOMContentLoaded', function() {
         const urlInput = document.getElementById('input_text');
         const form = document.getElementById('ingestForm');
         if (urlInput && urlInput.value.trim() && form) {
             // Wait for stars to be loaded before submitting
             waitForStars().then(() => {
-                const submitEvent = new SubmitEvent('submit', { 
+                const submitEvent = new SubmitEvent('submit', {
                     cancelable: true,
                     bubbles: true
                 });
@@ -59,5 +53,5 @@
             checkStars();
         });
     }
-</script>
+    </script>
 {% endblock extra_scripts %}
