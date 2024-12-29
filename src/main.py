@@ -1,3 +1,5 @@
+""" Main module for the FastAPI application. """
+
 import os
 
 from api_analytics.fastapi import Analytics
@@ -36,6 +38,11 @@ async def rate_limit_exception_handler(request: Request, exc: Exception) -> Resp
     -------
     Response
         A response indicating that the rate limit has been exceeded.
+
+    Raises
+    ------
+    exc
+        If the exception is not a RateLimitExceeded error, it is re-raised.
     """
     if isinstance(exc, RateLimitExceeded):
         # Delegate to the default rate limit handler

@@ -1,3 +1,5 @@
+""" This module contains functions to parse and validate input sources and patterns. """
+
 import os
 import re
 import string

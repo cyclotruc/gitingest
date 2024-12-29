@@ -1,3 +1,7 @@
+""" Command-line interface for the GitIngest package. """
+
+# pylint: disable=no-value-for-parameter
+
 import click
 
 from gitingest.ingest import ingest
@@ -40,7 +44,7 @@ def main(
 
     Raises
     ------
-    click.Abort
+    Abort
         If there is an error during the execution of the command, this exception is raised to abort the process.
     """
     try:

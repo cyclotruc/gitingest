@@ -1,8 +1,12 @@
+""" Functions to ingest and analyze a codebase directory or single file. """
+
 import os
 from fnmatch import fnmatch
 from typing import Any
 
 import tiktoken
+
+from gitingest.exceptions import AlreadyVisitedError, MaxFileSizeReachedError, MaxFilesReachedError
 
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 MAX_DIRECTORY_DEPTH = 20  # Maximum depth of directory traversal
@@ -14,9 +18,8 @@ def _should_include(path: str, base_path: str, include_patterns: list[str]) -> b
     """
     Determines if the given file or directory path matches any of the include patterns.
 
-    This function checks whether the relative path of a file or directory matches
-    any of the specified patterns. If a match is found, it returns `True`, indicating
-    that the file or directory should be included in further processing.
+    This function checks whether the relative path of a file or directory matches any of the specified patterns. If a
+    match is found, it returns `True`, indicating that the file or directory should be included in further processing.
 
     Parameters
     ----------
@@ -145,8 +148,8 @@ def _read_file_content(file_path: str) -> str:
     try:
         with open(file_path, encoding="utf-8", errors="ignore") as f:
             return f.read()
-    except Exception as e:
-        return f"Error reading file: {str(e)}"
+    except OSError as e:
+        return f"Error reading file: {e}"
 
 
 def _sort_children(children: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -215,7 +218,7 @@ def _scan_directory(
         A dictionary containing the query parameters, such as include and ignore patterns.
     seen_paths : set[str] | None, optional
         A set to track already visited paths, by default None.
-    depth : int, optional
+    depth : int
         The current depth of directory traversal, by default 0.
     stats : dict[str, int] | None, optional
         A dictionary to track statistics such as total file count and size, by default None.
@@ -268,118 +271,254 @@ def _scan_directory(
     try:
         for item in os.listdir(path):
             item_path = os.path.join(path, item)
-
-            if _should_exclude(item_path, base_path, ignore_patterns):
-                continue
-
-            is_file = os.path.isfile(item_path)
-            if is_file and query["include_patterns"]:
-                if not _should_include(item_path, base_path, include_patterns):
-                    result["ignore_content"] = True
-                    continue
-
-            # Handle symlinks
-            if os.path.islink(item_path):
-                if not _is_safe_symlink(item_path, base_path):
-                    print(f"Skipping symlink that points outside base directory: {item_path}")
-                    continue
-                real_path = os.path.realpath(item_path)
-                if real_path in seen_paths:
-                    print(f"Skipping already visited symlink target: {item_path}")
-                    continue
-
-                if os.path.isfile(real_path):
-                    file_size = os.path.getsize(real_path)
-                    if stats["total_size"] + file_size > MAX_TOTAL_SIZE_BYTES:
-                        print(f"Skipping file {item_path}: would exceed total size limit")
-                        continue
-
-                    stats["total_files"] += 1
-                    stats["total_size"] += file_size
-
-                    if stats["total_files"] > MAX_FILES:
-                        print(f"Maximum file limit ({MAX_FILES}) reached")
-                        return result
-
-                    is_text = _is_text_file(real_path)
-                    content = _read_file_content(real_path) if is_text else "[Non-text file]"
-
-                    child = {
-                        "name": item,
-                        "type": "file",
-                        "size": file_size,
-                        "content": content,
-                        "path": item_path,
-                    }
-                    result["children"].append(child)
-                    result["size"] += file_size
-                    result["file_count"] += 1
-
-                elif os.path.isdir(real_path):
-                    subdir = _scan_directory(
-                        path=real_path,
-                        query=query,
-                        seen_paths=seen_paths,
-                        depth=depth + 1,
-                        stats=stats,
-                    )
-                    if subdir and (not include_patterns or subdir["file_count"] > 0):
-                        subdir["name"] = item
-                        subdir["path"] = item_path
-                        result["children"].append(subdir)
-                        result["size"] += subdir["size"]
-                        result["file_count"] += subdir["file_count"]
-                        result["dir_count"] += 1 + subdir["dir_count"]
-                continue
-
-            if os.path.isfile(item_path):
-                file_size = os.path.getsize(item_path)
-                if stats["total_size"] + file_size > MAX_TOTAL_SIZE_BYTES:
-                    print(f"Skipping file {item_path}: would exceed total size limit")
-                    continue
-
-                stats["total_files"] += 1
-                stats["total_size"] += file_size
-
-                if stats["total_files"] > MAX_FILES:
-                    print(f"Maximum file limit ({MAX_FILES}) reached")
-                    return result
-
-                is_text = _is_text_file(item_path)
-                content = _read_file_content(item_path) if is_text else "[Non-text file]"
-
-                child = {
-                    "name": item,
-                    "type": "file",
-                    "size": file_size,
-                    "content": content,
-                    "path": item_path,
-                }
-                result["children"].append(child)
-                result["size"] += file_size
-                result["file_count"] += 1
-
-            elif os.path.isdir(item_path):
-                subdir = _scan_directory(
-                    path=item_path,
-                    query=query,
-                    seen_paths=seen_paths,
-                    depth=depth + 1,
-                    stats=stats,
-                )
-                if subdir and (not include_patterns or subdir["file_count"] > 0):
-                    result["children"].append(subdir)
-                    result["size"] += subdir["size"]
-                    result["file_count"] += subdir["file_count"]
-                    result["dir_count"] += 1 + subdir["dir_count"]
-
-        result["children"] = _sort_children(result["children"])
-        return result
-
+            _process_item(
+                item=item,
+                item_path=item_path,
+                query=query,
+                result=result,
+                seen_paths=seen_paths,
+                stats=stats,
+                depth=depth,
+                ignore_patterns=ignore_patterns,
+                base_path=base_path,
+                include_patterns=include_patterns,
+            )
+    except MaxFilesReachedError:
+        print(f"Maximum file limit ({MAX_FILES}) reached.")
     except PermissionError:
-        print(f"Permission denied: {path}")
+        print(f"Permission denied: {path}.")
 
+    result["children"] = _sort_children(result["children"])
     return result
+
+
+def _process_symlink(
+    item: str,
+    item_path: str,
+    query: dict[str, Any],
+    result: dict[str, Any],
+    seen_paths: set[str],
+    stats: dict[str, int],
+    depth: int,
+    base_path: str,
+    include_patterns: list[str],
+) -> None:
+    """
+    Process a symlink in the file system.
+
+    This function checks if a symlink is safe, resolves its target, and processes it accordingly.
+    If the symlink is not safe, an exception is raised.
+
+    Parameters
+    ----------
+    item : str
+        The name of the symlink.
+    item_path : str
+        The full path of the symlink.
+    query : dict[str, Any]
+        The query dictionary containing the parameters.
+    result : dict[str, Any]
+        The dictionary to accumulate the results.
+    seen_paths : set[str]
+        A set of already visited paths.
+    stats : dict[str, int]
+        The dictionary to track statistics such as file count and size.
+    depth : int
+        The current depth in the directory traversal.
+    base_path : str
+        The base path used for validation of the symlink.
+    include_patterns : list[str]
+        A list of include patterns for file filtering.
+
+    Raises
+    ------
+    AlreadyVisitedError
+        If the symlink has already been processed.
+    MaxFileSizeReachedError
+        If the file size exceeds the maximum limit.
+    MaxFilesReachedError
+        If the number of files exceeds the maximum limit.
+    """
+    if not _is_safe_symlink(item_path, base_path):
+        raise AlreadyVisitedError(item_path)
+
+    real_path = os.path.realpath(item_path)
+    if real_path in seen_paths:
+        raise AlreadyVisitedError(item_path)
+
+    if os.path.isfile(real_path):
+        file_size = os.path.getsize(real_path)
+        if stats["total_size"] + file_size > MAX_TOTAL_SIZE_BYTES:
+            raise MaxFileSizeReachedError(MAX_TOTAL_SIZE_BYTES)
+
+        stats["total_files"] += 1
+        stats["total_size"] += file_size
+
+        if stats["total_files"] > MAX_FILES:
+            print(f"Maximum file limit ({MAX_FILES}) reached")
+            raise MaxFilesReachedError(MAX_FILES)
+
+        is_text = _is_text_file(real_path)
+
+        child = {
+            "name": item,
+            "type": "file",
+            "size": file_size,
+            "content": _read_file_content(real_path) if is_text else "[Non-text file]",
+            "path": item_path,
+        }
+        result["children"].append(child)
+        result["size"] += file_size
+        result["file_count"] += 1
+
+    elif os.path.isdir(real_path):
+        subdir = _scan_directory(
+            path=real_path,
+            query=query,
+            seen_paths=seen_paths,
+            depth=depth + 1,
+            stats=stats,
+        )
+        if subdir and (not include_patterns or subdir["file_count"] > 0):
+            subdir["name"] = item
+            subdir["path"] = item_path
+            result["children"].append(subdir)
+            result["size"] += subdir["size"]
+            result["file_count"] += subdir["file_count"]
+            result["dir_count"] += 1 + subdir["dir_count"]
+
+
+def _process_file(item: str, item_path: str, result: dict[str, Any], stats: dict[str, int]) -> None:
+    """
+    Process a file in the file system.
+
+    This function checks the file's size, increments the statistics, and reads its content.
+    If the file size exceeds the maximum allowed, it raises an error.
+
+    Parameters
+    ----------
+    item : str
+        The name of the file.
+    item_path : str
+        The full path of the file.
+    result : dict[str, Any]
+        The dictionary to accumulate the results.
+    stats : dict[str, int]
+        The dictionary to track statistics such as file count and size.
+
+    Raises
+    ------
+    MaxFileSizeReachedError
+        If the file size exceeds the maximum limit.
+    MaxFilesReachedError
+        If the number of files exceeds the maximum limit.
+    """
+    file_size = os.path.getsize(item_path)
+    if stats["total_size"] + file_size > MAX_TOTAL_SIZE_BYTES:
+        print(f"Skipping file {item_path}: would exceed total size limit")
+        raise MaxFileSizeReachedError(MAX_TOTAL_SIZE_BYTES)
+
+    stats["total_files"] += 1
+    stats["total_size"] += file_size
+
+    if stats["total_files"] > MAX_FILES:
+        print(f"Maximum file limit ({MAX_FILES}) reached")
+        raise MaxFilesReachedError(MAX_FILES)
+
+    is_text = _is_text_file(item_path)
+    content = _read_file_content(item_path) if is_text else "[Non-text file]"
+
+    child = {
+        "name": item,
+        "type": "file",
+        "size": file_size,
+        "content": content,
+        "path": item_path,
+    }
+    result["children"].append(child)
+    result["size"] += file_size
+    result["file_count"] += 1
+
+
+def _process_item(
+    item: str,
+    item_path: str,
+    query: dict[str, Any],
+    result: dict[str, Any],
+    seen_paths: set[str],
+    stats: dict[str, int],
+    depth: int,
+    ignore_patterns: list[str],
+    base_path: str,
+    include_patterns: list[str],
+) -> None:
+    """
+    Process a file or directory item within a directory.
+
+    This function handles each file or directory item, checking if it should be included or excluded based on the
+    provided patterns. It handles symlinks, directories, and files accordingly.
+
+    Parameters
+    ----------
+    item : str
+        The name of the file or directory to process.
+    item_path : str
+        The full path of the file or directory to process.
+    query : dict[str, Any]
+        A dictionary of query parameters, including the base path and patterns.
+    result : dict[str, Any]
+        The result dictionary to accumulate processed file/directory data.
+    seen_paths : set[str]
+        A set of paths that have already been visited.
+    stats : dict[str, int]
+        A dictionary of statistics like the total file count and size.
+    depth : int
+        The current depth of directory traversal.
+    ignore_patterns : list[str]
+        A list of patterns to exclude files or directories.
+    base_path : str
+        The base directory used for relative path calculations.
+    include_patterns : list[str]
+        A list of patterns to include files or directories.
+    """
+    if _should_exclude(item_path, base_path, ignore_patterns):
+        return
+
+    if (
+        os.path.isfile(item_path)
+        and query["include_patterns"]
+        and not _should_include(item_path, base_path, include_patterns)
+    ):
+        result["ignore_content"] = True
+        return
+
+    try:
+        if os.path.islink(item_path):
+            _process_symlink(
+                item=item,
+                item_path=item_path,
+                query=query,
+                result=result,
+                seen_paths=seen_paths,
+                stats=stats,
+                depth=depth,
+                base_path=base_path,
+                include_patterns=include_patterns,
+            )
+
+        if os.path.isfile(item_path):
+            _process_file(item=item, item_path=item_path, result=result, stats=stats)
+
+        elif os.path.isdir(item_path):
+            subdir = _scan_directory(path=item_path, query=query, seen_paths=seen_paths, depth=depth + 1, stats=stats)
+            if subdir and (not include_patterns or subdir["file_count"] > 0):
+                result["children"].append(subdir)
+                result["size"] += subdir["size"]
+                result["file_count"] += subdir["file_count"]
+                result["dir_count"] += 1 + subdir["dir_count"]
+
+    except (MaxFileSizeReachedError, AlreadyVisitedError) as e:
+        print(e)
 
 
 def _extract_files_content(
@@ -475,14 +614,14 @@ def _create_summary_string(query: dict[str, Any], nodes: dict[str, Any]) -> str:
     Parameters
     ----------
     query : dict[str, Any]
-        A dictionary containing query parameters like repository name, commit, branch, and subpath.
+        Dictionary containing query parameters like repository name, commit, branch, and subpath.
     nodes : dict[str, Any]
-        A dictionary representing the directory structure, including file and directory counts.
+        Dictionary representing the directory structure, including file and directory counts.
 
     Returns
     -------
     str
-        A summary string containing details such as the repository name, file count, and other query-specific information.
+        Summary string containing details such as repository name, file count, and other query-specific information.
     """
     if "user_name" in query:
         summary = f"Repository: {query['user_name']}/{query['repo_name']}\n"
@@ -514,9 +653,9 @@ def _create_tree_structure(query: dict[str, Any], node: dict[str, Any], prefix: 
         A dictionary containing query parameters like repository name and subpath.
     node : dict[str, Any]
         The current directory or file node being processed.
-    prefix : str, optional
+    prefix : str
         A string used for indentation and formatting of the tree structure, by default "".
-    is_last : bool, optional
+    is_last : bool
         A flag indicating whether the current node is the last in its directory, by default True.
 
     Returns
@@ -561,23 +700,20 @@ def _generate_token_string(context_string: str) -> str | None:
     str | None
         The formatted number of tokens as a string (e.g., '1.2k', '1.2M'), or `None` if an error occurs.
     """
-    formatted_tokens = ""
     try:
         encoding = tiktoken.get_encoding("cl100k_base")
         total_tokens = len(encoding.encode(context_string, disallowed_special=()))
-
-    except Exception as e:
+    except (ValueError, UnicodeEncodeError) as e:
         print(e)
         return None
 
     if total_tokens > 1_000_000:
-        formatted_tokens = f"{total_tokens / 1_000_000:.1f}M"
-    elif total_tokens > 1_000:
-        formatted_tokens = f"{total_tokens / 1_000:.1f}k"
-    else:
-        formatted_tokens = f"{total_tokens}"
+        return f"{total_tokens / 1_000_000:.1f}M"
 
-    return formatted_tokens
+    if total_tokens > 1_000:
+        return f"{total_tokens / 1_000:.1f}k"
+
+    return str(total_tokens)
 
 
 def _ingest_single_file(path: str, query: dict[str, Any]) -> tuple[str, str, str]:
