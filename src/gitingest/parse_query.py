@@ -6,6 +6,7 @@ from urllib.parse import unquote
 
 from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
 
+
 TMP_BASE_PATH = "../tmp"
 HEX_DIGITS = set(string.hexdigits)
 
