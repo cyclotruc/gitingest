@@ -22,9 +22,7 @@ def _should_include(path: str, base_path: str, include_patterns: list[str]) -> b
 def _should_exclude(path: str, base_path: str, ignore_patterns: list[str]) -> bool:
     rel_path = path.replace(base_path, "").lstrip(os.sep)
     for pattern in ignore_patterns:
-        if pattern == "":
-            continue
-        if fnmatch(rel_path, pattern):
+        if pattern and fnmatch(rel_path, pattern):
             return True
     return False
 
@@ -68,6 +66,7 @@ def _scan_directory(
     """Recursively analyzes a directory and its contents with safety limits."""
     if seen_paths is None:
         seen_paths = set()
+
     if stats is None:
         stats = {"total_files": 0, "total_size": 0}
 
