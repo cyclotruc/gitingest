@@ -15,6 +15,7 @@ def ingest(
     exclude_patterns: list[str] | str | None = None,
     output: str | None = None,
 ) -> tuple[str, str, str]:
+
     try:
         query = parse_query(
             source=source,
@@ -27,7 +28,7 @@ def ingest(
 
             # Extract relevant fields for CloneConfig
             clone_config = CloneConfig(
-                url=f"https://github.com/{query['slug']}.git",
+                url=query["url"],
                 local_path=query["local_path"],
                 commit=query.get("commit"),
                 branch=query.get("branch"),

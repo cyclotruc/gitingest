@@ -61,7 +61,7 @@ async def process_query(
             ignore_patterns=exclude_patterns,
         )
         clone_config = CloneConfig(
-            url=f"https://github.com/{query['slug']}.git",
+            url=query["url"],
             local_path=query["local_path"],
             commit=query.get("commit"),
             branch=query.get("branch"),

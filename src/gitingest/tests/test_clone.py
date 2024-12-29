@@ -16,6 +16,7 @@ async def test_clone_repo_with_commit() -> None:
 
     with patch("gitingest.clone.check_repo_exists", return_value=True) as mock_check:
         with patch("gitingest.clone.run_git_command", new_callable=AsyncMock) as mock_exec:
+
             mock_process = AsyncMock()
             mock_process.communicate.return_value = (b"output", b"error")
             mock_exec.return_value = mock_process

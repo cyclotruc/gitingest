@@ -61,7 +61,7 @@ def parse_url(url: str) -> dict[str, Any]:
 
     # Handle branch names with slashes and special characters
 
-    # Find the index of the first type indicator ('tree' or 'blob'), if any
+    # Find the index of the first type indicator ("tree" or "blob"), if any
     type_indicator_index = next((i for i, part in enumerate(remaining_parts) if part in ("tree", "blob")), None)
 
     if type_indicator_index is None:
