@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 from gitingest.utils import AsyncTimeoutError, async_timeout
 
-CLONE_TIMEOUT = 20
+CLONE_TIMEOUT: int = 20
 
 
 @dataclass
