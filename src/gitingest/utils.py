@@ -1,4 +1,3 @@
-## Async Timeout decorator
 import asyncio
 import functools
 from collections.abc import Awaitable, Callable
@@ -13,6 +12,7 @@ class AsyncTimeoutError(Exception):
 
 
 def async_timeout(seconds: int = 10) -> Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]]:
+    # Async Timeout decorator
     def decorator(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
         @functools.wraps(func)
         async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
