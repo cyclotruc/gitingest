@@ -14,67 +14,6 @@ class CloneConfig:
     branch: str | None = None
 
 
-async def _check_repo_exists(url: str) -> bool:
-    """
-    Check if a repository exists at the given URL using an HTTP HEAD request.
-
-    Parameters
-    ----------
-    url : str
-        The URL of the repository.
-
-    Returns
-    -------
-    bool
-        True if the repository exists, False otherwise.
-    """
-    proc = await asyncio.create_subprocess_exec(
-        "curl",
-        "-I",
-        url,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    stdout, _ = await proc.communicate()
-    if proc.returncode != 0:
-        return False
-    # Check if stdout contains "404" status code
-    stdout_str = stdout.decode()
-    return "HTTP/1.1 404" not in stdout_str and "HTTP/2 404" not in stdout_str
-
-
-async def _run_git_command(*args: str) -> tuple[bytes, bytes]:
-    """
-    Executes a git command asynchronously and captures its output.
-
-    Parameters
-    ----------
-    *args : str
-        The git command and its arguments to execute.
-
-    Returns
-    -------
-    Tuple[bytes, bytes]
-        A tuple containing the stdout and stderr of the git command.
-
-    Raises
-    ------
-    RuntimeError
-        If the git command exits with a non-zero status.
-    """
-    proc = await asyncio.create_subprocess_exec(
-        *args,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    stdout, stderr = await proc.communicate()
-    if proc.returncode != 0:
-        error_message = stderr.decode().strip()
-        raise RuntimeError(f"Git command failed: {' '.join(args)}\nError: {error_message}")
-
-    return stdout, stderr
-
-
 @async_timeout(CLONE_TIMEOUT)
 async def clone_repo(config: CloneConfig) -> tuple[bytes, bytes]:
     """
@@ -142,3 +81,64 @@ async def clone_repo(config: CloneConfig) -> tuple[bytes, bytes]:
 
     except (RuntimeError, asyncio.TimeoutError, AsyncTimeoutError):
         raise  # Re-raise the exception
+
+
+async def _check_repo_exists(url: str) -> bool:
+    """
+    Check if a repository exists at the given URL using an HTTP HEAD request.
+
+    Parameters
+    ----------
+    url : str
+        The URL of the repository.
+
+    Returns
+    -------
+    bool
+        True if the repository exists, False otherwise.
+    """
+    proc = await asyncio.create_subprocess_exec(
+        "curl",
+        "-I",
+        url,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, _ = await proc.communicate()
+    if proc.returncode != 0:
+        return False
+    # Check if stdout contains "404" status code
+    stdout_str = stdout.decode()
+    return "HTTP/1.1 404" not in stdout_str and "HTTP/2 404" not in stdout_str
+
+
+async def _run_git_command(*args: str) -> tuple[bytes, bytes]:
+    """
+    Executes a git command asynchronously and captures its output.
+
+    Parameters
+    ----------
+    *args : str
+        The git command and its arguments to execute.
+
+    Returns
+    -------
+    Tuple[bytes, bytes]
+        A tuple containing the stdout and stderr of the git command.
+
+    Raises
+    ------
+    RuntimeError
+        If the git command exits with a non-zero status.
+    """
+    proc = await asyncio.create_subprocess_exec(
+        *args,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, stderr = await proc.communicate()
+    if proc.returncode != 0:
+        error_message = stderr.decode().strip()
+        raise RuntimeError(f"Git command failed: {' '.join(args)}\nError: {error_message}")
+
+    return stdout, stderr
