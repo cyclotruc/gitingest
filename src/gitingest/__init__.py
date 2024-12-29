@@ -1,4 +1,4 @@
-from gitingest.clone import clone_repo
+from gitingest.clone import clone_repo, CloneConfig
 from gitingest.ingest import ingest
 from gitingest.ingest_from_query import ingest_from_query
 from gitingest.parse_query import parse_query

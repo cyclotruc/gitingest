@@ -20,14 +20,37 @@ def should_include(path: str, base_path: str, include_patterns: list[str]) -> bo
 
 
 def should_exclude(path: str, base_path: str, ignore_patterns: list[str]) -> bool:
+    """
+    Check if a path should be excluded based on ignore patterns.
+    Supports full directory exclusions with nested content.
+    """
     rel_path = path.replace(base_path, "").lstrip(os.sep)
+    rel_path = rel_path.replace('\\', '/')  # Normalize path separators
+
     for pattern in ignore_patterns:
         if pattern == "":
             continue
-        if fnmatch(rel_path, pattern):
-            return True
+            
+        # If pattern is a directory (ends with /), all its contents should be excluded
+        is_dir_pattern = pattern.endswith('/')
+        pattern_base = pattern.rstrip('/')
+        
+        # For directory patterns, exclude both the directory itself and all its contents
+        if is_dir_pattern:
+            # Check if path is or starts with the directory pattern
+            if rel_path == pattern_base or rel_path.startswith(f"{pattern_base}/"):
+                return True
+            # Also check parent directories
+            rel_parts = rel_path.split('/')
+            for i in range(len(rel_parts)):
+                if '/'.join(rel_parts[:i+1]) == pattern_base:
+                    return True
+        else:
+            # For file patterns, use standard fnmatch
+            if fnmatch(rel_path, pattern):
+                return True
+            
     return False
-
 
 def is_safe_symlink(symlink_path: str, base_path: str) -> bool:
     """Check if a symlink points to a location within the base directory."""
@@ -71,6 +94,29 @@ def scan_directory(
     if stats is None:
         stats = {"total_files": 0, "total_size": 0}
 
+    # Convert to absolute paths and normalize slashes, remove trailing slashes
+    path = os.path.abspath(os.path.normpath(path.rstrip('\\/')))
+    base_path = os.path.abspath(os.path.normpath(query["local_path"].rstrip('\\/')))
+    
+    # Check if path exists and is a directory
+    if not os.path.exists(path):
+        print(f"Path does not exist: {path}")
+        return None
+        
+    if not os.path.isdir(path):
+        print(f"Path is not a directory: {path}")
+        return None
+
+    # Check if path is same as or subdirectory of base_path
+    try:
+        relative = os.path.relpath(path, base_path)
+        if relative.startswith('..'):
+            print(f"Skipping path outside target directory: {path}")
+            return None
+    except ValueError:
+        print(f"Skipping path outside target directory: {path}")
+        return None
+
     if depth > MAX_DIRECTORY_DEPTH:
         print(f"Skipping deep directory: {path} (max depth {MAX_DIRECTORY_DEPTH} reached)")
         return None
@@ -102,14 +148,17 @@ def scan_directory(
     }
 
     ignore_patterns = query["ignore_patterns"]
-    base_path = query["local_path"]
     include_patterns = query["include_patterns"]
 
     try:
-        for item in os.listdir(path):
-            item_path = os.path.join(path, item)
+        items = sorted(os.listdir(path))  # Sort for consistent ordering
+        for item in items:
+            item_path = os.path.normpath(os.path.join(path, item))
+            
+            print(f"Checking path: {item_path}")  # Show what we're actually checking
 
             if should_exclude(item_path, base_path, ignore_patterns):
+                print(f"Skipping excluded path: {item_path}")
                 continue
 
             is_file = os.path.isfile(item_path)
@@ -117,22 +166,6 @@ def scan_directory(
                 if not should_include(item_path, base_path, include_patterns):
                     result["ignore_content"] = True
                     continue
-
-            # Handle symlinks
-            if os.path.islink(item_path):
-                if not is_safe_symlink(item_path, base_path):
-                    print(f"Skipping symlink that points outside base directory: {item_path}")
-                    continue
-                real_path = os.path.realpath(item_path)
-                if real_path in seen_paths:
-                    print(f"Skipping already visited symlink target: {item_path}")
-                    continue
-
-                if os.path.isfile(real_path):
-                    file_size = os.path.getsize(real_path)
-                    if stats["total_size"] + file_size > MAX_TOTAL_SIZE_BYTES:
-                        print(f"Skipping file {item_path}: would exceed total size limit")
-                        continue
 
                     stats["total_files"] += 1
                     stats["total_size"] += file_size
@@ -394,11 +427,19 @@ def ingest_directory(path: str, query: dict[str, Any]) -> tuple[str, str, str]:
 
 def ingest_from_query(query: dict[str, Any]) -> tuple[str, str, str]:
     """Main entry point for analyzing a codebase directory or single file."""
-    path = os.path.join(query["local_path"], query["subpath"].lstrip(os.sep))
-    if not os.path.exists(path) and not os.path.exists(os.path.dirname(path)):
-        raise ValueError(f"{query['subpath']} cannot be found")
-
+    # Normalize the path properly, remove trailing slashes
+    path = os.path.abspath(os.path.normpath(
+        os.path.join(query["local_path"].rstrip('\\/'), 
+                    query["subpath"].lstrip(os.sep).rstrip('\\/'))
+    ))
+    
+    if not os.path.exists(path):
+        raise ValueError(f"Path does not exist: {path}")
+    
     if query.get("type") == "blob":
         return ingest_single_file(path, query)
+
+    if not os.path.isdir(path):
+        raise ValueError(f"Path is not a directory: {path}")
 
     return ingest_directory(path, query)
