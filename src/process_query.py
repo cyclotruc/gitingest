@@ -12,6 +12,21 @@ templates = Jinja2Templates(directory="templates")
 
 
 def print_query(url: str, max_file_size: int, pattern_type: str, pattern: str) -> None:
+    """
+    Print a formatted summary of the query details, including the URL, file size,
+    and pattern information, for easier debugging or logging.
+
+    Parameters
+    ----------
+    url : str
+        The URL associated with the query.
+    max_file_size : int
+        The maximum file size allowed for the query, in bytes.
+    pattern_type : str
+        Specifies the type of pattern to use, either "include" or "exclude".
+    pattern : str
+        The actual pattern string to include or exclude in the query.
+    """
     print(f"{Colors.WHITE}{url:<20}{Colors.END}", end="")
     if int(max_file_size / 1024) != 50:
         print(f" | {Colors.YELLOW}Size: {int(max_file_size/1024)}kb{Colors.END}", end="")
@@ -22,12 +37,46 @@ def print_query(url: str, max_file_size: int, pattern_type: str, pattern: str) -
 
 
 def print_error(url: str, e: Exception, max_file_size: int, pattern_type: str, pattern: str) -> None:
+    """
+    Print a formatted error message including the URL, file size, pattern details, and the exception encountered,
+    for debugging or logging purposes.
+
+    Parameters
+    ----------
+    url : str
+        The URL associated with the query that caused the error.
+    e : Exception
+        The exception raised during the query or process.
+    max_file_size : int
+        The maximum file size allowed for the query, in bytes.
+    pattern_type : str
+        Specifies the type of pattern to use, either "include" or "exclude".
+    pattern : str
+        The actual pattern string to include or exclude in the query.
+    """
     print(f"{Colors.BROWN}WARN{Colors.END}: {Colors.RED}<-  {Colors.END}", end="")
     print_query(url, max_file_size, pattern_type, pattern)
     print(f" | {Colors.RED}{e}{Colors.END}")
 
 
 def print_success(url: str, max_file_size: int, pattern_type: str, pattern: str, summary: str) -> None:
+    """
+    Print a formatted success message, including the URL, file size, pattern details, and a summary with estimated
+    tokens, for debugging or logging purposes.
+
+    Parameters
+    ----------
+    url : str
+        The URL associated with the successful query.
+    max_file_size : int
+        The maximum file size allowed for the query, in bytes.
+    pattern_type : str
+        Specifies the type of pattern to use, either "include" or "exclude".
+    pattern : str
+        The actual pattern string to include or exclude in the query.
+    summary : str
+        A summary of the query result, including details like estimated tokens.
+    """
     estimated_tokens = summary[summary.index("Estimated tokens:") + len("Estimated ") :]
     print(f"{Colors.GREEN}INFO{Colors.END}: {Colors.GREEN}<-  {Colors.END}", end="")
     print_query(url, max_file_size, pattern_type, pattern)
@@ -42,6 +91,32 @@ async def process_query(
     pattern: str = "",
     is_index: bool = False,
 ) -> _TemplateResponse:
+    """
+    Process a query by parsing input, cloning a repository, and generating a summary.
+
+    Handle user input, process GitHub repository data, and prepare
+    a response for rendering a template with the processed results or an error message.
+
+    Parameters
+    ----------
+    request : Request
+        The HTTP request object.
+    input_text : str
+        Input text provided by the user, typically a GitHub repository URL or slug.
+    slider_position : int
+        Position of the slider, representing the maximum file size in the query.
+    pattern_type : str, optional
+        Type of pattern to use, either "include" or "exclude" (default is "exclude").
+    pattern : str, optional
+        Pattern to include or exclude in the query, depending on the pattern type.
+    is_index : bool, optional
+        Flag indicating whether the request is for the index page (default is False).
+
+    Returns
+    -------
+    _TemplateResponse
+        Rendered template response containing the processed results or an error message.
+    """
     template = "index.jinja" if is_index else "github.jinja"
     max_file_size = logSliderToSize(slider_position)
 
