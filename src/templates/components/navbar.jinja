@@ -20,27 +20,58 @@
     }
 
     fetchGitHubStars();
+
+    // Dark mode toggle functionality
+    function initDarkMode() {
+        const isDark = localStorage.getItem('darkMode') === 'true' || 
+                      (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        
+        document.documentElement.classList.toggle('dark', isDark);
+        updateDarkModeIcon(isDark);
+    }
+
+    function toggleDarkMode() {
+        const isDark = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('darkMode', isDark);
+        updateDarkModeIcon(isDark);
+    }
+
+    function updateDarkModeIcon(isDark) {
+        const moonIcon = document.getElementById('moon-icon');
+        const sunIcon = document.getElementById('sun-icon');
+        
+        if (isDark) {
+            moonIcon.classList.add('hidden');
+            sunIcon.classList.remove('hidden');
+        } else {
+            moonIcon.classList.remove('hidden');
+            sunIcon.classList.add('hidden');
+        }
+    }
+
+    // Initialize dark mode on page load
+    document.addEventListener('DOMContentLoaded', initDarkMode);
 </script>
-<header class="sticky top-0 bg-[#FFFDF8] border-b-[3px] border-gray-900 z-50">
+<header class="sticky top-0 bg-[#FFFDF8] dark:bg-gray-900 border-b-[3px] border-gray-900 dark:border-gray-400 z-50">
     <div class="max-w-4xl mx-auto px-4">
         <div class="flex justify-between items-center h-16">
             <!-- Logo -->
             <div class="flex items-center gap-4">
                 <h1 class="text-2xl font-bold tracking-tight">
                     <a href="/" class="hover:opacity-80 transition-opacity">
-                        <span class="text-gray-900">Git</span><span class="text-[#fca847]">ingest</span>
+                        <span class="text-gray-900 dark:text-white">Git</span><span class="text-[#fca847] dark:text-[#5CF1A4]">ingest</span>
                     </a>
                 </h1>
             </div>
             <!-- Navigation with updated styling -->
             <nav class="flex items-center space-x-6">
                 <a href="/api"
-                   class="text-gray-900 hover:-translate-y-0.5 transition-transform">API</a>
+                   class="text-gray-900 dark:text-white hover:-translate-y-0.5 transition-transform">API</a>
                 <div class="flex items-center gap-2">
                     <a href="https://github.com/cyclotruc/gitingest"
                        target="_blank"
                        rel="noopener noreferrer"
-                       class="text-gray-900 hover:-translate-y-0.5 transition-transform flex items-center gap-1.5">
+                       class="text-gray-900 dark:text-white hover:-translate-y-0.5 transition-transform flex items-center gap-1.5">
                         <svg class="w-4 h-4"
                              fill="currentColor"
                              viewBox="0 0 24 24"
@@ -50,7 +81,7 @@
                         </svg>
                         GitHub
                     </a>
-                    <div class="flex items-center text-sm text-gray-600">
+                    <div class="flex items-center text-sm text-gray-600 dark:text-gray-300">
                         <svg class="w-4 h-4 text-[#ffc480] mr-1"
                              fill="currentColor"
                              viewBox="0 0 20 20">
@@ -59,6 +90,18 @@
                         <span id="github-stars">0</span>
                     </div>
                 </div>
+                <button onclick="toggleDarkMode()" 
+                        class="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                        aria-label="Toggle dark mode">
+                    <!-- Moon icon -->
+                    <svg id="moon-icon" class="w-5 h-5 text-gray-900 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                    </svg>
+                    <!-- Sun icon -->
+                    <svg id="sun-icon" class="hidden w-5 h-5 text-gray-900 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                </button>
             </nav>
         </div>
     </div>

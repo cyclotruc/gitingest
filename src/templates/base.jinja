@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -51,7 +51,7 @@
         </style>
         {% block extra_head %}{% endblock %}
     </head>
-    <body class="bg-[#FFFDF8] min-h-screen flex flex-col">
+    <body class="bg-[#FFFDF8] dark:bg-gray-900 dark:text-white min-h-screen flex flex-col transition-colors duration-200">
         <canvas id="snow-canvas"></canvas>
         {% include 'components/navbar.jinja' %}
         <!-- Main content wrapper -->
