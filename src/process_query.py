@@ -1,3 +1,4 @@
+from typing import Union
 from fastapi import Request
 from fastapi.templating import Jinja2Templates
 from starlette.templating import _TemplateResponse
@@ -18,32 +19,35 @@ async def process_query(
     pattern_type: str = "exclude",
     pattern: str = "",
     is_index: bool = False,
-) -> _TemplateResponse:
+    raw_response: bool = False
+) -> Union[_TemplateResponse, tuple[str, str, str]]:
     """
-    Process a query by parsing input, cloning a repository, and generating a summary.
-
-    Handle user input, process GitHub repository data, and prepare
-    a response for rendering a template with the processed results or an error message.
+    Process query and return template response or raw data tuple.
 
     Parameters
     ----------
     request : Request
-        The HTTP request object.
+    HTTP request object
     input_text : str
-        Input text provided by the user, typically a GitHub repository URL or slug.
+    GitHub repository URL or slug
     slider_position : int
-        Position of the slider, representing the maximum file size in the query.
+    Maximum file size position (0-500)
     pattern_type : str, optional
-        Type of pattern to use, either "include" or "exclude" (default is "exclude").
+    "include" or "exclude" pattern type (default: "exclude")
     pattern : str, optional
-        Pattern to include or exclude in the query, depending on the pattern type.
-    is_index : bool, optional
-        Flag indicating whether the request is for the index page (default is False).
+    Pattern for including/excluding files
+    is_index : bool, optional 
+    Whether request is for index page (default: False)
+    raw_response : bool, optional
+    Return raw data tuple instead of template (default: False)
 
     Returns
     -------
-    _TemplateResponse
-        Rendered template response containing the processed results or an error message.
+    Union[_TemplateResponse, tuple[str, str, str]]
+    TemplateResponse:
+        Rendered HTML template with processed results, summary, and error messages
+    tuple[str, str, str]: 
+        Raw data as (summary, directory_tree, file_contents) when raw_response=True
     """
     template = "index.jinja" if is_index else "github.jinja"
     max_file_size = logSliderToSize(slider_position)
@@ -51,7 +55,7 @@ async def process_query(
     if pattern_type == "include":
         include_patterns = pattern
         exclude_patterns = None
-    elif pattern_type == "exclude":
+    else:
         exclude_patterns = pattern
         include_patterns = None
 
@@ -63,16 +67,52 @@ async def process_query(
             include_patterns=include_patterns,
             ignore_patterns=exclude_patterns,
         )
+
         clone_config = CloneConfig(
             url=query["url"],
             local_path=query["local_path"],
             commit=query.get("commit"),
             branch=query.get("branch"),
         )
+
         await clone_repo(clone_config)
         summary, tree, content = ingest_from_query(query)
+
+        if raw_response:
+            return summary, tree, content
+
         with open(f"{clone_config.local_path}.txt", "w") as f:
             f.write(tree + "\n" + content)
+
+        if not raw_response and len(content) > MAX_DISPLAY_SIZE:
+            content = (
+                f"(Files content cropped to {int(MAX_DISPLAY_SIZE / 1_000)}k characters, "
+                "download full ingest to see more)\n" + content[:MAX_DISPLAY_SIZE]
+            )
+
+        _print_success(
+            url=query["url"],
+            max_file_size=max_file_size,
+            pattern_type=pattern_type,
+            pattern=pattern,
+            summary=summary,
+        )
+        return templates.TemplateResponse(
+            template,
+            {
+                "request": request,
+                "github_url": input_text,
+                "result": True,
+                "summary": summary,
+                "tree": tree,
+                "content": contents,
+                "examples": EXAMPLE_REPOS if is_index else [],
+                "ingest_id": query["id"],
+                "default_file_size": slider_position,
+                "pattern_type": pattern_type,
+                "pattern": pattern,
+            },
+        )
 
     except Exception as e:
         # hack to print error message when query is not defined
@@ -81,6 +121,9 @@ async def process_query(
         else:
             print(f"{Colors.BROWN}WARN{Colors.END}: {Colors.RED}<-  {Colors.END}", end="")
             print(f"{Colors.RED}{e}{Colors.END}")
+            
+        if raw_response:
+            raise e
 
         return templates.TemplateResponse(
             template,
@@ -94,37 +137,6 @@ async def process_query(
                 "pattern": pattern,
             },
         )
-
-    if len(content) > MAX_DISPLAY_SIZE:
-        content = (
-            f"(Files content cropped to {int(MAX_DISPLAY_SIZE / 1_000)}k characters, "
-            "download full ingest to see more)\n" + content[:MAX_DISPLAY_SIZE]
-        )
-
-    _print_success(
-        url=query["url"],
-        max_file_size=max_file_size,
-        pattern_type=pattern_type,
-        pattern=pattern,
-        summary=summary,
-    )
-
-    return templates.TemplateResponse(
-        template,
-        {
-            "request": request,
-            "github_url": input_text,
-            "result": True,
-            "summary": summary,
-            "tree": tree,
-            "content": content,
-            "examples": EXAMPLE_REPOS if is_index else [],
-            "ingest_id": query["id"],
-            "default_file_size": slider_position,
-            "pattern_type": pattern_type,
-            "pattern": pattern,
-        },
-    )
 
 
 def _print_query(url: str, max_file_size: int, pattern_type: str, pattern: str) -> None:

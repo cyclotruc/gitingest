@@ -19,6 +19,9 @@ You can also replace `hub` with `ingest` in any github url to access the corespo
 
 - **Easy code context**: Get a text digest from a git repository URL or a directory
 - **Smart Formatting**: Optimized output format for LLM prompts
+- **Flexible Filtering**:
+  - Include/exclude files by pattern
+  - Control maximum file size
 - **Statistics about**:
   - File and directory structure
   - Size of the extract
@@ -61,6 +64,24 @@ summary, tree, content = ingest("https://github.com/cyclotruc/gitingest")
 ```
 
 By default, this won't write a file but can be enabled with the `output` argument
+
+## 🌐 Web API Usage
+
+You can access repositories directly via URL:
+
+```
+# Basic repository access
+https://gitingest.com/user/repo
+
+# With query parameters
+https://gitingest.com/extract/user/repo?max_file_size=243&pattern_type=include&pattern=*.py
+
+# Parameters:
+- max_file_size: Controls maximum file size (default: 243)
+- pattern_type: 'include' or 'exclude'
+- pattern: File pattern (e.g. "*.py" for Python files)
+- summary: Set to true to include summary and tree structure
+```
 
 ## 🛠️ Using
 

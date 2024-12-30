@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Form, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 
 from process_query import process_query
@@ -8,6 +8,41 @@ from server_utils import limiter
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
+@router.get("/extract/{full_path:path}", response_model=None)
+async def extract_content(
+    request: Request,
+    full_path: str,
+    summary: bool = False,
+) -> Response:
+    try:
+        query_params = request.query_params
+        max_file_size = int(query_params.get("max_file_size", 243))
+        pattern_type = query_params.get("pattern_type", "exclude")
+        pattern = query_params.get("pattern", "")
+
+        result_summary, tree, content = await process_query(
+            request,
+            input_text=f"https://github.com/{full_path}",
+            slider_position=max_file_size,
+            pattern_type=pattern_type,
+            pattern=pattern,
+            is_index=False,
+            raw_response=True
+        )
+        
+        response_parts = []
+        if summary:
+            response_parts.append(f"Summary:\n{result_summary}\n")
+            response_parts.append(f"Tree:\n{tree}\n")
+        response_parts.append(f"Content:\n{content}")
+        
+        return Response(content="\n".join(response_parts), media_type="text/plain")
+    except Exception as e:
+        return Response(
+            content=f"Error during extraction: {str(e)}",
+            media_type="text/plain",
+            status_code=500,
+        )
 
 @router.get("/{full_path:path}")
 async def catch_all(request: Request, full_path: str) -> HTMLResponse:
