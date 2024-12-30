@@ -88,12 +88,14 @@ async def test_check_repo_exists_with_pat() -> None:
         mock_process.returncode = 0
         mock_exec.return_value = mock_process
 
-        await check_repo_exists(url, pat)
-        
+        await _check_repo_exists(url, pat)
+
         # Verify curl command includes authorization header
         mock_exec.assert_called_with(
-            "curl", "-I",
-            "-H", f"Authorization: token {pat}",
+            "curl",
+            "-I",
+            "-H",
+            f"Authorization: token {pat}",
             url,
             stdout=-1,  # asyncio.subprocess.PIPE
             stderr=-1,  # asyncio.subprocess.PIPE
@@ -111,12 +113,14 @@ async def test_check_repo_exists_custom_git_server() -> None:
         mock_process.returncode = 0
         mock_exec.return_value = mock_process
 
-        await check_repo_exists(url, pat)
-        
+        await _check_repo_exists(url, pat)
+
         # Verify curl command uses correct API endpoint and includes authorization header
         mock_exec.assert_called_with(
-            "curl", "-I",
-            "-H", f"Authorization: token {pat}",
+            "curl",
+            "-I",
+            "-H",
+            f"Authorization: token {pat}",
             "https://git.custom.com/api/v1/repos/user/repo",
             stdout=-1,  # asyncio.subprocess.PIPE
             stderr=-1,  # asyncio.subprocess.PIPE
@@ -130,22 +134,21 @@ async def test_clone_repo_with_pat() -> None:
         local_path="/tmp/repo",
         commit=None,
         branch="main",
-        pat="test_token_123"
+        pat="test_token_123",
     )
 
-    with patch("gitingest.clone.check_repo_exists", return_value=True) as mock_check:
-        with patch("gitingest.clone.run_git_command", new_callable=AsyncMock) as mock_exec:
+    with patch("gitingest.clone._check_repo_exists", return_value=True) as mock_check:
+        with patch("gitingest.clone._run_git_command", new_callable=AsyncMock) as mock_exec:
             mock_process = AsyncMock()
             mock_process.communicate.return_value = (b"output", b"error")
             mock_exec.return_value = mock_process
 
             await clone_repo(clone_config)
             mock_check.assert_called_once_with(clone_config.url, clone_config.pat)
-            
+
             # Verify git clone command includes PAT in URL
             expected_url = clone_config.url.replace("https://", f"https://oauth2:{clone_config.pat}@")
             # Check that the command was called with the correct arguments
             mock_exec.assert_called_with(
-                "git", "clone", "--depth=1", "--single-branch",
-                expected_url, clone_config.local_path
+                "git", "clone", "--depth=1", "--single-branch", expected_url, clone_config.local_path
             )
