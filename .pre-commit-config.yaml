@@ -76,3 +76,10 @@ repos:
     rev: v1.36.4
     hooks:
       - id: djlint-reformat-jinja
+
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.43.0
+    hooks:
+      - id: markdownlint
+        description: "Lint markdown files."
+        args: ["--disable=line-length"]

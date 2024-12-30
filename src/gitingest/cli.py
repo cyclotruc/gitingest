@@ -1,17 +1,7 @@
-import os
-
 import click
 
 from gitingest.ingest import ingest
 from gitingest.ingest_from_query import MAX_FILE_SIZE
-
-
-def normalize_pattern(pattern: str) -> str:
-    pattern = pattern.strip()
-    pattern = pattern.lstrip(os.sep)
-    if pattern.endswith(os.sep):
-        pattern += "*"
-    return pattern
 
 
 @click.command()

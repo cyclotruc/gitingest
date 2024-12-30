@@ -1,32 +1,13 @@
-[![Image](./docs/frontpage.png "GitIngest main page")](https://gitingest.com)
-
-<!-- License -->
-<a href="https://github.com/cyclotruc/gitingest/blob/main/LICENSE">
-  <img alt="License" src="https://img.shields.io/badge/license-MIT-blue.svg" />
-</a>
-<!-- PyPI version -->
-<a href="https://badge.fury.io/py/gitingest">
-  <img src="https://badge.fury.io/py/gitingest.svg" alt="PyPI version" />
-</a>
-<!-- Downloads -->
-<a href="https://pepy.tech/project/gitingest">
-  <img src="https://pepy.tech/badge/gitingest" alt="Downloads" />
-</a>
-<!-- GitHub issues -->
-<a href="https://github.com/cyclotruc/gitingest/issues">
-  <img src="https://img.shields.io/github/issues/cyclotruc/gitingest" alt="GitHub issues" />
-</a>
-<!-- Black code style -->
-<a href="https://github.com/psf/black">
-  <img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg" />
-</a>
-
-<!-- Discord -->
-<a href="https://discord.com/invite/zerRaGK9EC">
-  <img src="https://dcbadge.limes.pink/api/server/https://discord.com/invite/zerRaGK9EC" alt="Discord" />
-</a>
-
 # GitIngest
+
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/cyclotruc/gitingest/blob/main/LICENSE)
+[![PyPI version](https://badge.fury.io/py/gitingest.svg)](https://badge.fury.io/py/gitingest)
+[![Downloads](https://pepy.tech/badge/gitingest)](https://pepy.tech/project/gitingest)
+[![GitHub issues](https://img.shields.io/github/issues/cyclotruc/gitingest)](https://github.com/cyclotruc/gitingest/issues)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Discord](https://dcbadge.limes.pink/api/server/https://discord.com/invite/zerRaGK9EC)](https://discord.com/invite/zerRaGK9EC)
+
+[![Image](./docs/frontpage.png "GitIngest main page")](https://gitingest.com)
 
 Turn any Git repository into a prompt-friendly text ingest for LLMs.
 
@@ -92,15 +73,15 @@ By default, this won't write a file but can be enabled with the `output` argumen
 
 1. Build the image:
 
-``` bash
-docker build -t gitingest .
-```
+   ``` bash
+   docker build -t gitingest .
+   ```
 
 2. Run the container:
 
-``` bash
-docker run -d --name gitingest -p 8000:8000 gitingest
-```
+   ``` bash
+   docker run -d --name gitingest -p 8000:8000 gitingest
+   ```
 
 The application will be available at `http://localhost:8000`
 Ensure environment variables are set before running the application or deploying it via Docker.
@@ -135,22 +116,20 @@ ALLOWED_HOSTS="gitingest.local,localhost"
 
 1. Clone the repository
 
-```bash
-git clone https://github.com/cyclotruc/gitingest.git
-cd gitingest
-```
+   ```bash
+   git clone https://github.com/cyclotruc/gitingest.git
+   cd gitingest
+   ```
 
 2. Install dependencies
 
-```bash
-pip install -r requirements.txt
-```
+   ```bash
+   pip install -r requirements.txt
+   ```
 
 3. Run the application:
 
-```bash
-cd src
-uvicorn main:app --reload
-```
-
-The frontend will be available at `localhost:8000`
+   ```bash
+   cd src
+   uvicorn main:app --reload
+   ```

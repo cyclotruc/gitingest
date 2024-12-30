@@ -1,4 +1,5 @@
 import os
+import re
 import string
 import uuid
 from typing import Any
@@ -6,11 +7,11 @@ from urllib.parse import unquote
 
 from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
 
-TMP_BASE_PATH = "../tmp"
+TMP_BASE_PATH: str = "../tmp"
 HEX_DIGITS = set(string.hexdigits)
 
 
-def parse_url(url: str) -> dict[str, Any]:
+def _parse_url(url: str) -> dict[str, Any]:
     url = url.split(" ")[0]
     url = unquote(url)  # Decode URL-encoded characters
 
@@ -69,28 +70,56 @@ def _is_valid_git_commit_hash(commit: str) -> bool:
     return len(commit) == 40 and all(c in HEX_DIGITS for c in commit)
 
 
-def normalize_pattern(pattern: str) -> str:
+def _normalize_pattern(pattern: str) -> str:
     pattern = pattern.lstrip(os.sep)
     if pattern.endswith(os.sep):
         pattern += "*"
     return pattern
 
 
-def parse_patterns(pattern: list[str] | str) -> list[str]:
-    patterns = pattern if isinstance(pattern, list) else [pattern]
-    patterns = [p.strip() for p in patterns]
+def _parse_patterns(pattern: list[str] | str) -> list[str]:
+    """
+    Parse and validate file/directory patterns for inclusion or exclusion.
 
+    Takes either a single pattern string or list of pattern strings and processes them into a normalized list.
+    Patterns are split on commas and spaces, validated for allowed characters, and normalized.
+
+    Parameters
+    ----------
+    pattern : list[str] | str
+        Pattern(s) to parse - either a single string or list of strings
+
+    Returns
+    -------
+    list[str]
+        List of normalized pattern strings
+
+    Raises
+    ------
+    ValueError
+        If any pattern contains invalid characters. Only alphanumeric characters,
+        dash (-), underscore (_), dot (.), forward slash (/), plus (+), and
+        asterisk (*) are allowed.
+    """
+    patterns = pattern if isinstance(pattern, list) else [pattern]
+
+    parsed_patterns = []
     for p in patterns:
+        parsed_patterns.extend(re.split(",| ", p))
+
+    parsed_patterns = [p for p in parsed_patterns if p != ""]
+
+    for p in parsed_patterns:
         if not all(c.isalnum() or c in "-_./+*" for c in p):
             raise ValueError(
                 f"Pattern '{p}' contains invalid characters. Only alphanumeric characters, dash (-), "
                 "underscore (_), dot (.), forward slash (/), plus (+), and asterisk (*) are allowed."
             )
 
-    return [normalize_pattern(p) for p in patterns]
+    return [_normalize_pattern(p) for p in parsed_patterns]
 
 
-def override_ignore_patterns(ignore_patterns: list[str], include_patterns: list[str]) -> list[str]:
+def _override_ignore_patterns(ignore_patterns: list[str], include_patterns: list[str]) -> list[str]:
     """
     Removes patterns from ignore_patterns that are present in include_patterns using set difference.
 
@@ -109,7 +138,7 @@ def override_ignore_patterns(ignore_patterns: list[str], include_patterns: list[
     return list(set(ignore_patterns) - set(include_patterns))
 
 
-def parse_path(path: str) -> dict[str, Any]:
+def _parse_path(path: str) -> dict[str, Any]:
     query = {
         "url": None,
         "local_path": os.path.abspath(path),
@@ -151,19 +180,19 @@ def parse_query(
     """
     # Determine the parsing method based on the source type
     if from_web or source.startswith("https://") or "github.com" in source:
-        query = parse_url(source)
+        query = _parse_url(source)
     else:
-        query = parse_path(source)
+        query = _parse_path(source)
 
     # Process ignore patterns
     ignore_patterns_list = DEFAULT_IGNORE_PATTERNS.copy()
     if ignore_patterns:
-        ignore_patterns_list += parse_patterns(ignore_patterns)
+        ignore_patterns_list += _parse_patterns(ignore_patterns)
 
     # Process include patterns and override ignore patterns accordingly
     if include_patterns:
-        parsed_include = parse_patterns(include_patterns)
-        ignore_patterns_list = override_ignore_patterns(ignore_patterns_list, include_patterns=parsed_include)
+        parsed_include = _parse_patterns(include_patterns)
+        ignore_patterns_list = _override_ignore_patterns(ignore_patterns_list, include_patterns=parsed_include)
     else:
         parsed_include = None
 

@@ -1,7 +1,7 @@
 import pytest
 
 from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
-from gitingest.parse_query import parse_query, parse_url
+from gitingest.parse_query import _parse_url, parse_query
 
 
 def test_parse_url_valid() -> None:
@@ -11,7 +11,7 @@ def test_parse_url_valid() -> None:
         "https://bitbucket.org/user/repo",
     ]
     for url in test_cases:
-        result = parse_url(url)
+        result = _parse_url(url)
         assert result["user_name"] == "user"
         assert result["repo_name"] == "repo"
         assert result["url"] == url
@@ -20,7 +20,7 @@ def test_parse_url_valid() -> None:
 def test_parse_url_invalid() -> None:
     url = "https://only-domain.com"
     with pytest.raises(ValueError, match="Invalid repository URL"):
-        parse_url(url)
+        _parse_url(url)
 
 
 def test_parse_query_basic() -> None:
