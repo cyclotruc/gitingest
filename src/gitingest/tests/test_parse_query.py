@@ -104,7 +104,7 @@ def test_parse_query_include_and_ignore_overlap() -> None:
 def test_parse_query_local_path() -> None:
     path = "/home/user/project"
     result = parse_query(path, max_file_size=100, from_web=False)
-    assert result["local_path"] == "C:\\home\\user\\project"
+    assert result["local_path"] == "/home/user/project"
     assert result["id"] is not None
     assert result["slug"] == "user/project"
 
