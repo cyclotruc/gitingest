@@ -1,4 +1,5 @@
 import os
+import re
 import string
 import uuid
 from typing import Any
@@ -77,17 +78,45 @@ def _normalize_pattern(pattern: str) -> str:
 
 
 def _parse_patterns(pattern: list[str] | str) -> list[str]:
-    patterns = pattern if isinstance(pattern, list) else [pattern]
-    patterns = [p.strip() for p in patterns]
+    """
+    Parse and validate file/directory patterns for inclusion or exclusion.
 
+    Takes either a single pattern string or list of pattern strings and processes them into a normalized list.
+    Patterns are split on commas and spaces, validated for allowed characters, and normalized.
+
+    Parameters
+    ----------
+    pattern : list[str] | str
+        Pattern(s) to parse - either a single string or list of strings
+
+    Returns
+    -------
+    list[str]
+        List of normalized pattern strings
+
+    Raises
+    ------
+    ValueError
+        If any pattern contains invalid characters. Only alphanumeric characters,
+        dash (-), underscore (_), dot (.), forward slash (/), plus (+), and
+        asterisk (*) are allowed.
+    """
+    patterns = pattern if isinstance(pattern, list) else [pattern]
+
+    parsed_patterns = []
     for p in patterns:
+        parsed_patterns.extend(re.split(",| ", p))
+
+    parsed_patterns = [p for p in parsed_patterns if p != ""]
+
+    for p in parsed_patterns:
         if not all(c.isalnum() or c in "-_./+*" for c in p):
             raise ValueError(
                 f"Pattern '{p}' contains invalid characters. Only alphanumeric characters, dash (-), "
                 "underscore (_), dot (.), forward slash (/), plus (+), and asterisk (*) are allowed."
             )
 
-    return [_normalize_pattern(p) for p in patterns]
+    return [_normalize_pattern(p) for p in parsed_patterns]
 
 
 def _override_ignore_patterns(ignore_patterns: list[str], include_patterns: list[str]) -> list[str]:
