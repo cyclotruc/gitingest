@@ -12,6 +12,23 @@ templates = Jinja2Templates(directory="templates")
 
 @router.get("/", response_class=HTMLResponse)
 async def home(request: Request) -> HTMLResponse:
+    """
+    Renders the home page with example repositories and default parameters.
+
+    This endpoint serves the home page of the application, rendering the `index.jinja` template
+    and providing it with a list of example repositories and default file size values.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming request object, which provides context for rendering the response.
+
+    Returns
+    -------
+    HTMLResponse
+        An HTML response containing the rendered home page template, with example repositories
+        and other default parameters such as file size.
+    """
     return templates.TemplateResponse(
         "index.jinja",
         {
@@ -31,6 +48,32 @@ async def index_post(
     pattern_type: str = Form(...),
     pattern: str = Form(...),
 ) -> HTMLResponse:
+    """
+    Processes the form submission with user input for query parameters.
+
+    This endpoint handles POST requests from the home page form. It processes the user-submitted
+    input (e.g., text, file size, pattern type) and invokes the `process_query` function to handle
+    the query logic, returning the result as an HTML response.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming request object, which provides context for rendering the response.
+    input_text : str, optional
+        The input text provided by the user for processing, by default taken from the form.
+    max_file_size : int, optional
+        The maximum allowed file size for the input, specified by the user.
+    pattern_type : str, optional
+        The type of pattern used for the query, specified by the user.
+    pattern : str, optional
+        The pattern string used in the query, specified by the user.
+
+    Returns
+    -------
+    HTMLResponse
+        An HTML response containing the results of processing the form input and query logic,
+        which will be rendered and returned to the user.
+    """
     return await process_query(
         request,
         input_text,

@@ -15,7 +15,39 @@ def ingest(
     exclude_patterns: list[str] | str | None = None,
     output: str | None = None,
 ) -> tuple[str, str, str]:
+    """
+    Main entry point for ingesting a source and processing its contents.
 
+    This function analyzes a source (URL or local path), clones the corresponding repository (if applicable),
+    and processes its files according to the specified query parameters. It returns a summary, a tree-like
+    structure of the files, and the content of the files. The results can optionally be written to an output file.
+
+    Parameters
+    ----------
+    source : str
+        The source to analyze, which can be a URL (for a GitHub repository) or a local directory path.
+    max_file_size : int, optional
+        The maximum allowed file size for file ingestion. Files larger than this size are ignored, by default 10*1024*1024 (10 MB).
+    include_patterns : list[str] | str | None, optional
+        A pattern or list of patterns specifying which files to include in the analysis. If `None`, all files are included.
+    exclude_patterns : list[str] | str | None, optional
+        A pattern or list of patterns specifying which files to exclude from the analysis. If `None`, no files are excluded.
+    output : str | None, optional
+        The file path where the summary and content should be written. If `None`, the results are not written to a file.
+
+    Returns
+    -------
+    tuple[str, str, str]
+        A tuple containing:
+        - A summary string of the analyzed repository or directory.
+        - A tree-like string representation of the file structure.
+        - The content of the files in the repository or directory.
+
+    Raises
+    ------
+    TypeError
+        If `clone_repo` does not return a coroutine, or if the `source` is of an unsupported type.
+    """
     try:
         query = parse_query(
             source=source,
@@ -42,8 +74,8 @@ def ingest(
 
         summary, tree, content = ingest_from_query(query)
 
-        if output:
-            with open(f"{output}", "w") as f:
+        if output is not None:
+            with open(output, "w") as f:
                 f.write(tree + "\n" + content)
 
         return summary, tree, content

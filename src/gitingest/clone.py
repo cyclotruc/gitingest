@@ -1,13 +1,32 @@
 import asyncio
 from dataclasses import dataclass
 
-from gitingest.utils import AsyncTimeoutError, async_timeout
+from gitingest.exceptions import AsyncTimeoutError
+from gitingest.utils import async_timeout
 
 CLONE_TIMEOUT: int = 20
 
 
 @dataclass
 class CloneConfig:
+    """
+    Configuration for cloning a Git repository.
+
+    This class holds the necessary parameters for cloning a repository to a local path, including
+    the repository's URL, the target local path, and optional parameters for a specific commit or branch.
+
+    Attributes
+    ----------
+    url : str
+        The URL of the Git repository to clone.
+    local_path : str
+        The local directory where the repository will be cloned.
+    commit : str | None, optional
+        The specific commit hash to check out after cloning (default is None).
+    branch : str | None, optional
+        The branch to clone (default is None).
+    """
+
     url: str
     local_path: str
     commit: str | None = None
@@ -17,7 +36,11 @@ class CloneConfig:
 @async_timeout(CLONE_TIMEOUT)
 async def clone_repo(config: CloneConfig) -> tuple[bytes, bytes]:
     """
-    Clones a repository to a local path based on the provided query parameters.
+    Clones a repository to a local path based on the provided configuration.
+
+    This function handles the process of cloning a Git repository to the local file system.
+    It can clone a specific branch or commit if provided, and it raises exceptions if
+    any errors occur during the cloning process.
 
     Parameters
     ----------
@@ -30,7 +53,7 @@ async def clone_repo(config: CloneConfig) -> tuple[bytes, bytes]:
 
     Returns
     -------
-    Tuple[bytes, bytes]
+    tuple[bytes, bytes]
         A tuple containing the stdout and stderr of the git commands executed.
 
     Raises
@@ -123,7 +146,7 @@ async def _run_git_command(*args: str) -> tuple[bytes, bytes]:
 
     Returns
     -------
-    Tuple[bytes, bytes]
+    tuple[bytes, bytes]
         A tuple containing the stdout and stderr of the git command.
 
     Raises

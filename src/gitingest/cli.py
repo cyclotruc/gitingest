@@ -17,7 +17,32 @@ def main(
     exclude_pattern: tuple[str, ...],
     include_pattern: tuple[str, ...],
 ) -> None:
-    """Analyze a directory and create a text dump of its contents."""
+    """
+    Analyze a directory or repository and create a text dump of its contents.
+
+    This command analyzes the contents of a specified source directory or repository,
+    applies custom include and exclude patterns, and generates a text summary of the analysis
+    which is then written to an output file.
+
+    Parameters
+    ----------
+    source : str
+        The source directory or repository to analyze.
+    output : str | None
+        The path where the output file will be written. If not specified, the output will be written
+        to a file named `<repo_name>.txt` in the current directory.
+    max_size : int
+        The maximum file size to process, in bytes. Files larger than this size will be ignored.
+    exclude_pattern : tuple[str, ...]
+        A tuple of patterns to exclude during the analysis. Files matching these patterns will be ignored.
+    include_pattern : tuple[str, ...]
+        A tuple of patterns to include during the analysis. Only files matching these patterns will be processed.
+
+    Raises
+    ------
+    click.Abort
+        If there is an error during the execution of the command, this exception is raised to abort the process.
+    """
     try:
         # Combine default and custom ignore patterns
         exclude_patterns = list(exclude_pattern)

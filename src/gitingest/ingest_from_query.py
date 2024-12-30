@@ -11,6 +11,27 @@ MAX_TOTAL_SIZE_BYTES = 500 * 1024 * 1024  # 500 MB
 
 
 def _should_include(path: str, base_path: str, include_patterns: list[str]) -> bool:
+    """
+    Determines if the given file or directory path matches any of the include patterns.
+
+    This function checks whether the relative path of a file or directory matches
+    any of the specified patterns. If a match is found, it returns `True`, indicating
+    that the file or directory should be included in further processing.
+
+    Parameters
+    ----------
+    path : str
+        The absolute path of the file or directory to check.
+    base_path : str
+        The base directory from which the relative path is calculated.
+    include_patterns : list[str]
+        A list of patterns to check against the relative path.
+
+    Returns
+    -------
+    bool
+        `True` if the path matches any of the include patterns, `False` otherwise.
+    """
     rel_path = path.replace(base_path, "").lstrip(os.sep)
     include = False
     for pattern in include_patterns:
@@ -20,6 +41,27 @@ def _should_include(path: str, base_path: str, include_patterns: list[str]) -> b
 
 
 def _should_exclude(path: str, base_path: str, ignore_patterns: list[str]) -> bool:
+    """
+    Determines if the given file or directory path matches any of the ignore patterns.
+
+    This function checks whether the relative path of a file or directory matches
+    any of the specified ignore patterns. If a match is found, it returns `True`, indicating
+    that the file or directory should be excluded from further processing.
+
+    Parameters
+    ----------
+    path : str
+        The absolute path of the file or directory to check.
+    base_path : str
+        The base directory from which the relative path is calculated.
+    ignore_patterns : list[str]
+        A list of patterns to check against the relative path.
+
+    Returns
+    -------
+    bool
+        `True` if the path matches any of the ignore patterns, `False` otherwise.
+    """
     rel_path = path.replace(base_path, "").lstrip(os.sep)
     for pattern in ignore_patterns:
         if pattern and fnmatch(rel_path, pattern):
@@ -28,7 +70,25 @@ def _should_exclude(path: str, base_path: str, ignore_patterns: list[str]) -> bo
 
 
 def _is_safe_symlink(symlink_path: str, base_path: str) -> bool:
-    """Check if a symlink points to a location within the base directory."""
+    """
+    Check if a symlink points to a location within the base directory.
+
+    This function resolves the target of a symlink and ensures it is within the specified
+    base directory, returning `True` if it is safe, or `False` if the symlink points outside
+    the base directory.
+
+    Parameters
+    ----------
+    symlink_path : str
+        The path of the symlink to check.
+    base_path : str
+        The base directory to ensure the symlink points within.
+
+    Returns
+    -------
+    bool
+        `True` if the symlink points within the base directory, `False` otherwise.
+    """
     try:
         target_path = os.path.realpath(symlink_path)
         base_path = os.path.realpath(base_path)
@@ -39,7 +99,23 @@ def _is_safe_symlink(symlink_path: str, base_path: str) -> bool:
 
 
 def _is_text_file(file_path: str) -> bool:
-    """Determines if a file is likely a text file based on its content."""
+    """
+    Determine if a file is likely a text file based on its content.
+
+    This function attempts to read the first 1024 bytes of a file and checks for the presence
+    of non-text characters. It returns `True` if the file is determined to be a text file,
+    otherwise returns `False`.
+
+    Parameters
+    ----------
+    file_path : str
+        The path to the file to check.
+
+    Returns
+    -------
+    bool
+        `True` if the file is likely a text file, `False` otherwise.
+    """
     try:
         with open(file_path, "rb") as file:
             chunk = file.read(1024)
@@ -49,6 +125,23 @@ def _is_text_file(file_path: str) -> bool:
 
 
 def _read_file_content(file_path: str) -> str:
+    """
+    Reads the content of a file.
+
+    This function attempts to open a file and read its contents using UTF-8 encoding.
+    If an error occurs during reading (e.g., file is not found or permission error),
+    it returns an error message.
+
+    Parameters
+    ----------
+    file_path : str
+        The path to the file to read.
+
+    Returns
+    -------
+    str
+        The content of the file, or an error message if the file could not be read.
+    """
     try:
         with open(file_path, encoding="utf-8", errors="ignore") as f:
             return f.read()
@@ -63,7 +156,31 @@ def _scan_directory(
     depth: int = 0,
     stats: dict[str, int] | None = None,
 ) -> dict[str, Any] | None:
-    """Recursively analyzes a directory and its contents with safety limits."""
+    """
+    Recursively analyze a directory and its contents with safety limits.
+
+    This function scans a directory and its subdirectories up to a specified depth. It checks
+    for any file or directory that should be included or excluded based on the provided patterns
+    and limits. It also tracks the number of files and total size processed.
+
+    Parameters
+    ----------
+    path : str
+        The path of the directory to scan.
+    query : dict[str, Any]
+        A dictionary containing the query parameters, such as include and ignore patterns.
+    seen_paths : set[str] | None, optional
+        A set to track already visited paths, by default None.
+    depth : int, optional
+        The current depth of directory traversal, by default 0.
+    stats : dict[str, int] | None, optional
+        A dictionary to track statistics such as total file count and size, by default None.
+
+    Returns
+    -------
+    dict[str, Any] | None
+        A dictionary representing the directory structure and contents, or `None` if limits are reached.
+    """
     if seen_paths is None:
         seen_paths = set()
 
@@ -224,7 +341,28 @@ def _extract_files_content(
     max_file_size: int,
     files: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
-    """Recursively collects all text files with their contents."""
+    """
+    Recursively collect all text files with their contents.
+
+    This function traverses the directory tree and extracts the contents of all text files
+    into a list, ignoring non-text files or files that exceed the specified size limit.
+
+    Parameters
+    ----------
+    query : dict[str, Any]
+        A dictionary containing the query parameters, including the base path of the repository.
+    node : dict[str, Any]
+        The current directory or file node being processed.
+    max_file_size : int
+        The maximum file size in bytes for which content should be extracted.
+    files : list[dict[str, Any]] | None, optional
+        A list to collect the extracted files' information, by default None.
+
+    Returns
+    -------
+    list[dict[str, Any]]
+        A list of dictionaries, each containing the path, content (or `None` if too large), and size of each file.
+    """
     if files is None:
         files = []
 
@@ -248,7 +386,22 @@ def _extract_files_content(
 
 
 def _create_file_content_string(files: list[dict[str, Any]]) -> str:
-    """Creates a formatted string of file contents with separators."""
+    """
+    Create a formatted string of file contents with separators.
+
+    This function takes a list of files and generates a formatted string where each file’s
+    content is separated by a divider. If a README.md file is found, it is placed at the top.
+
+    Parameters
+    ----------
+    files : list[dict[str, Any]]
+        A list of dictionaries containing file information, including the path and content.
+
+    Returns
+    -------
+    str
+        A formatted string representing the contents of all the files with appropriate separators.
+    """
     output = ""
     separator = "=" * 48 + "\n"
 
@@ -278,7 +431,24 @@ def _create_file_content_string(files: list[dict[str, Any]]) -> str:
 
 
 def _create_summary_string(query: dict[str, Any], nodes: dict[str, Any]) -> str:
-    """Creates a summary string with file counts and content size."""
+    """
+    Create a summary string with file counts and content size.
+
+    This function generates a summary of the repository's contents, including the number
+    of files analyzed, the total content size, and other relevant details based on the query parameters.
+
+    Parameters
+    ----------
+    query : dict[str, Any]
+        A dictionary containing query parameters like repository name, commit, branch, and subpath.
+    nodes : dict[str, Any]
+        A dictionary representing the directory structure, including file and directory counts.
+
+    Returns
+    -------
+    str
+        A summary string containing details such as the repository name, file count, and other query-specific information.
+    """
     if "user_name" in query:
         summary = f"Repository: {query['user_name']}/{query['repo_name']}\n"
     else:
@@ -297,7 +467,28 @@ def _create_summary_string(query: dict[str, Any], nodes: dict[str, Any]) -> str:
 
 
 def _create_tree_structure(query: dict[str, Any], node: dict[str, Any], prefix: str = "", is_last: bool = True) -> str:
-    """Creates a tree-like string representation of the file structure."""
+    """
+    Create a tree-like string representation of the file structure.
+
+    This function generates a string representation of the directory structure, formatted
+    as a tree with appropriate indentation for nested directories and files.
+
+    Parameters
+    ----------
+    query : dict[str, Any]
+        A dictionary containing query parameters like repository name and subpath.
+    node : dict[str, Any]
+        The current directory or file node being processed.
+    prefix : str, optional
+        A string used for indentation and formatting of the tree structure, by default "".
+    is_last : bool, optional
+        A flag indicating whether the current node is the last in its directory, by default True.
+
+    Returns
+    -------
+    str
+        A string representing the directory structure formatted as a tree.
+    """
     tree = ""
 
     if not node["name"]:
@@ -319,7 +510,22 @@ def _create_tree_structure(query: dict[str, Any], node: dict[str, Any], prefix: 
 
 
 def _generate_token_string(context_string: str) -> str | None:
-    """Returns the number of tokens in a text string."""
+    """
+    Return the number of tokens in a text string.
+
+    This function estimates the number of tokens in a given text string using the `tiktoken`
+    library. It returns the number of tokens in a human-readable format (e.g., '1.2k', '1.2M').
+
+    Parameters
+    ----------
+    context_string : str
+        The text string for which the token count is to be estimated.
+
+    Returns
+    -------
+    str | None
+        The formatted number of tokens as a string (e.g., '1.2k', '1.2M'), or `None` if an error occurs.
+    """
     formatted_tokens = ""
     try:
         encoding = tiktoken.get_encoding("cl100k_base")
@@ -340,6 +546,29 @@ def _generate_token_string(context_string: str) -> str | None:
 
 
 def _ingest_single_file(path: str, query: dict[str, Any]) -> tuple[str, str, str]:
+    """
+    Ingest a single file and return its summary, directory structure, and content.
+
+    This function reads a file, generates a summary of its contents, and returns the content
+    along with its directory structure and token estimation.
+
+    Parameters
+    ----------
+    path : str
+        The path of the file to ingest.
+    query : dict[str, Any]
+        A dictionary containing query parameters, such as the maximum file size.
+
+    Returns
+    -------
+    tuple[str, str, str]
+        A tuple containing the summary, directory structure, and file content.
+
+    Raises
+    ------
+    ValueError
+        If the specified path is not a file or if the file is not a text file.
+    """
     if not os.path.isfile(path):
         raise ValueError(f"Path {path} is not a file")
 
@@ -376,6 +605,29 @@ def _ingest_single_file(path: str, query: dict[str, Any]) -> tuple[str, str, str
 
 
 def _ingest_directory(path: str, query: dict[str, Any]) -> tuple[str, str, str]:
+    """
+    Ingest an entire directory and return its summary, directory structure, and file contents.
+
+    This function processes a directory, extracts its contents, and generates a summary,
+    directory structure, and file content. It recursively processes subdirectories as well.
+
+    Parameters
+    ----------
+    path : str
+        The path of the directory to ingest.
+    query : dict[str, Any]
+        A dictionary containing query parameters, including maximum file size.
+
+    Returns
+    -------
+    tuple[str, str, str]
+        A tuple containing the summary, directory structure, and file contents.
+
+    Raises
+    ------
+    ValueError
+        If no files are found in the directory.
+    """
     nodes = _scan_directory(path=path, query=query)
     if not nodes:
         raise ValueError(f"No files found in {path}")
@@ -392,7 +644,27 @@ def _ingest_directory(path: str, query: dict[str, Any]) -> tuple[str, str, str]:
 
 
 def ingest_from_query(query: dict[str, Any]) -> tuple[str, str, str]:
-    """Main entry point for analyzing a codebase directory or single file."""
+    """
+    Main entry point for analyzing a codebase directory or single file.
+
+    This function processes a file or directory based on the provided query, extracting its contents
+    and generating a summary, directory structure, and file content, along with token estimations.
+
+    Parameters
+    ----------
+    query : dict[str, Any]
+        A dictionary containing parameters like local path, subpath, file type, etc.
+
+    Returns
+    -------
+    tuple[str, str, str]
+        A tuple containing the summary, directory structure, and file contents.
+
+    Raises
+    ------
+    ValueError
+        If the specified path cannot be found or if the file is not a text file.
+    """
     path = f"{query['local_path']}{query['subpath']}"
     if not os.path.exists(path):
         raise ValueError(f"{query['slug']} cannot be found")
