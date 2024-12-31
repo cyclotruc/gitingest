@@ -1,21 +1,36 @@
-## Rate Limiter
+import math
+
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+
+# Initialize a rate limiter
 limiter = Limiter(key_func=get_remote_address)
 
-## Logarithmic slider to file size
-import math
-def logSliderToSize(position):
-    """Convert slider position to file size in KB"""
+
+def logSliderToSize(position: int) -> int:
+    """
+    Convert a slider position to a file size in bytes using a logarithmic scale.
+
+    Parameters
+    ----------
+    position : int
+        Slider position ranging from 0 to 500.
+
+    Returns
+    -------
+    int
+        File size in bytes corresponding to the slider position.
+    """
     maxp = 500
     minv = math.log(1)
-    maxv = math.log(102400)
-    
+    maxv = math.log(102_400)
     return round(math.exp(minv + (maxv - minv) * pow(position / maxp, 1.5))) * 1024
+
 
 ## Color printing utility
 class Colors:
     """ANSI color codes"""
+
     BLACK = "\033[0;30m"
     RED = "\033[0;31m"
     GREEN = "\033[0;32m"

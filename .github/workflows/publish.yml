@@ -1,0 +1,41 @@
+name: Publish to PyPI
+
+on:
+  release:
+    types: [created] # Trigger only when a release is created
+  workflow_dispatch: # Allows manual triggering of the workflow
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.13
+
+      # Step 3: Install dependencies for building and publishing
+      - name: Install build tools
+        run: |
+          pip install --upgrade pip
+          pip install build twine
+
+      # Step 4: Build the package
+      - name: Build the package
+        run: |
+          python -m build
+
+      # Step 5: Publish to PyPI
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        run: |
+          python -m twine check dist/*
+          python -m twine upload --skip-existing dist/*

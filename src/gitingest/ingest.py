@@ -1,28 +1,88 @@
 import asyncio
+import inspect
 import shutil
-from typing import Union, List
 from pathlib import Path
 
-from .ingest_from_query import ingest_from_query
-from .clone import clone_repo
-from .parse_query import parse_query
+from gitingest.clone import CloneConfig, clone_repo
+from gitingest.ingest_from_query import ingest_from_query
+from gitingest.parse_query import parse_query
 
-def ingest(source: str, max_file_size: int = 10 * 1024 * 1024, include_patterns: Union[List[str], str] = None, exclude_patterns: Union[List[str], str] = None, output: str = None) -> str:
+
+def ingest(
+    source: str,
+    max_file_size: int = 10 * 1024 * 1024,  # 10 MB
+    include_patterns: list[str] | str | None = None,
+    exclude_patterns: list[str] | str | None = None,
+    output: str | None = None,
+) -> tuple[str, str, str]:
+    """
+    Main entry point for ingesting a source and processing its contents.
+
+    This function analyzes a source (URL or local path), clones the corresponding repository (if applicable),
+    and processes its files according to the specified query parameters. It returns a summary, a tree-like
+    structure of the files, and the content of the files. The results can optionally be written to an output file.
+
+    Parameters
+    ----------
+    source : str
+        The source to analyze, which can be a URL (for a GitHub repository) or a local directory path.
+    max_file_size : int, optional
+        The maximum allowed file size for file ingestion. Files larger than this size are ignored, by default 10*1024*1024 (10 MB).
+    include_patterns : list[str] | str | None, optional
+        A pattern or list of patterns specifying which files to include in the analysis. If `None`, all files are included.
+    exclude_patterns : list[str] | str | None, optional
+        A pattern or list of patterns specifying which files to exclude from the analysis. If `None`, no files are excluded.
+    output : str | None, optional
+        The file path where the summary and content should be written. If `None`, the results are not written to a file.
+
+    Returns
+    -------
+    tuple[str, str, str]
+        A tuple containing:
+        - A summary string of the analyzed repository or directory.
+        - A tree-like string representation of the file structure.
+        - The content of the files in the repository or directory.
+
+    Raises
+    ------
+    TypeError
+        If `clone_repo` does not return a coroutine, or if the `source` is of an unsupported type.
+    """
     try:
-        query = parse_query(source, max_file_size, False, include_patterns, exclude_patterns)        
-        if query['url']:
-            asyncio.run(clone_repo(query))
-        
+        query = parse_query(
+            source=source,
+            max_file_size=max_file_size,
+            from_web=False,
+            include_patterns=include_patterns,
+            ignore_patterns=exclude_patterns,
+        )
+        if query["url"]:
+
+            # Extract relevant fields for CloneConfig
+            clone_config = CloneConfig(
+                url=query["url"],
+                local_path=query["local_path"],
+                commit=query.get("commit"),
+                branch=query.get("branch"),
+            )
+            clone_result = clone_repo(clone_config)
+
+            if inspect.iscoroutine(clone_result):
+                asyncio.run(clone_result)
+            else:
+                raise TypeError("clone_repo did not return a coroutine as expected.")
+
         summary, tree, content = ingest_from_query(query)
 
-        if output:
-            with open(f"{output}", "w") as f:
+        if output is not None:
+            with open(output, "w") as f:
                 f.write(tree + "\n" + content)
 
         return summary, tree, content
+
     finally:
         # Clean up the temporary directory if it was created
-        if query['url']:
+        if query["url"]:
             # Get parent directory two levels up from local_path (../tmp)
-            cleanup_path = str(Path(query['local_path']).parents[1])
+            cleanup_path = str(Path(query["local_path"]).parents[1])
             shutil.rmtree(cleanup_path, ignore_errors=True)

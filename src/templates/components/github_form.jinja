@@ -2,28 +2,30 @@
     <div class="w-full h-full absolute inset-0 bg-gray-900 rounded-xl translate-y-2 translate-x-2"></div>
     <div class="rounded-xl relative z-20 pl-8 sm:pl-10 pr-8 sm:pr-16 py-8 border-[3px] border-gray-900 bg-[#fff4da]">
         <img src="https://cdn.devdojo.com/images/january2023/shape-1.png"
-            class="absolute md:block hidden left-0 h-[4.5rem] w-[4.5rem] bottom-0 -translate-x-full ml-3">
-
+             class="absolute md:block hidden left-0 h-[4.5rem] w-[4.5rem] bottom-0 -translate-x-full ml-3">
         <form class="flex md:flex-row flex-col w-full h-full justify-center items-stretch space-y-5 md:space-y-0 md:space-x-5"
-            id="ingestForm" onsubmit="handleSubmit(event{% if is_index %}, true{% endif %})">
+              id="ingestForm"
+              onsubmit="handleSubmit(event{% if is_index %}, true{% endif %})">
             <div class="relative w-full h-full">
                 <div class="w-full h-full rounded bg-gray-900 translate-y-1 translate-x-1 absolute inset-0 z-10"></div>
-                <input type="text" name="input_text" id="input_text" placeholder="https://github.com/..."
-                    value="{{ github_url if github_url else '' }}"
-                    required
-                    class="border-[3px] w-full relative z-20 border-gray-900 placeholder-gray-600 text-lg font-medium focus:outline-none py-3.5 px-6 rounded">
+                <input type="text"
+                       name="input_text"
+                       id="input_text"
+                       placeholder="https://github.com/..."
+                       value="{{ github_url if github_url else '' }}"
+                       required
+                       class="border-[3px] w-full relative z-20 border-gray-900 placeholder-gray-600 text-lg font-medium focus:outline-none py-3.5 px-6 rounded">
             </div>
             <div class="relative w-auto flex-shrink-0 h-full group">
                 <div class="w-full h-full rounded bg-gray-800 translate-y-1 translate-x-1 absolute inset-0 z-10"></div>
                 <button type="submit"
-                    class="py-3.5 rounded px-6 group-hover:-translate-y-px group-hover:-translate-x-px ease-out duration-300 z-20 relative w-full border-[3px] border-gray-900 font-medium bg-[#ffc480] tracking-wide text-lg flex-shrink-0 text-gray-900">
+                        class="py-3.5 rounded px-6 group-hover:-translate-y-px group-hover:-translate-x-px ease-out duration-300 z-20 relative w-full border-[3px] border-gray-900 font-medium bg-[#ffc480] tracking-wide text-lg flex-shrink-0 text-gray-900">
                     Ingest
                 </button>
             </div>
             <input type="hidden" name="pattern_type" value="exclude">
             <input type="hidden" name="pattern" value="">
         </form>
-
         <div class="mt-4 relative z-20 flex flex-wrap gap-4 items-start">
             <!-- Pattern selector -->
             <div class="w-[200px] sm:w-[250px] mr-9 mt-4">
@@ -31,74 +33,62 @@
                     <div class="w-full h-full rounded bg-gray-900 translate-y-1 translate-x-1 absolute inset-0 z-10"></div>
                     <div class="flex relative z-20 border-[3px] border-gray-900 rounded bg-white">
                         <div class="relative flex items-center">
-                            <select id="pattern_type" 
+                            <select id="pattern_type"
                                     name="pattern_type"
                                     class="w-21 py-2 pl-2 pr-6 appearance-none bg-[#e6e8eb] focus:outline-none border-r-[3px] border-gray-900">
-                                <option value="exclude" {% if pattern_type == 'exclude' or not pattern_type %}selected{% endif %}>Exclude</option>
+                                <option value="exclude"
+                                        {% if pattern_type == 'exclude' or not pattern_type %}selected{% endif %}>
+                                    Exclude
+                                </option>
                                 <option value="include" {% if pattern_type == 'include' %}selected{% endif %}>Include</option>
                             </select>
-                            <svg class="absolute right-2 w-4 h-4 pointer-events-none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="6 9 12 15 18 9"/>
+                            <svg class="absolute right-2 w-4 h-4 pointer-events-none"
+                                 xmlns="http://www.w3.org/2000/svg"
+                                 viewBox="0 0 24 24"
+                                 fill="none"
+                                 stroke="currentColor"
+                                 stroke-width="2"
+                                 stroke-linecap="round"
+                                 stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9" />
                             </svg>
                         </div>
-                        <input type="text" 
+                        <input type="text"
                                id="pattern"
-                               name="pattern" 
+                               name="pattern"
                                placeholder="*.md, src/ "
                                value="{{ pattern if pattern else '' }}"
                                class=" py-2 px-2 bg-[#E8F0FE] focus:outline-none w-full">
                     </div>
                 </div>
             </div>
-
             <div class="w-[200px] sm:w-[200px] mt-3">
-                <label for="file_size" class="block text-gray-700 mb-1">Include files under: <span id="size_value" class="font-bold">50kb</span></label>
-                <input type="range" 
-                    id="file_size" 
-                    name="max_file_size"
-                    min="0" 
-                    max="500"
-                    required
-                    value="{{ default_file_size }}"
-                    class="w-full h-3 
-                           bg-[#FAFAFA]
-                           bg-no-repeat 
-                           bg-[length:50%_100%] 
-                           bg-[#ebdbb7]
-                           appearance-none 
-                           border-[3px] 
-                           border-gray-900 
-                           rounded-sm 
-                           focus:outline-none 
-                           bg-gradient-to-r from-[#FE4A60] to-[#FE4A60] 
-                           [&::-webkit-slider-thumb]:w-5 
-                           [&::-webkit-slider-thumb]:h-7 
-                           [&::-webkit-slider-thumb]:appearance-none 
-                           [&::-webkit-slider-thumb]:bg-white 
-                           [&::-webkit-slider-thumb]:rounded-sm 
-                           [&::-webkit-slider-thumb]:cursor-pointer 
-                           [&::-webkit-slider-thumb]:border-solid
-                           [&::-webkit-slider-thumb]:border-[3px]
-                           [&::-webkit-slider-thumb]:border-gray-900
-                           [&::-webkit-slider-thumb]:shadow-[3px_3px_0_#000]
-                           
-                           ">
+                <label for="file_size" class="block text-gray-700 mb-1">
+                    Include files under: <span id="size_value" class="font-bold">50kb</span>
+                </label>
+                <input type="range"
+                       id="file_size"
+                       name="max_file_size"
+                       min="0"
+                       max="500"
+                       required
+                       value="{{ default_file_size }}"
+                       class="w-full h-3 bg-[#FAFAFA] bg-no-repeat bg-[length:50%_100%] bg-[#ebdbb7] appearance-none border-[3px] border-gray-900 rounded-sm focus:outline-none bg-gradient-to-r from-[#FE4A60] to-[#FE4A60] [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-7 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-sm [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-solid [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-gray-900 [&::-webkit-slider-thumb]:shadow-[3px_3px_0_#000]  ">
             </div>
         </div>
-
         {% if show_examples %}
-        <!-- Example repositories section -->
-        <div class="mt-4">
-            <p class="opacity-70 mb-1">Try these example repositories:</p>
-            <div class="flex flex-wrap gap-2">
-                {% for example in examples %}
-                <button onclick="submitExample('{{ example.url }}')"
-                    class="px-4 py-1 bg-[#EBDBB7] hover:bg-[#FFC480] text-gray-900 rounded transition-colors duration-200 border-[3px] border-gray-900 relative hover:-translate-y-px hover:-translate-x-px">
-                    {{ example.name }}
-                    </button>
+            <!-- Example repositories section -->
+            <div class="mt-4">
+                <p class="opacity-70 mb-1">Try these example repositories:</p>
+                <div class="flex flex-wrap gap-2">
+                    {% for example in examples %}
+                        <button onclick="submitExample('{{ example.url }}')"
+                                class="px-4 py-1 bg-[#EBDBB7] hover:bg-[#FFC480] text-gray-900 rounded transition-colors duration-200 border-[3px] border-gray-900 relative hover:-translate-y-px hover:-translate-x-px">
+                            {{ example.name }}
+                        </button>
                     {% endfor %}
+                </div>
             </div>
-        </div>
         {% endif %}
     </div>
-</div> 
+</div>
