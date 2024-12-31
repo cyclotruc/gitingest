@@ -1,7 +1,7 @@
 import os
 from fnmatch import fnmatch
 from typing import Any
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 
 import tiktoken
 
