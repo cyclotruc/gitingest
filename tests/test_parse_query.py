@@ -1,3 +1,5 @@
+""" Tests for the parse_query module. """
+
 import pytest
 
 from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS

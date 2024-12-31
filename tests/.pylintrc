@@ -1,0 +1,10 @@
+[MASTER]
+init-hook=
+    import sys
+    sys.path.append('./src')
+
+[MESSAGES CONTROL]
+disable=missing-class-docstring,missing-function-docstring,protected-access,fixme
+
+[FORMAT]
+max-line-length=119

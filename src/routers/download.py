@@ -1,3 +1,5 @@
+""" This module contains the FastAPI router for downloading a digest file. """
+
 import os
 
 from fastapi import APIRouter, HTTPException
@@ -32,26 +34,30 @@ async def download_ingest(digest_id: str) -> Response:
 
     Raises
     ------
-    FileNotFoundError
-        If no `.txt` file is found in the directory corresponding to the given `digest_id`.
     HTTPException
         If the digest directory is not found or if no `.txt` file exists in the directory.
     """
-    try:
-        # Find the first .txt file in the directory
-        directory = f"{TMP_BASE_PATH}/{digest_id}"
-        txt_files = [f for f in os.listdir(directory) if f.endswith(".txt")]
+    directory = f"{TMP_BASE_PATH}/{digest_id}"
 
+    try:
+        if not os.path.exists(directory):
+            raise FileNotFoundError("Directory not found")
+
+        txt_files = [f for f in os.listdir(directory) if f.endswith(".txt")]
         if not txt_files:
             raise FileNotFoundError("No .txt file found")
 
-        with open(f"{directory}/{txt_files[0]}") as f:
-            content = f.read()
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Digest not found") from exc
 
-        return Response(
-            content=content,
-            media_type="text/plain",
-            headers={"Content-Disposition": f"attachment; filename={txt_files[0]}"},
-        )
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Digest not found")
+    # Find the first .txt file in the directory
+    first_file = txt_files[0]
+
+    with open(f"{directory}/{first_file}", encoding="utf-8") as f:
+        content = f.read()
+
+    return Response(
+        content=content,
+        media_type="text/plain",
+        headers={"Content-Disposition": f"attachment; filename={first_file}"},
+    )
