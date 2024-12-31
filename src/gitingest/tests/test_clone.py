@@ -73,7 +73,7 @@ async def test_check_repo_exists() -> None:
 
         # Test failed request
         mock_process.returncode = 1
-        assert await _check_repo_exists(url) is False
+        assert await not _check_repo_exists(url)
 
 
 @pytest.mark.asyncio
