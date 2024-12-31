@@ -105,7 +105,7 @@ async def process_query(
                 "result": True,
                 "summary": summary,
                 "tree": tree,
-                "content": contents,
+                "content": content,
                 "examples": EXAMPLE_REPOS if is_index else [],
                 "ingest_id": query["id"],
                 "default_file_size": slider_position,
