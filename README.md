@@ -69,7 +69,7 @@ By default, this won't write a file but can be enabled with the `output` argumen
 
 You can access repositories directly via URL:
 
-```
+```plaintext
 # Basic repository access
 https://gitingest.com/user/repo
 

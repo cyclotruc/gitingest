@@ -47,7 +47,7 @@ async def index_post(
     max_file_size: int = Form(...),
     pattern_type: str = Form(...),
     pattern: str = Form(...),
-) -> HTMLResponse:
+) -> HTMLResponse | tuple[str, str, str]:
     """
     Processes the form submission with user input for query parameters.
 

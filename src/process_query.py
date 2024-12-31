@@ -1,4 +1,3 @@
-from typing import Union
 from fastapi import Request
 from fastapi.templating import Jinja2Templates
 from starlette.templating import _TemplateResponse
@@ -19,8 +18,8 @@ async def process_query(
     pattern_type: str = "exclude",
     pattern: str = "",
     is_index: bool = False,
-    raw_response: bool = False
-) -> Union[_TemplateResponse, tuple[str, str, str]]:
+    raw_response: bool = False,
+) -> _TemplateResponse | tuple[str, str, str]:
     """
     Process query and return template response or raw data tuple.
 
