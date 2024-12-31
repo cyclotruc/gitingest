@@ -1,13 +1,13 @@
 # GitIngest
 
+[![Image](./docs/frontpage.png "GitIngest main page")](https://gitingest.com)
+
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/cyclotruc/gitingest/blob/main/LICENSE)
 [![PyPI version](https://badge.fury.io/py/gitingest.svg)](https://badge.fury.io/py/gitingest)
 [![Downloads](https://pepy.tech/badge/gitingest)](https://pepy.tech/project/gitingest)
 [![GitHub issues](https://img.shields.io/github/issues/cyclotruc/gitingest)](https://github.com/cyclotruc/gitingest/issues)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Discord](https://dcbadge.limes.pink/api/server/https://discord.com/invite/zerRaGK9EC)](https://discord.com/invite/zerRaGK9EC)
-
-[![Image](./docs/frontpage.png "GitIngest main page")](https://gitingest.com)
 
 Turn any Git repository into a prompt-friendly text ingest for LLMs.
 
@@ -105,35 +105,45 @@ https://gitingest.com/extract/user/repo?max_file_size=243&pattern_type=include&p
    ```
 
 The application will be available at `http://localhost:8000`
-Ensure environment variables are set before running the application or deploying it via Docker.
 
-## ✔️ Contributing
+If you are hosting it on a domain, you can specify the allowed hostnames via env variable `ALLOWED_HOSTS`.
 
-Contributions are welcome!
+   ```bash
+   #Default: "gitingest.com,*.gitingest.com,localhost, 127.0.0.1".
+   ALLOWED_HOSTS="example.com, localhost, 127.0.0.1"
+   ```
 
-Gitingest aims to be friendly for first time contributors, with a simple python and html codebase. If you need any help while working with the code, reach out to us on [discord](https://discord.com/invite/zerRaGK9EC)
+## 🛠️ Stack
 
-### Ways to contribute
+- [Tailwind CSS](https://tailwindcss.com/) - Frontend
+- [FastAPI](https://github.com/fastapi/fastapi) - Backend framework
+- [Jinja2](https://jinja.palletsprojects.com/) - HTML templating
+- [tiktoken](https://github.com/openai/tiktoken) - Token estimation
+- [apianalytics.dev](https://www.apianalytics.dev/) - Simple Analytics
 
-1. Provide your feedback and ideas on discord
-2. Open an Issue on github to report a bug
-3. Create a Pull request
-   - Fork the repository
-   - Make your changes and test them locally
-   - Open a pull request for review and feedback
+## ✔️ Contributing to Gitingest
 
-### 🔧 Local dev
+Gitingest aims to be friendly for first time contributors, with a simple python and html codebase.
+ If you need any help while working with the code, reach out to us on [discord](https://discord.com/invite/zerRaGK9EC)
 
-#### Environment Configuration
+### Ways to help (non-technical)
 
-- **`ALLOWED_HOSTS`**: Specify allowed hostnames for the application. Default: `"gitingest.com,*.gitingest.com,gitdigest.dev,localhost"`.
-You can configure the application using the following environment variables:
+- Provide your feedback and ideas on discord
+- Open an Issue on github to report a bug / submit an feature request
+- Talk about Gitingest on social media
 
-```bash
-ALLOWED_HOSTS="gitingest.local,localhost"
-```
+### How to submit a PR
 
-#### Run locally
+1. Fork the repository & clone it locally
+2. Setup the dev environment (see Development section bellow)
+3. Run unit tests with `pytest`
+4. Commit your changes and run `pre-commit`
+5. Open a pull request on Github for review and feedback
+6. (Optionnal) Invite project maintainer to your branch for easier collaboration
+
+## 🔧 Development
+
+### Run web UI locally
 
 1. Clone the repository
 
@@ -145,7 +155,10 @@ ALLOWED_HOSTS="gitingest.local,localhost"
 2. Install dependencies
 
    ```bash
-   pip install -r requirements.txt
+   pip install -r requirements-dev.txt
+   python -m venv .venv
+   source .venv/bin/activate
+   pre-commit install
    ```
 
 3. Run the application:
@@ -153,4 +166,26 @@ ALLOWED_HOSTS="gitingest.local,localhost"
    ```bash
    cd src
    uvicorn main:app --reload
+   ```
+
+4. Run unit tests
+
+   ```bash
+   pytest
+   ```
+
+The application should be available at `http://localhost:8000`
+
+### Working on the CLI
+
+1. Install the package in dev mode
+
+   ```bash
+   pip install -e .
+   ```
+
+2. Run the CLI
+
+   ```bash
+   gitingest --help
    ```
