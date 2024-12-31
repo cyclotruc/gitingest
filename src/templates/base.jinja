@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="light">
+<html lang="en" class="">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -36,6 +36,15 @@
             {% block title %}Git ingest{% endblock %}
         </title>
         <script src="https://cdn.tailwindcss.com"></script>
+        <!-- Add Tailwind configuration right after loading Tailwind -->
+        <script>
+            tailwind.config = {
+                darkMode: 'class', // Enable class-based dark mode
+                theme: {
+                    extend: {}
+                }
+            }
+        </script>
         <script src="/static/js/utils.js"></script>
         <script src="/static/js/snow.js"></script>
         <style>
