@@ -168,4 +168,4 @@ async def test_check_repo_exists_with_redirect() -> None:
         mock_process.returncode = 0  # Simulate successful request
         mock_exec.return_value = mock_process
 
-        assert await _check_repo_exists(url) is True
+        assert await _check_repo_exists(url)
