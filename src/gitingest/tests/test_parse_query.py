@@ -1,7 +1,7 @@
 import pytest
 
 from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
-from gitingest.parse_query import _parse_url, parse_query, _parse_patterns
+from gitingest.parse_query import _parse_patterns, _parse_url, parse_query
 
 
 def test_parse_url_valid() -> None:
