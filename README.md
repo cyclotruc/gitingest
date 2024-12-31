@@ -13,8 +13,7 @@ Turn any Git repository into a prompt-friendly text ingest for LLMs.
 
 You can also replace `hub` with `ingest` in any github url to access the coresponding digest.
 
-[gitingest.com](https://gitingest.com/) · [Chrome Extension](https://chromewebstore.google.com/detail/adfjahbijlkjfoicpjkhjicpjpjfaood) · [Firefox Add-on](https://addons.mozilla.org/firefox/addon/gitingest/)
-
+[gitingest.com](https://gitingest.com) · [Chrome Extension](https://chromewebstore.google.com/detail/adfjahbijlkjfoicpjkhjicpjpjfaood) · [Firefox Add-on](https://addons.mozilla.org/firefox/addon/gitingest)
 
 ## 🚀 Features
 
@@ -35,12 +34,14 @@ pip install gitingest
 
 ## 🧩 Browser Extension Usage
 
-<a href="https://chromewebstore.google.com/detail/adfjahbijlkjfoicpjkhjicpjpjfaood" target="_blank" title="Get GitIngest Extension from Chrome Web Store"><img height="48" src="https://github.com/user-attachments/assets/20a6e44b-fd46-4e6c-8ea6-aad436035753" alt="Available in the Chrome Web Store" /></a>
-<a href="https://addons.mozilla.org/firefox/addon/gitingest/" target="_blank" title="Get GitIngest Extension from Firefox Add-ons"><img height="48" src="https://github.com/user-attachments/assets/c0e99e6b-97cf-4af2-9737-099db7d3538b" alt="Get The Add-on for Firefox" /></a>
-<a href="https://microsoftedge.microsoft.com/addons/detail/nfobhllgcekbmpifkjlopfdfdmljmipf" target="_blank" title="Get GitIngest Extension from Firefox Add-ons"><img height="48" src="https://github.com/user-attachments/assets/204157eb-4cae-4c0e-b2cb-db514419fd9e" alt="Get from the Edge Add-ons" /></a>
+<!-- markdownlint-disable MD033 -->
+<a href="https://chromewebstore.google.com/detail/adfjahbijlkjfoicpjkhjicpjpjfaood"><img height="48" src="https://github.com/user-attachments/assets/20a6e44b-fd46-4e6c-8ea6-aad436035753" alt="Available in the Chrome Web Store"/></a>
+<a href="https://addons.mozilla.org/firefox/addon/gitingest"><img height="48" src="https://github.com/user-attachments/assets/c0e99e6b-97cf-4af2-9737-099db7d3538b" alt="Get The Add-on for Firefox" /></a>
+<a href="https://microsoftedge.microsoft.com/addons/detail/nfobhllgcekbmpifkjlopfdfdmljmipf"><img height="48" src="https://github.com/user-attachments/assets/204157eb-4cae-4c0e-b2cb-db514419fd9e" alt="Get from the Edge Add-ons" /></a>
+<!-- markdownlint-enable MD033 -->
 
-The extension is open source at [lcandy2/gitingest-extension](https://github.com/lcandy2/gitingest-extension).  
-For anyone who wants install it manually, you may download it [here](https://github.com/lcandy2/gitingest-extension/releases).  
+The extension is open source at [lcandy2/gitingest-extension](https://github.com/lcandy2/gitingest-extension).
+For anyone who wants install it manually, you may download it [here](https://github.com/lcandy2/gitingest-extension/releases).
 Issues and feature requests are welcome to the repo.
 
 ## 💡 Command Line usage
@@ -98,11 +99,11 @@ If you are hosting it on a domain, you can specify the allowed hostnames via env
 
 ## 🛠️ Stack
 
-- [Tailwind CSS](https://tailwindcss.com/) - Frontend
+- [Tailwind CSS](https://tailwindcss.com) - Frontend
 - [FastAPI](https://github.com/fastapi/fastapi) - Backend framework
-- [Jinja2](https://jinja.palletsprojects.com/) - HTML templating
+- [Jinja2](https://jinja.palletsprojects.com) - HTML templating
 - [tiktoken](https://github.com/openai/tiktoken) - Token estimation
-- [apianalytics.dev](https://www.apianalytics.dev/) - Simple Analytics
+- [apianalytics.dev](https://www.apianalytics.dev) - Simple Analytics
 
 ## ✔️ Contributing to Gitingest
 
