@@ -6,4 +6,4 @@ slowapi
 starlette
 tiktoken
 uvicorn
-PyPDF2
+pypdf
