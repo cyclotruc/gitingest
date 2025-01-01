@@ -1,4 +1,4 @@
-# 输入配置
+# Input configuration
 input:
   supported_sources:
     - local
@@ -6,28 +6,28 @@ input:
     - gitlab
   default_source: local
 
-# 路径配置
+# Path configuration
 paths:
   input:
-    base_dir: .  # 默认使用当前目录
-    github: ""   # 默认GitHub仓库
-    gitlab: ""   # 默认GitLab仓库
+    base_dir: .  # Use the current directory by default
+    github: ""   # Default GitHub repository
+    gitlab: ""   # Default GitLab repository
   output:
-    base_dir: output  # 输出基础目录
-    reports: reports  # 报告目录
-    trees: trees     # 目录树文件
-    temp: temp       # 临时文件
+    base_dir: output  # Output base directory
+    reports: reports  # Report directory
+    trees: trees      # Directory tree file
+    temp: temp        # Temporary file
 
-# 树形结构配置
+# Tree structure configuration
 tree:
-  max_depth: 4  # 目录树最大深度
+  max_depth: 4 # Maximum depth of directory tree
 
-# 文件配置
+# File configuration
 file:
   max_size: 10485760  # 10MB
-  encoding: utf-8     # 文件编码
+  encoding: utf-8     # File encoding
 
-# 输出配置
+# Output configuration
 output:
   formats:
     - md
@@ -40,6 +40,6 @@ output:
     txt: analysis_report.txt
     tree: directory_tree.txt
 
-# 内容配置
+# Content configuration
 content:
-  preview_length: 1000  # 内容预览长度（字符数）
+  preview_length: 1000 # Content preview length (number of characters)
