@@ -1,6 +1,6 @@
 <div class="relative">
     <div class="w-full h-full absolute inset-0 bg-gray-900 rounded-xl translate-y-2 translate-x-2"></div>
-    <div class="rounded-xl relative z-20 pl-8 sm:pl-10 pr-8 sm:pr-16 py-8 border-[3px] border-gray-900 dark:border-gray-600 bg-[#fff4da] dark:bg-gray-800">
+    <div class="rounded-xl relative z-20 pl-8 sm:pl-10 pr-8 sm:pr-16 py-8 border-[3px] border-gray-900 dark:border-gray-900 bg-[#fff4da] dark:bg-[#343a70]">
         <img src="https://cdn.devdojo.com/images/january2023/shape-1.png"
              class="absolute md:block hidden left-0 h-[4.5rem] w-[4.5rem] bottom-0 -translate-x-full ml-3">
         <form class="flex md:flex-row flex-col w-full h-full justify-center items-stretch space-y-5 md:space-y-0 md:space-x-5"
@@ -14,12 +14,12 @@
                        placeholder="https://github.com/..."
                        value="{{ github_url if github_url else '' }}"
                        required
-                       class="border-[3px] w-full relative z-20 border-gray-900 dark:border-gray-600 placeholder-gray-600 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 text-lg font-medium focus:outline-none py-3.5 px-6 rounded">
+                       class="border-[3px] w-full relative z-20 border-gray-900 dark:border-gray-900 placeholder-gray-600 dark:placeholder-gray-300 text-gray-900 dark:text-white bg-white dark:bg-zinc-700 text-lg font-medium focus:outline-none py-3.5 px-6 rounded">
             </div>
             <div class="relative w-auto flex-shrink-0 h-full group">
                 <div class="w-full h-full rounded bg-gray-800 translate-y-1 translate-x-1 absolute inset-0 z-10"></div>
                 <button type="submit"
-                        class="py-3.5 rounded px-6 group-hover:-translate-y-px group-hover:-translate-x-px ease-out duration-300 z-20 relative w-full border-[3px] border-gray-900 dark:border-gray-600 font-medium bg-[#ffc480] dark:bg-[#fca847] tracking-wide text-lg flex-shrink-0 text-gray-900">
+                        class="py-3.5 rounded px-6 group-hover:-translate-y-px group-hover:-translate-x-px ease-out duration-300 z-20 relative w-full border-[3px] border-gray-900 dark:border-gray-900 font-medium bg-[#ffc480] dark:bg-indigo-500 tracking-wide text-lg flex-shrink-0 text-gray-900">
                     Ingest
                 </button>
             </div>
@@ -31,11 +31,11 @@
             <div class="w-[200px] sm:w-[250px] mr-9 mt-4">
                 <div class="relative">
                     <div class="w-full h-full rounded bg-gray-900 translate-y-1 translate-x-1 absolute inset-0 z-10"></div>
-                    <div class="flex relative z-20 border-[3px] border-gray-900 dark:border-gray-600 rounded bg-white dark:bg-gray-700">
+                    <div class="flex relative z-20 border-[3px] border-gray-900 dark:border-gray-900 rounded bg-white dark:bg-zinc-700">
                         <div class="relative flex items-center">
                             <select id="pattern_type"
                                     name="pattern_type"
-                                    class="w-21 py-2 pl-2 pr-6 appearance-none bg-[#e6e8eb] dark:bg-gray-600 dark:text-white focus:outline-none border-r-[3px] border-gray-900 dark:border-gray-600">
+                                    class="w-21 py-2 pl-2 pr-6 appearance-none bg-[#e6e8eb] dark:bg-zinc-600 dark:text-white focus:outline-none border-r-[3px] border-gray-900 dark:border-gray-600">
                                 <option value="exclude"
                                         {% if pattern_type == 'exclude' or not pattern_type %}selected{% endif %}>
                                     Exclude
@@ -58,7 +58,7 @@
                                name="pattern"
                                placeholder="*.md, src/ "
                                value="{{ pattern if pattern else '' }}"
-                               class="py-2 px-2 bg-[#E8F0FE] dark:bg-gray-600 dark:text-white focus:outline-none w-full">
+                               class="py-2 px-2 bg-[#E8F0FE] dark:bg-zinc-600 dark:text-white focus:outline-none w-full">
                     </div>
                 </div>
             </div>
@@ -73,7 +73,7 @@
                        max="500"
                        required
                        value="{{ default_file_size }}"
-                       class="w-full h-3 bg-[#FAFAFA] dark:bg-gray-600 bg-no-repeat bg-[length:50%_100%] bg-[#ebdbb7] appearance-none border-[3px] border-gray-900 dark:border-gray-600 rounded-sm focus:outline-none bg-gradient-to-r from-[#FE4A60] to-[#FE4A60] [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-7 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:dark:bg-gray-300 [&::-webkit-slider-thumb]:rounded-sm [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-solid [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-gray-900 [&::-webkit-slider-thumb]:dark:border-gray-600 [&::-webkit-slider-thumb]:shadow-[3px_3px_0_#000]">
+                       class="w-full h-3 bg-[#FAFAFA] dark:bg-zinc-600 bg-no-repeat bg-[length:50%_100%] bg-[#ebdbb7] appearance-none border-[3px] border-gray-900 dark:border-gray-600 rounded-sm focus:outline-none bg-gradient-to-r from-[#FE4A60] to-[#FE4A60] [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-7 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:dark:bg-zinc-300 [&::-webkit-slider-thumb]:rounded-sm [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-solid [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-gray-900 [&::-webkit-slider-thumb]:dark:border-gray-600 [&::-webkit-slider-thumb]:shadow-[3px_3px_0_#000]">
             </div>
         </div>
         {% if show_examples %}
@@ -83,7 +83,7 @@
                 <div class="flex flex-wrap gap-2">
                     {% for example in examples %}
                         <button onclick="submitExample('{{ example.url }}')"
-                                class="px-4 py-1 bg-[#EBDBB7] dark:bg-gray-700 hover:bg-[#FFC480] dark:hover:bg-[#fca847] text-gray-900 dark:text-white rounded transition-colors duration-200 border-[3px] border-gray-900 dark:border-gray-600 relative hover:-translate-y-px hover:-translate-x-px">
+                                class="px-4 py-1 bg-[#EBDBB7] dark:bg-zinc-700 hover:bg-[#FFC480] dark:hover:bg-indigo-500 text-gray-900 dark:text-white rounded transition-colors duration-200 border-[3px] border-gray-900 dark:border-gray-900 relative hover:-translate-y-px hover:-translate-x-px">
                             {{ example.name }}
                         </button>
                     {% endfor %}
