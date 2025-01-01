@@ -9,6 +9,7 @@ def test_parse_url_valid() -> None:
         "https://github.com/user/repo",
         "https://gitlab.com/user/repo",
         "https://bitbucket.org/user/repo",
+        "http://github.com/user/repo",
     ]
     for url in test_cases:
         result = _parse_url(url)

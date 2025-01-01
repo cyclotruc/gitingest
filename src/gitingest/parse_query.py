@@ -116,6 +116,7 @@ def _parse_url(url: str) -> dict[str, Any]:
     _id = str(uuid.uuid4())
     slug = f"{user_name}-{repo_name}"
 
+    final_url = f"https://{domain}/{user_name}/{repo_name}" if url.startswith("https://") else f"http://{domain}/{user_name}/{repo_name}"
     parsed = {
         "user_name": user_name,
         "repo_name": repo_name,
@@ -124,7 +125,7 @@ def _parse_url(url: str) -> dict[str, Any]:
         "commit": None,
         "subpath": "/",
         "local_path": f"{TMP_BASE_PATH}/{_id}/{slug}",
-        "url": f"https://{domain}/{user_name}/{repo_name}",
+        "url": final_url,
         "slug": slug,
         "id": _id,
     }
