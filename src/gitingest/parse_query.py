@@ -124,7 +124,7 @@ def _parse_url(url: str) -> dict[str, Any]:
         "commit": None,
         "subpath": "/",
         "local_path": f"{TMP_BASE_PATH}/{_id}/{slug}",
-        "url": final_url,
+        "url": f"https://{domain}/{user_name}/{repo_name}",
         "slug": slug,
         "id": _id,
     }
