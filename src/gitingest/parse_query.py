@@ -116,7 +116,11 @@ def _parse_url(url: str) -> dict[str, Any]:
     _id = str(uuid.uuid4())
     slug = f"{user_name}-{repo_name}"
 
-    final_url = f"https://{domain}/{user_name}/{repo_name}" if url.startswith("https://") else f"http://{domain}/{user_name}/{repo_name}"
+    final_url = (
+        f"https://{domain}/{user_name}/{repo_name}"
+        if url.startswith("https://")
+        else f"http://{domain}/{user_name}/{repo_name}"
+    )
     parsed = {
         "user_name": user_name,
         "repo_name": repo_name,
