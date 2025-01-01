@@ -51,7 +51,7 @@ async def _check_repo_exists(url: str, pat: str | None = None) -> bool:
         True if the repository exists, False otherwise.
     """
     # Parse URL to get components
-    parts = url.split('/')
+    parts = url.split("/")
     if len(parts) < 5:  # Need at least protocol, empty, host, username, repo
         return False
 
@@ -60,7 +60,7 @@ async def _check_repo_exists(url: str, pat: str | None = None) -> bool:
     repo = parts[4]
 
     # Construct API URL based on host
-    if 'github.com' in host:
+    if "github.com" in host:
         api_url = url
     else:
         # For custom Git servers, use API v1 endpoint

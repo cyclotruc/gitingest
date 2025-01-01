@@ -170,6 +170,7 @@ async def test_check_repo_exists_with_redirect() -> None:
         mock_exec.return_value = mock_process
         assert await _check_repo_exists(url)
 
+
 @pytest.mark.asyncio
 async def test_check_repo_exists_with_pat() -> None:
     url = "https://github.com/user/repo"

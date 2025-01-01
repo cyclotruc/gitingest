@@ -17,7 +17,6 @@
                        required
                        class="border-[3px] w-full relative z-20 border-gray-900 placeholder-gray-600 text-lg font-medium focus:outline-none py-3.5 px-6 rounded">
             </div>
-
             <!-- Access Settings Checkbox -->
             <div class="flex items-center space-x-2 ml-2">
                 <input type="checkbox"
@@ -26,7 +25,6 @@
                        onchange="toggleAccessSettings()">
                 <label for="showAccessSettings" class="text-gray-900">Access Settings</label>
             </div>
-
             <!-- PAT input (hidden by default) -->
             <div id="accessSettingsContainer" class="hidden">
                 <div class="relative w-full h-full">
@@ -39,7 +37,6 @@
                            class="border-[3px] w-full relative z-20 border-gray-900 placeholder-gray-600 text-lg font-medium focus:outline-none py-3.5 px-6 rounded">
                 </div>
             </div>
-
             <!-- Submit Button -->
             <div class="relative w-full sm:w-auto flex-shrink-0 h-full group">
                 <div class="w-full h-full rounded bg-gray-800 translate-y-1 translate-x-1 absolute inset-0 z-10"></div>
@@ -48,11 +45,9 @@
                     Ingest
                 </button>
             </div>
-
             <input type="hidden" name="pattern_type" value="exclude">
             <input type="hidden" name="pattern" value="">
         </form>
-
         <script>
             function toggleAccessSettings() {
                 const container = document.getElementById('accessSettingsContainer');
@@ -60,7 +55,6 @@
                 container.classList.toggle('hidden', !checkbox.checked);
             }
         </script>
-
         <div class="mt-4 relative z-20 flex flex-wrap gap-4 items-start">
             <!-- Pattern selector -->
             <div class="w-[200px] sm:w-[250px] mr-9 mt-4">
