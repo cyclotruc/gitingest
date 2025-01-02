@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Form, Request
+from urllib.parse import unquote_plus
+
+from fastapi import APIRouter, Form, Query, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
@@ -10,7 +12,14 @@ templates = Jinja2Templates(directory="templates")
 
 
 @router.get("/{full_path:path}")
-async def catch_all(request: Request, full_path: str) -> HTMLResponse:
+async def catch_all(
+    request: Request,
+    full_path: str,
+    include: str | None = Query(default=None),
+    exclude: str | None = Query(default=None),
+    pattern: str | None = Query(default=None),
+    pattern_type: str | None = Query(default="exclude"),
+) -> HTMLResponse:
     """
     Renders a page with a GitHub URL based on the provided path.
 
@@ -23,13 +32,33 @@ async def catch_all(request: Request, full_path: str) -> HTMLResponse:
         The incoming request object, which provides context for rendering the response.
     full_path : str
         The full path extracted from the URL, which is used to build the GitHub URL.
+    include : str | None
+        Include pattern for files, if provided.
+    exclude : str | None
+        Exclude pattern for files, if provided.
+    pattern : str | None
+        Generic pattern to use with pattern_type.
+    pattern_type : str | None
+        Type of pattern (include/exclude) to use with pattern.
 
     Returns
     -------
     HTMLResponse
-        An HTML response containing the rendered template, with the GitHub URL
-        and other default parameters such as loading state and file size.
+        An HTML response containing the rendered template.
     """
+    # Handle both pattern_type+pattern and direct include/exclude parameters
+    actual_pattern = ""
+    actual_pattern_type = pattern_type
+
+    if include:
+        actual_pattern = unquote_plus(include)
+        actual_pattern_type = "include"
+    elif exclude:
+        actual_pattern = unquote_plus(exclude)
+        actual_pattern_type = "exclude"
+    elif pattern:
+        actual_pattern = unquote_plus(pattern)
+
     return templates.TemplateResponse(
         "github.jinja",
         {
@@ -37,6 +66,8 @@ async def catch_all(request: Request, full_path: str) -> HTMLResponse:
             "github_url": f"https://github.com/{full_path}",
             "loading": True,
             "default_file_size": 243,
+            "pattern_type": actual_pattern_type,
+            "pattern": actual_pattern,
         },
     )
 

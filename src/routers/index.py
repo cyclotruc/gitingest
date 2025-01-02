@@ -1,3 +1,5 @@
+from urllib.parse import unquote_plus
+
 from fastapi import APIRouter, Form, Query, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -17,11 +19,26 @@ async def home(
     pattern_type: str | None = Query(default="exclude"),
     pattern: str | None = Query(default=""),
     include_files_under: int | None = Query(default=243),
+    include: str | None = Query(default=None),  # For include patterns
+    exclude: str | None = Query(default=None),  # For exclude patterns
 ) -> HTMLResponse:
     """
     Renders the home page with example repositories and default parameters.
     Now supports query parameters for deep linking.
     """
+    # Handle both pattern_type+pattern and direct include/exclude parameters
+    actual_pattern = ""
+    actual_pattern_type = pattern_type
+
+    if include:
+        actual_pattern = unquote_plus(include)
+        actual_pattern_type = "include"
+    elif exclude:
+        actual_pattern = unquote_plus(exclude)
+        actual_pattern_type = "exclude"
+    elif pattern:
+        actual_pattern = unquote_plus(pattern)
+
     return templates.TemplateResponse(
         "index.jinja",
         {
@@ -29,8 +46,8 @@ async def home(
             "examples": EXAMPLE_REPOS,
             "default_file_size": include_files_under,
             "github_url": repo if repo else "",
-            "pattern_type": pattern_type,
-            "pattern": pattern,
+            "pattern_type": actual_pattern_type,
+            "pattern": actual_pattern,
         },
     )
 

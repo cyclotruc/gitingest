@@ -226,8 +226,9 @@ function updateURLQueryParams() {
         const params = new URLSearchParams();
         if (repo) params.set('repo', repo);
         if (pattern) {
-            // Set either include or exclude based on pattern_type
-            params.set(patternType, pattern);
+            // Properly encode the pattern to handle glob characters
+            const encodedPattern = encodeURIComponent(pattern);
+            params.set(patternType, encodedPattern);
         }
         if (includeFilesUnder) params.set('include_files_under', includeFilesUnder);
 
