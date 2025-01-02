@@ -163,8 +163,9 @@ def _read_file_content(file_path: str) -> str:
     """
     Reads the content of a file.
 
-    This function reads text files using UTF-8 encoding or extracts text from PDF files.
-    If an error occurs during reading, it returns an error message.
+    This function attempts to open a file and read its contents using UTF-8 encoding or extracts text from pdf files.
+    If an error occurs during reading (e.g., file is not found or permission error),
+    it returns an error message.
 
     Parameters
     ----------
