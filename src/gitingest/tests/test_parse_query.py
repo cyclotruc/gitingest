@@ -4,12 +4,11 @@ from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
 from gitingest.parse_query import _parse_patterns, _parse_url, parse_query
 
 
-def test_parse_url_valid() -> None:
+def test_parse_url_valid_https() -> None:
     test_cases = [
         "https://github.com/user/repo",
         "https://gitlab.com/user/repo",
         "https://bitbucket.org/user/repo",
-        "http://github.com/user/repo",
     ]
     for url in test_cases:
         result = _parse_url(url)
@@ -17,6 +16,17 @@ def test_parse_url_valid() -> None:
         assert result["repo_name"] == "repo"
         assert result["url"] == url
 
+def test_parse_url_valid_http() -> None:
+    test_cases = [
+        "http://github.com/user/repo",
+        "http://gitlab.com/user/repo",
+        "http://bitbucket.org/user/repo",
+    ]
+    for url in test_cases:
+        result = _parse_url(url)
+        assert result["user_name"] == "user"
+        assert result["repo_name"] == "repo"
+        assert result["slug"] == "user-repo"
 
 def test_parse_url_invalid() -> None:
     url = "https://only-domain.com"
