@@ -39,7 +39,7 @@ async def home(
 @limiter.limit("10/minute")
 async def index_post(
     request: Request,
-    input_text: str = Form(...),
+    repo: str = Form(...),
     include_files_under: int = Form(...),
     pattern_type: str = Form(...),
     pattern: str = Form(...),
@@ -55,24 +55,23 @@ async def index_post(
     ----------
     request : Request
         The incoming request object, which provides context for rendering the response.
-    input_text : str, optional
-        The input text provided by the user for processing, by default taken from the form.
-    include_files_under : int, optional
+    repo : str
+        The repository URL or local path provided by the user.
+    include_files_under : int
         The maximum allowed file size for the input, specified by the user.
-    pattern_type : str, optional
+    pattern_type : str
         The type of pattern used for the query, specified by the user.
-    pattern : str, optional
+    pattern : str
         The pattern string used in the query, specified by the user.
 
     Returns
     -------
     HTMLResponse
-        An HTML response containing the results of processing the form input and query logic,
-        which will be rendered and returned to the user.
+        An HTML response containing the results of processing the form input and query logic.
     """
     return await process_query(
         request,
-        input_text,
+        repo,
         include_files_under,
         pattern_type,
         pattern,

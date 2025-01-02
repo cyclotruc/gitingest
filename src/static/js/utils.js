@@ -39,17 +39,20 @@ function handleSubmit(event, showLoading = false) {
 
     const formData = new FormData(form);
 
-    // Ensure we're using the visible input values
+    // Ensure we're using the visible input values and correct field names
     const slider = document.getElementById('file_size');
     const patternType = document.getElementById('pattern_type');
     const pattern = document.getElementById('pattern');
+    const repoInput = document.getElementById('input_text');
+
+    if (repoInput) {
+        formData.set('repo', repoInput.value);
+    }
 
     if (slider) {
         formData.set('include_files_under', slider.value);
     }
 
-    // For the form submission, we still use pattern_type and pattern
-    // since that's what the server expects
     if (patternType) {
         formData.set('pattern_type', patternType.value);
     }
