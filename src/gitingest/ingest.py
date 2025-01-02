@@ -1,7 +1,6 @@
 import asyncio
 import inspect
 import shutil
-from pathlib import Path
 
 from gitingest.clone import CloneConfig, clone_repo
 from gitingest.ingest_from_query import ingest_from_query
@@ -79,10 +78,9 @@ def ingest(
                 f.write(tree + "\n" + content)
 
         return summary, tree, content
-
     finally:
         # Clean up the temporary directory if it was created
         if query["url"]:
-            # Get parent directory two levels up from local_path (../tmp)
-            cleanup_path = str(Path(query["local_path"]).parents[1])
+            # Clean up the temporary directory under /tmp/gitingest
+            cleanup_path = "/tmp/gitingest"
             shutil.rmtree(cleanup_path, ignore_errors=True)

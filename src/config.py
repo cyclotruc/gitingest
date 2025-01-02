@@ -1,5 +1,5 @@
 MAX_DISPLAY_SIZE: int = 300_000
-TMP_BASE_PATH: str = "../tmp"
+TMP_BASE_PATH: str = "/tmp/gitingest"
 
 EXAMPLE_REPOS: list[dict[str, str]] = [
     {"name": "Gitingest", "url": "https://github.com/cyclotruc/gitingest"},

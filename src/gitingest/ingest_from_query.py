@@ -185,6 +185,50 @@ def _read_file_content(file_path: str) -> str:
         return f"Error reading file: {str(e)}"
 
 
+def _sort_children(children: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """
+    Sort children nodes with:
+    1. README.md first
+    2. Regular files (not starting with dot)
+    3. Hidden files (starting with dot)
+    4. Regular directories (not starting with dot)
+    5. Hidden directories (starting with dot)
+    All groups are sorted alphanumerically within themselves.
+
+    Parameters
+    ----------
+    children : list[dict[str, Any]]
+        List of file and directory nodes to sort.
+
+    Returns
+    -------
+    list[dict[str, Any]]
+        Sorted list according to the specified order.
+    """
+    # Separate files and directories
+    files = [child for child in children if child["type"] == "file"]
+    directories = [child for child in children if child["type"] == "directory"]
+
+    # Find README.md
+    readme_files = [f for f in files if f["name"].lower() == "readme.md"]
+    other_files = [f for f in files if f["name"].lower() != "readme.md"]
+
+    # Separate hidden and regular files/directories
+    regular_files = [f for f in other_files if not f["name"].startswith(".")]
+    hidden_files = [f for f in other_files if f["name"].startswith(".")]
+    regular_dirs = [d for d in directories if not d["name"].startswith(".")]
+    hidden_dirs = [d for d in directories if d["name"].startswith(".")]
+
+    # Sort each group alphanumerically
+    regular_files.sort(key=lambda x: x["name"])
+    hidden_files.sort(key=lambda x: x["name"])
+    regular_dirs.sort(key=lambda x: x["name"])
+    hidden_dirs.sort(key=lambda x: x["name"])
+
+    # Combine all groups in the desired order
+    return readme_files + regular_files + hidden_files + regular_dirs + hidden_dirs
+
+
 def _scan_directory(
     path: str,
     query: dict[str, Any],
@@ -365,6 +409,9 @@ def _scan_directory(
                     result["file_count"] += subdir["file_count"]
                     result["dir_count"] += 1 + subdir["dir_count"]
 
+        result["children"] = _sort_children(result["children"])
+        return result
+
     except PermissionError:
         print(f"Permission denied: {path}")
 
@@ -426,7 +473,7 @@ def _create_file_content_string(files: list[dict[str, Any]]) -> str:
     Create a formatted string of file contents with separators.
 
     This function takes a list of files and generates a formatted string where each file’s
-    content is separated by a divider. If a README.md file is found, it is placed at the top.
+    content is separated by a divider.
 
     Parameters
     ----------
@@ -441,21 +488,9 @@ def _create_file_content_string(files: list[dict[str, Any]]) -> str:
     output = ""
     separator = "=" * 48 + "\n"
 
-    # First add README.md if it exists
-    for file in files:
-        if not file["content"]:
-            continue
-
-        if file["path"].lower() == "/readme.md":
-            output += separator
-            output += f"File: {file['path']}\n"
-            output += separator
-            output += f"{file['content']}\n\n"
-            break
-
     # Then add all other files in their original order
     for file in files:
-        if not file["content"] or file["path"].lower() == "/readme.md":
+        if not file["content"]:
             continue
 
         output += separator
