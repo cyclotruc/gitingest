@@ -16,6 +16,7 @@ def test_parse_url_valid_https() -> None:
         assert result["repo_name"] == "repo"
         assert result["url"] == url
 
+
 def test_parse_url_valid_http() -> None:
     test_cases = [
         "http://github.com/user/repo",
@@ -27,6 +28,7 @@ def test_parse_url_valid_http() -> None:
         assert result["user_name"] == "user"
         assert result["repo_name"] == "repo"
         assert result["slug"] == "user-repo"
+
 
 def test_parse_url_invalid() -> None:
     url = "https://only-domain.com"
