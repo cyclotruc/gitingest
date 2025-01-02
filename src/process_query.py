@@ -103,7 +103,7 @@ async def process_query(
             print(f"{Colors.RED}{e}{Colors.END}")
 
         context["error_message"] = f"Error: {e}"
-        return template_response(context)
+        return template_response(context=context)
 
     if len(content) > MAX_DISPLAY_SIZE:
         content = (
@@ -129,7 +129,7 @@ async def process_query(
         }
     )
 
-    return template_response(context)
+    return template_response(context=context)
 
 
 def _print_query(url: str, max_file_size: int, pattern_type: str, pattern: str) -> None:
