@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Form, Request
+from fastapi import APIRouter, Form, Query, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
@@ -11,30 +11,26 @@ templates = Jinja2Templates(directory="templates")
 
 
 @router.get("/", response_class=HTMLResponse)
-async def home(request: Request) -> HTMLResponse:
+async def home(
+    request: Request,
+    repo: str | None = Query(default=None),
+    pattern_type: str | None = Query(default="exclude"),
+    pattern: str | None = Query(default=""),
+    include_files_under: int | None = Query(default=243),
+) -> HTMLResponse:
     """
     Renders the home page with example repositories and default parameters.
-
-    This endpoint serves the home page of the application, rendering the `index.jinja` template
-    and providing it with a list of example repositories and default file size values.
-
-    Parameters
-    ----------
-    request : Request
-        The incoming request object, which provides context for rendering the response.
-
-    Returns
-    -------
-    HTMLResponse
-        An HTML response containing the rendered home page template, with example repositories
-        and other default parameters such as file size.
+    Now supports query parameters for deep linking.
     """
     return templates.TemplateResponse(
         "index.jinja",
         {
             "request": request,
             "examples": EXAMPLE_REPOS,
-            "default_file_size": 243,
+            "default_file_size": include_files_under,
+            "github_url": repo if repo else "",
+            "pattern_type": pattern_type,
+            "pattern": pattern,
         },
     )
 
@@ -44,7 +40,7 @@ async def home(request: Request) -> HTMLResponse:
 async def index_post(
     request: Request,
     input_text: str = Form(...),
-    max_file_size: int = Form(...),
+    include_files_under: int = Form(...),
     pattern_type: str = Form(...),
     pattern: str = Form(...),
 ) -> HTMLResponse:
@@ -61,7 +57,7 @@ async def index_post(
         The incoming request object, which provides context for rendering the response.
     input_text : str, optional
         The input text provided by the user for processing, by default taken from the form.
-    max_file_size : int, optional
+    include_files_under : int, optional
         The maximum allowed file size for the input, specified by the user.
     pattern_type : str, optional
         The type of pattern used for the query, specified by the user.
@@ -77,7 +73,7 @@ async def index_post(
     return await process_query(
         request,
         input_text,
-        max_file_size,
+        include_files_under,
         pattern_type,
         pattern,
         is_index=True,

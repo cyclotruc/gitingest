@@ -39,22 +39,27 @@ function handleSubmit(event, showLoading = false) {
 
     const formData = new FormData(form);
 
-    // Update file size
+    // Ensure we're using the visible input values
     const slider = document.getElementById('file_size');
-    if (slider) {
-        formData.delete('max_file_size');
-        formData.append('max_file_size', slider.value);
-    }
-
-    // Update pattern type and pattern
     const patternType = document.getElementById('pattern_type');
     const pattern = document.getElementById('pattern');
-    if (patternType && pattern) {
-        formData.delete('pattern_type');
-        formData.delete('pattern');
-        formData.append('pattern_type', patternType.value);
-        formData.append('pattern', pattern.value);
+
+    if (slider) {
+        formData.set('include_files_under', slider.value);
     }
+
+    // For the form submission, we still use pattern_type and pattern
+    // since that's what the server expects
+    if (patternType) {
+        formData.set('pattern_type', patternType.value);
+    }
+
+    if (pattern) {
+        formData.set('pattern', pattern.value);
+    }
+
+    // Update URL params before submitting
+    updateURLQueryParams();
 
     const originalContent = submitButton.innerHTML;
     const currentStars = document.getElementById('github-stars')?.textContent;
@@ -97,8 +102,8 @@ function handleSubmit(event, showLoading = false) {
 
             // Wait for next tick to ensure DOM is updated
             setTimeout(() => {
-                // Reinitialize slider functionality
                 initializeSlider();
+                attachEventHandlers(); // Re-attach handlers after content update
 
                 const starsElement = document.getElementById('github-stars');
                 if (starsElement && starCount) {
@@ -202,8 +207,84 @@ function setupGlobalEnterHandler() {
     });
 }
 
-// Add to the DOMContentLoaded event listener
+// Add URL query parameter handling functions
+function updateURLQueryParams() {
+    console.log('Updating URL params...');
+
+    const repo = document.getElementById('input_text')?.value;
+    const patternType = document.getElementById('pattern_type')?.value;
+    const pattern = document.getElementById('pattern')?.value;
+    const includeFilesUnder = document.getElementById('file_size')?.value;
+
+    console.log('Current values:', { repo, patternType, pattern, includeFilesUnder });
+
+    // Only update if we have at least one value
+    if (repo || pattern || includeFilesUnder) {
+        const params = new URLSearchParams();
+        if (repo) params.set('repo', repo);
+        if (pattern) {
+            // Set either include or exclude based on pattern_type
+            params.set(patternType, pattern);
+        }
+        if (includeFilesUnder) params.set('include_files_under', includeFilesUnder);
+
+        const newRelativePathQuery = window.location.pathname + '?' + params.toString();
+        console.log('New URL:', newRelativePathQuery);
+        window.history.replaceState(null, '', newRelativePathQuery);
+    }
+}
+
+function copyCurrentURL() {
+    const currentURL = window.location.href;
+    console.log('Copying URL:', currentURL);
+    navigator.clipboard.writeText(currentURL).then(() => {
+        const button = document.querySelector('button[onclick="copyCurrentURL()"]');
+        const originalText = button.innerHTML;
+        button.innerHTML = 'Copied!';
+        setTimeout(() => {
+            button.innerHTML = originalText;
+        }, 2000);
+    });
+}
+
+// Ensure handlers are attached after dynamic content loads
+function attachEventHandlers() {
+    console.log('Attaching event handlers...');
+
+    const inputText = document.getElementById('input_text');
+    const patternTypeSelect = document.getElementById('pattern_type');
+    const patternInput = document.getElementById('pattern');
+    const fileSizeSlider = document.getElementById('file_size');
+
+    const elements = [
+        { el: inputText, name: 'input_text' },
+        { el: patternTypeSelect, name: 'pattern_type' },
+        { el: patternInput, name: 'pattern' },
+        { el: fileSizeSlider, name: 'file_size' }
+    ];
+
+    elements.forEach(({ el, name }) => {
+        if (el) {
+            console.log(`Attaching handlers to ${name}`);
+            ['input', 'change'].forEach(eventType => {
+                el.addEventListener(eventType, () => {
+                    console.log(`${eventType} event on ${name}`);
+                    updateURLQueryParams();
+                });
+            });
+        } else {
+            console.warn(`Element ${name} not found`);
+        }
+    });
+
+    // Initial URL update
+    updateURLQueryParams();
+}
+
+// Update the DOMContentLoaded event listener
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM Content Loaded');
     initializeSlider();
     setupGlobalEnterHandler();
+    attachEventHandlers();
 });
