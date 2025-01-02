@@ -100,7 +100,7 @@ def _parse_url(url: str) -> dict[str, Any]:
     url = url.split(" ")[0]
     url = unquote(url)  # Decode URL-encoded characters
 
-    if not url.startswith("https://"):
+    if not url.startswith(("https://", "http://")):
         url = "https://" + url
 
     # Extract domain and path
