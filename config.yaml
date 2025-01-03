@@ -1,0 +1,45 @@
+# 输入配置
+input:
+  supported_sources:
+    - local
+    - github
+    - gitlab
+  default_source: local
+
+# 路径配置
+paths:
+  input:
+    base_dir: .  # 默认使用当前目录
+    github: ""   # 默认GitHub仓库
+    gitlab: ""   # 默认GitLab仓库
+  output:
+    base_dir: output  # 输出基础目录
+    reports: reports  # 报告目录
+    trees: trees     # 目录树文件
+    temp: temp       # 临时文件
+
+# 树形结构配置
+tree:
+  max_depth: 4  # 目录树最大深度
+
+# 文件配置
+file:
+  max_size: 10485760  # 10MB
+  encoding: utf-8     # 文件编码
+
+# 输出配置
+output:
+  formats:
+    - md
+    - json
+    - txt
+  default_format: md
+  files:
+    md: analysis_report.md
+    json: analysis_report.json
+    txt: analysis_report.txt
+    tree: directory_tree.txt
+
+# 内容配置
+content:
+  preview_length: 1000  # 内容预览长度（字符数）
