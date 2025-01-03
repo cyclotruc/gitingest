@@ -1,3 +1,5 @@
+""" Main entry point for ingesting a source and processing its contents. """
+
 import asyncio
 import inspect
 import shutil
@@ -25,14 +27,15 @@ def ingest(
     ----------
     source : str
         The source to analyze, which can be a URL (for a GitHub repository) or a local directory path.
-    max_file_size : int, optional
-        The maximum allowed file size for file ingestion. Files larger than this size are ignored, by default 10*1024*1024 (10 MB).
+    max_file_size : int
+        Maximum allowed file size for file ingestion. Files larger than this size are ignored, by default
+        10*1024*1024 (10 MB).
     include_patterns : list[str] | str | None, optional
-        A pattern or list of patterns specifying which files to include in the analysis. If `None`, all files are included.
+        Pattern or list of patterns specifying which files to include. If `None`, all files are included.
     exclude_patterns : list[str] | str | None, optional
-        A pattern or list of patterns specifying which files to exclude from the analysis. If `None`, no files are excluded.
+        Pattern or list of patterns specifying which files to exclude. If `None`, no files are excluded.
     output : str | None, optional
-        The file path where the summary and content should be written. If `None`, the results are not written to a file.
+        File path where the summary and content should be written. If `None`, the results are not written to a file.
 
     Returns
     -------
@@ -74,7 +77,7 @@ def ingest(
         summary, tree, content = ingest_from_query(query)
 
         if output is not None:
-            with open(output, "w") as f:
+            with open(output, "w", encoding="utf-8") as f:
                 f.write(tree + "\n" + content)
 
         return summary, tree, content

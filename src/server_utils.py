@@ -1,3 +1,5 @@
+""" Utility functions for the server. """
+
 import math
 
 from slowapi import Limiter
@@ -7,7 +9,7 @@ from slowapi.util import get_remote_address
 limiter = Limiter(key_func=get_remote_address)
 
 
-def logSliderToSize(position: int) -> int:
+def log_slider_to_size(position: int) -> int:
     """
     Convert a slider position to a file size in bytes using a logarithmic scale.
 

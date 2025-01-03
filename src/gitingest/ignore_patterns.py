@@ -1,3 +1,5 @@
+""" Default ignore patterns for GitIngest. """
+
 DEFAULT_IGNORE_PATTERNS: list[str] = [
     # Python
     "*.pyc",

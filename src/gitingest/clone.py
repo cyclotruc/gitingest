@@ -1,7 +1,8 @@
+""" This module contains functions for cloning a Git repository to a local path. """
+
 import asyncio
 from dataclasses import dataclass
 
-from gitingest.exceptions import AsyncTimeoutError
 from gitingest.utils import async_timeout
 
 CLONE_TIMEOUT: int = 20
@@ -59,11 +60,7 @@ async def clone_repo(config: CloneConfig) -> tuple[bytes, bytes]:
     Raises
     ------
     ValueError
-        If the repository does not exist or if required query parameters are missing.
-    RuntimeError
-        If any git command fails during execution.
-    AsyncTimeoutError
-        If the cloning process exceeds the specified timeout.
+        If the 'url' or 'local_path' parameters are missing, or if the repository is not found.
     """
     # Extract and validate query parameters
     url: str = config.url
@@ -81,29 +78,25 @@ async def clone_repo(config: CloneConfig) -> tuple[bytes, bytes]:
     if not await _check_repo_exists(url):
         raise ValueError("Repository not found, make sure it is public")
 
-    try:
-        if commit:
-            # Scenario 1: Clone and checkout a specific commit
-            # Clone the repository without depth to ensure full history for checkout
-            clone_cmd = ["git", "clone", "--single-branch", url, local_path]
-            await _run_git_command(*clone_cmd)
+    if commit:
+        # Scenario 1: Clone and checkout a specific commit
+        # Clone the repository without depth to ensure full history for checkout
+        clone_cmd = ["git", "clone", "--single-branch", url, local_path]
+        await _run_git_command(*clone_cmd)
 
-            # Checkout the specific commit
-            checkout_cmd = ["git", "-C", local_path, "checkout", commit]
-            return await _run_git_command(*checkout_cmd)
+        # Checkout the specific commit
+        checkout_cmd = ["git", "-C", local_path, "checkout", commit]
+        return await _run_git_command(*checkout_cmd)
 
-        if branch and branch.lower() not in ("main", "master"):
+    if branch and branch.lower() not in ("main", "master"):
 
-            # Scenario 2: Clone a specific branch with shallow depth
-            clone_cmd = ["git", "clone", "--depth=1", "--single-branch", "--branch", branch, url, local_path]
-            return await _run_git_command(*clone_cmd)
-
-        # Scenario 3: Clone the default branch with shallow depth
-        clone_cmd = ["git", "clone", "--depth=1", "--single-branch", url, local_path]
+        # Scenario 2: Clone a specific branch with shallow depth
+        clone_cmd = ["git", "clone", "--depth=1", "--single-branch", "--branch", branch, url, local_path]
         return await _run_git_command(*clone_cmd)
 
-    except (RuntimeError, asyncio.TimeoutError, AsyncTimeoutError):
-        raise  # Re-raise the exception
+    # Scenario 3: Clone the default branch with shallow depth
+    clone_cmd = ["git", "clone", "--depth=1", "--single-branch", url, local_path]
+    return await _run_git_command(*clone_cmd)
 
 
 async def _check_repo_exists(url: str) -> bool:

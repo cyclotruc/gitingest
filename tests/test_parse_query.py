@@ -1,3 +1,5 @@
+""" Tests for the parse_query module. """
+
 import pytest
 
 from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
@@ -153,3 +155,11 @@ def test_parse_query_uuid_uniqueness() -> None:
     result1 = parse_query(path, max_file_size=100, from_web=False)
     result2 = parse_query(path, max_file_size=100, from_web=False)
     assert result1["id"] != result2["id"]
+
+
+def test_parse_url_with_query_and_fragment() -> None:
+    url = "https://github.com/user/repo?arg=value#fragment"
+    result = _parse_url(url)
+    assert result["user_name"] == "user"
+    assert result["repo_name"] == "repo"
+    assert result["url"] == "https://github.com/user/repo"  # URL should be cleaned

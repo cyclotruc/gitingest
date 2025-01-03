@@ -1,3 +1,7 @@
+""" Process a query by parsing input, cloning a repository, and generating a summary. """
+
+from functools import partial
+
 from fastapi import Request
 from fastapi.templating import Jinja2Templates
 from starlette.templating import _TemplateResponse
@@ -6,7 +10,7 @@ from config import EXAMPLE_REPOS, MAX_DISPLAY_SIZE
 from gitingest.clone import CloneConfig, clone_repo
 from gitingest.ingest_from_query import ingest_from_query
 from gitingest.parse_query import parse_query
-from server_utils import Colors, logSliderToSize
+from server_utils import Colors, log_slider_to_size
 
 templates = Jinja2Templates(directory="templates")
 
@@ -33,27 +37,44 @@ async def process_query(
         Input text provided by the user, typically a GitHub repository URL or slug.
     slider_position : int
         Position of the slider, representing the maximum file size in the query.
-    pattern_type : str, optional
+    pattern_type : str
         Type of pattern to use, either "include" or "exclude" (default is "exclude").
-    pattern : str, optional
+    pattern : str
         Pattern to include or exclude in the query, depending on the pattern type.
-    is_index : bool, optional
+    is_index : bool
         Flag indicating whether the request is for the index page (default is False).
 
     Returns
     -------
     _TemplateResponse
         Rendered template response containing the processed results or an error message.
-    """
-    template = "index.jinja" if is_index else "github.jinja"
-    max_file_size = logSliderToSize(slider_position)
 
+    Raises
+    ------
+    ValueError
+        If an invalid pattern type is provided.
+    """
     if pattern_type == "include":
         include_patterns = pattern
         exclude_patterns = None
     elif pattern_type == "exclude":
         exclude_patterns = pattern
         include_patterns = None
+    else:
+        raise ValueError(f"Invalid pattern type: {pattern_type}")
+
+    template = "index.jinja" if is_index else "github.jinja"
+    template_response = partial(templates.TemplateResponse, name=template)
+    max_file_size = log_slider_to_size(slider_position)
+
+    context = {
+        "request": request,
+        "github_url": input_text,
+        "examples": EXAMPLE_REPOS if is_index else [],
+        "default_file_size": slider_position,
+        "pattern_type": pattern_type,
+        "pattern": pattern,
+    }
 
     try:
         query = parse_query(
@@ -71,9 +92,8 @@ async def process_query(
         )
         await clone_repo(clone_config)
         summary, tree, content = ingest_from_query(query)
-        with open(f"{clone_config.local_path}.txt", "w") as f:
+        with open(f"{clone_config.local_path}.txt", "w", encoding="utf-8") as f:
             f.write(tree + "\n" + content)
-
     except Exception as e:
         # hack to print error message when query is not defined
         if "query" in locals() and query is not None and isinstance(query, dict):
@@ -82,18 +102,8 @@ async def process_query(
             print(f"{Colors.BROWN}WARN{Colors.END}: {Colors.RED}<-  {Colors.END}", end="")
             print(f"{Colors.RED}{e}{Colors.END}")
 
-        return templates.TemplateResponse(
-            template,
-            {
-                "request": request,
-                "github_url": input_text,
-                "error_message": f"Error: {e}",
-                "examples": EXAMPLE_REPOS if is_index else [],
-                "default_file_size": slider_position,
-                "pattern_type": pattern_type,
-                "pattern": pattern,
-            },
-        )
+        context["error_message"] = f"Error: {e}"
+        return template_response(context=context)
 
     if len(content) > MAX_DISPLAY_SIZE:
         content = (
@@ -109,22 +119,17 @@ async def process_query(
         summary=summary,
     )
 
-    return templates.TemplateResponse(
-        template,
+    context.update(
         {
-            "request": request,
-            "github_url": input_text,
             "result": True,
             "summary": summary,
             "tree": tree,
             "content": content,
-            "examples": EXAMPLE_REPOS if is_index else [],
             "ingest_id": query["id"],
-            "default_file_size": slider_position,
-            "pattern_type": pattern_type,
-            "pattern": pattern,
-        },
+        }
     )
+
+    return template_response(context=context)
 
 
 def _print_query(url: str, max_file_size: int, pattern_type: str, pattern: str) -> None:
