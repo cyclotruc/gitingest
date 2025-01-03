@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Form, Request
+from urllib.parse import unquote_plus
+
+from fastapi import APIRouter, Form, Query, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
@@ -11,30 +13,41 @@ templates = Jinja2Templates(directory="templates")
 
 
 @router.get("/", response_class=HTMLResponse)
-async def home(request: Request) -> HTMLResponse:
+async def home(
+    request: Request,
+    repo: str | None = Query(default=None),
+    pattern_type: str | None = Query(default="exclude"),
+    pattern: str | None = Query(default=""),
+    include_files_under: int | None = Query(default=243),
+    include: str | None = Query(default=None),  # For include patterns
+    exclude: str | None = Query(default=None),  # For exclude patterns
+) -> HTMLResponse:
     """
     Renders the home page with example repositories and default parameters.
-
-    This endpoint serves the home page of the application, rendering the `index.jinja` template
-    and providing it with a list of example repositories and default file size values.
-
-    Parameters
-    ----------
-    request : Request
-        The incoming request object, which provides context for rendering the response.
-
-    Returns
-    -------
-    HTMLResponse
-        An HTML response containing the rendered home page template, with example repositories
-        and other default parameters such as file size.
+    Now supports query parameters for deep linking.
     """
+    # Handle both pattern_type+pattern and direct include/exclude parameters
+    actual_pattern = ""
+    actual_pattern_type = pattern_type
+
+    if include:
+        actual_pattern = unquote_plus(include)
+        actual_pattern_type = "include"
+    elif exclude:
+        actual_pattern = unquote_plus(exclude)
+        actual_pattern_type = "exclude"
+    elif pattern:
+        actual_pattern = unquote_plus(pattern)
+
     return templates.TemplateResponse(
         "index.jinja",
         {
             "request": request,
             "examples": EXAMPLE_REPOS,
-            "default_file_size": 243,
+            "default_file_size": include_files_under,
+            "github_url": repo if repo else "",
+            "pattern_type": actual_pattern_type,
+            "pattern": actual_pattern,
         },
     )
 
@@ -43,8 +56,8 @@ async def home(request: Request) -> HTMLResponse:
 @limiter.limit("10/minute")
 async def index_post(
     request: Request,
-    input_text: str = Form(...),
-    max_file_size: int = Form(...),
+    repo: str = Form(...),
+    include_files_under: int = Form(...),
     pattern_type: str = Form(...),
     pattern: str = Form(...),
 ) -> HTMLResponse:
@@ -59,25 +72,24 @@ async def index_post(
     ----------
     request : Request
         The incoming request object, which provides context for rendering the response.
-    input_text : str, optional
-        The input text provided by the user for processing, by default taken from the form.
-    max_file_size : int, optional
+    repo : str
+        The repository URL or local path provided by the user.
+    include_files_under : int
         The maximum allowed file size for the input, specified by the user.
-    pattern_type : str, optional
+    pattern_type : str
         The type of pattern used for the query, specified by the user.
-    pattern : str, optional
+    pattern : str
         The pattern string used in the query, specified by the user.
 
     Returns
     -------
     HTMLResponse
-        An HTML response containing the results of processing the form input and query logic,
-        which will be rendered and returned to the user.
+        An HTML response containing the results of processing the form input and query logic.
     """
     return await process_query(
         request,
-        input_text,
-        max_file_size,
+        repo,
+        include_files_under,
         pattern_type,
         pattern,
         is_index=True,

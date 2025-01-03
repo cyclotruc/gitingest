@@ -13,7 +13,7 @@ templates = Jinja2Templates(directory="templates")
 
 async def process_query(
     request: Request,
-    input_text: str,
+    repo: str,
     slider_position: int,
     pattern_type: str = "exclude",
     pattern: str = "",
@@ -29,8 +29,8 @@ async def process_query(
     ----------
     request : Request
         The HTTP request object.
-    input_text : str
-        Input text provided by the user, typically a GitHub repository URL or slug.
+    repo : str
+        The repository URL or local path provided by the user.
     slider_position : int
         Position of the slider, representing the maximum file size in the query.
     pattern_type : str, optional
@@ -57,7 +57,7 @@ async def process_query(
 
     try:
         query = parse_query(
-            source=input_text,
+            source=repo,
             max_file_size=max_file_size,
             from_web=True,
             include_patterns=include_patterns,
@@ -86,7 +86,7 @@ async def process_query(
             template,
             {
                 "request": request,
-                "github_url": input_text,
+                "github_url": repo,
                 "error_message": f"Error: {e}",
                 "examples": EXAMPLE_REPOS if is_index else [],
                 "default_file_size": slider_position,
@@ -113,7 +113,7 @@ async def process_query(
         template,
         {
             "request": request,
-            "github_url": input_text,
+            "github_url": repo,
             "result": True,
             "summary": summary,
             "tree": tree,
