@@ -5,7 +5,7 @@ import re
 import string
 import uuid
 from typing import Any
-from urllib.parse import unquote
+from urllib.parse import unquote, urlparse
 
 from gitingest.exceptions import InvalidPatternError
 from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
@@ -104,6 +104,10 @@ def _parse_url(url: str) -> dict[str, Any]:
 
     if not url.startswith(("https://", "http://")):
         url = "https://" + url
+
+    # Parse URL and reconstruct it without query parameters and fragments
+    parsed_url = urlparse(url)
+    url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
 
     # Extract domain and path
     url_parts = url.split("/")

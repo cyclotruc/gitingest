@@ -1,6 +1,10 @@
 """ Main module for the FastAPI application. """
 
+import asyncio
 import os
+import shutil
+import time
+from contextlib import asynccontextmanager
 
 from api_analytics.fastapi import Analytics
 from dotenv import load_dotenv
@@ -12,14 +16,86 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from config import DELETE_REPO_AFTER, TMP_BASE_PATH
 from routers import download, dynamic, index
 from server_utils import limiter
 
 # Load environment variables from .env file
 load_dotenv()
 
-# Initialize the FastAPI application
-app = FastAPI()
+
+async def remove_old_repositories():
+    """
+    Background task that runs periodically to clean up old repository directories.
+
+    This task:
+    - Scans the TMP_BASE_PATH directory every 60 seconds
+    - Removes directories older than DELETE_REPO_AFTER seconds
+    - Before deletion, logs repository URLs to history.txt if a matching .txt file exists
+    - Handles errors gracefully if deletion fails
+
+    The repository URL is extracted from the first .txt file in each directory,
+    assuming the filename format: "owner-repository.txt"
+    """
+    while True:
+        try:
+            if not os.path.exists(TMP_BASE_PATH):
+                await asyncio.sleep(60)
+                continue
+
+            current_time = time.time()
+
+            for folder in os.listdir(TMP_BASE_PATH):
+                folder_path = os.path.join(TMP_BASE_PATH, folder)
+
+                # Skip if folder is not old enough
+                if current_time - os.path.getctime(folder_path) <= DELETE_REPO_AFTER:
+                    continue
+
+                # Try to log repository URL before deletion
+                try:
+                    txt_files = [f for f in os.listdir(folder_path) if f.endswith(".txt")]
+                    if txt_files:
+                        filename = txt_files[0].replace(".txt", "")
+                        if "-" in filename:
+                            owner, repo = filename.split("-", 1)
+                            repo_url = f"https://github.com/{owner}/{repo}"
+                            with open("history.txt", "a") as history:
+                                history.write(f"{repo_url}\n")
+                except Exception as e:
+                    print(f"Error logging repository URL for {folder_path}: {str(e)}")
+
+                # Delete the folder
+                try:
+                    shutil.rmtree(folder_path)
+                except Exception as e:
+                    print(f"Error deleting {folder_path}: {str(e)}")
+
+        except Exception as e:
+            print(f"Error in remove_old_repositories: {str(e)}")
+
+        await asyncio.sleep(60)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Lifecycle manager for the FastAPI application.
+    Handles startup and shutdown events.
+    """
+    task = asyncio.create_task(remove_old_repositories())
+
+    yield
+    # Cancel the background task on shutdown
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+
+
+# Initialize the FastAPI application with lifespan
+app = FastAPI(lifespan=lifespan)
 app.state.limiter = limiter
 
 
