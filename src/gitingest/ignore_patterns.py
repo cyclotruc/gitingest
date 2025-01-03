@@ -97,7 +97,6 @@ DEFAULT_IGNORE_PATTERNS: list[str] = [
     "*.jpeg",
     "*.gif",
     "*.ico",
-    "*.pdf",
     "*.mov",
     "*.mp4",
     "*.mp3",

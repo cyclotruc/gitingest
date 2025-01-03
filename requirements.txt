@@ -1,6 +1,7 @@
 click>=8.0.0
 fastapi-analytics
 fastapi[standard]
+pypdf
 python-dotenv
 slowapi
 starlette

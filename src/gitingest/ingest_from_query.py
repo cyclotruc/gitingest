@@ -5,6 +5,7 @@ from fnmatch import fnmatch
 from typing import Any
 
 import tiktoken
+from pypdf import PdfReader
 
 from gitingest.exceptions import AlreadyVisitedError, MaxFileSizeReachedError, MaxFilesReachedError
 
@@ -101,6 +102,23 @@ def _is_safe_symlink(symlink_path: str, base_path: str) -> bool:
         return False
 
 
+def _is_pdf_file(file_path: str) -> bool:
+    """
+    Check if the file is a PDF based on its extension.
+
+    Parameters
+    ----------
+    file_path : str
+        The path to the file to check.
+
+    Returns
+    -------
+    bool
+        `True` if the file is a PDF, `False` otherwise.
+    """
+    return file_path.lower().endswith(".pdf")
+
+
 def _is_text_file(file_path: str) -> bool:
     """
     Determine if a file is likely a text file based on its content.
@@ -127,11 +145,32 @@ def _is_text_file(file_path: str) -> bool:
         return False
 
 
+def _read_pdf_content(file_path: str) -> str:
+    """
+    Extract text from a PDF file.
+
+    Parameters
+    ----------
+    file_path : str
+        The path to the PDF file.
+
+    Returns
+    -------
+    str
+        The extracted text from the PDF, or an error message if extraction fails.
+    """
+    try:
+        reader = PdfReader(file_path)
+        return "\n".join(page.extract_text() for page in reader.pages if page.extract_text())
+    except Exception as e:
+        return f"Error reading PDF file: {str(e)}"
+
+
 def _read_file_content(file_path: str) -> str:
     """
     Reads the content of a file.
 
-    This function attempts to open a file and read its contents using UTF-8 encoding.
+    This function attempts to open a file and read its contents using UTF-8 encoding or extracts text from pdf files.
     If an error occurs during reading (e.g., file is not found or permission error),
     it returns an error message.
 
@@ -145,6 +184,8 @@ def _read_file_content(file_path: str) -> str:
     str
         The content of the file, or an error message if the file could not be read.
     """
+    if _is_pdf_file(file_path):
+        return _read_pdf_content(file_path)
     try:
         with open(file_path, encoding="utf-8", errors="ignore") as f:
             return f.read()
