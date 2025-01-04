@@ -1,0 +1,15 @@
+version: 2
+
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "06:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "patch"
+      - "minor"
+    ignore:
+      - dependency-name: "pytest"
+        versions: [">=6.0.0a1, <7.0.0"]
