@@ -1,3 +1,5 @@
+""" gitingest: A package for ingesting data from git repositories. """
+
 from gitingest.clone import clone_repo
 from gitingest.ingest import ingest
 from gitingest.ingest_from_query import ingest_from_query

@@ -1,5 +1,59 @@
+[project]
+name = "gitingest"
+version = "0.1.2"
+description="CLI tool to analyze and create text dumps of codebases for LLMs"
+readme = {file = "README.md", content-type = "text/markdown" }
+requires-python = ">= 3.10"
+dependencies = [
+    "click>=8.0.0",
+    "fastapi-analytics",
+    "fastapi[standard]",
+    "python-dotenv",
+    "slowapi",
+    "starlette",
+    "tiktoken",
+    "uvicorn",
+]
+license = {file = "LICENSE"}
+authors = [{name = "Romain Courtois", email = "romain@coderamp.io"}]
+classifiers=[
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+
+[project.scripts]
+gitingest = "gitingest.cli:main"
+
+[project.urls]
+homepage = "https://gitingest.com"
+github = "https://github.com/cyclotruc/gitingest"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = {find = {where = ["src"]}}
+include-package-data = true
+
+# Linting configuration
 [tool.pylint.format]
 max-line-length = 119
+
+[tool.pylint.'MESSAGES CONTROL']
+disable = [
+    "too-many-arguments",
+    "too-many-positional-arguments",
+    "too-many-locals",
+    "too-few-public-methods",
+    "broad-exception-caught",
+    "duplicate-code",
+]
 
 [tool.pycln]
 all = true
@@ -14,3 +68,12 @@ filter_files = true
 
 [tool.black]
 line-length = 119
+
+# Test configuration
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests/"]
+python_files = "test_*.py"
+asyncio_mode = "auto"
+python_classes = "Test*"
+python_functions = "test_*"

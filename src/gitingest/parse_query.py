@@ -1,14 +1,16 @@
+""" This module contains functions to parse and validate input sources and patterns. """
+
 import os
 import re
 import string
 import uuid
 from typing import Any
-from urllib.parse import unquote
+from urllib.parse import unquote, urlparse
 
 from gitingest.exceptions import InvalidPatternError
 from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
 
-TMP_BASE_PATH: str = "../tmp"
+TMP_BASE_PATH: str = "/tmp/gitingest"
 HEX_DIGITS = set(string.hexdigits)
 
 
@@ -100,8 +102,12 @@ def _parse_url(url: str) -> dict[str, Any]:
     url = url.split(" ")[0]
     url = unquote(url)  # Decode URL-encoded characters
 
-    if not url.startswith("https://"):
+    if not url.startswith(("https://", "http://")):
         url = "https://" + url
+
+    # Parse URL and reconstruct it without query parameters and fragments
+    parsed_url = urlparse(url)
+    url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
 
     # Extract domain and path
     url_parts = url.split("/")

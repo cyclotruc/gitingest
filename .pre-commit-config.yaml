@@ -83,3 +83,51 @@ repos:
       - id: markdownlint
         description: "Lint markdown files."
         args: ["--disable=line-length"]
+
+  - repo: https://github.com/terrencepreilly/darglint
+    rev: v1.8.1
+    hooks:
+      - id: darglint
+        name: darglint for source
+        args: [--docstring-style=numpy]
+        files: ^src/
+
+  - repo: https://github.com/pycqa/pylint
+    rev: v3.3.3
+    hooks:
+      - id: pylint
+        name: pylint for source
+        files: ^src/
+        additional_dependencies:
+          [
+            click,
+            fastapi-analytics,
+            pytest-asyncio,
+            python-dotenv,
+            slowapi,
+            starlette,
+            tiktoken,
+            uvicorn,
+          ]
+      - id: pylint
+        name: pylint for tests
+        files: ^tests/
+        args:
+          - --rcfile=tests/.pylintrc
+        additional_dependencies:
+          [
+            click,
+            fastapi-analytics,
+            pytest,
+            pytest-asyncio,
+            python-dotenv,
+            slowapi,
+            starlette,
+            tiktoken,
+            uvicorn,
+          ]
+
+  - repo: meta
+    hooks:
+      - id: check-hooks-apply
+      - id: check-useless-excludes

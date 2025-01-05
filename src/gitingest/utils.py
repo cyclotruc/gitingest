@@ -1,3 +1,5 @@
+""" Utility functions for the GitIngest package. """
+
 import asyncio
 import functools
 from collections.abc import Awaitable, Callable
@@ -19,7 +21,7 @@ def async_timeout(seconds: int = 10) -> Callable[[Callable[P, Awaitable[T]]], Ca
 
     Parameters
     ----------
-    seconds : int, optional
+    seconds : int
         The maximum allowed time (in seconds) for the asynchronous function to complete.
         The default is 10 seconds.
 
@@ -29,11 +31,6 @@ def async_timeout(seconds: int = 10) -> Callable[[Callable[P, Awaitable[T]]], Ca
         A decorator that, when applied to an async function, ensures the function
         completes within the specified time limit. If the function takes too long,
         an `AsyncTimeoutError` is raised.
-
-    Raises
-    ------
-    AsyncTimeoutError
-        If the wrapped asynchronous function does not complete within the specified time limit.
     """
 
     def decorator(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
@@ -41,8 +38,8 @@ def async_timeout(seconds: int = 10) -> Callable[[Callable[P, Awaitable[T]]], Ca
         async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
             try:
                 return await asyncio.wait_for(func(*args, **kwargs), timeout=seconds)
-            except asyncio.TimeoutError:
-                raise AsyncTimeoutError(f"Operation timed out after {seconds} seconds")
+            except asyncio.TimeoutError as exc:
+                raise AsyncTimeoutError(f"Operation timed out after {seconds} seconds") from exc
 
         return wrapper
 

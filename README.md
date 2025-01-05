@@ -4,16 +4,19 @@
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/cyclotruc/gitingest/blob/main/LICENSE)
 [![PyPI version](https://badge.fury.io/py/gitingest.svg)](https://badge.fury.io/py/gitingest)
+[![GitHub stars](https://img.shields.io/github/stars/cyclotruc/gitingest?style=social.svg)](https://github.com/cyclotruc/gitingest)
 [![Downloads](https://pepy.tech/badge/gitingest)](https://pepy.tech/project/gitingest)
 [![GitHub issues](https://img.shields.io/github/issues/cyclotruc/gitingest)](https://github.com/cyclotruc/gitingest/issues)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 [![Discord](https://dcbadge.limes.pink/api/server/https://discord.com/invite/zerRaGK9EC)](https://discord.com/invite/zerRaGK9EC)
 
 Turn any Git repository into a prompt-friendly text ingest for LLMs.
 
-You can also replace `hub` with `ingest` in any github url to access the coresponding digest.
+You can also replace `hub` with `ingest` in any GitHub URL to access the coresponding digest
 
 [gitingest.com](https://gitingest.com/) · [Chrome Extension](https://chromewebstore.google.com/detail/adfjahbijlkjfoicpjkhjicpjpjfaood) · [Firefox Add-on](https://addons.mozilla.org/firefox/addon/gitingest/)
+
 
 
 ## 🚀 Features
@@ -24,7 +27,7 @@ You can also replace `hub` with `ingest` in any github url to access the corespo
   - File and directory structure
   - Size of the extract
   - Token count
-- **CLI tool**: Run it as a command (Currently on Linux only)
+- **CLI tool**: Run it as a shell command (currently on Linux only)
 - **Python package**: Import it in your code
 
 ## 📦 Installation
@@ -43,7 +46,8 @@ The extension is open source at [lcandy2/gitingest-extension](https://github.com
 For anyone who wants install it manually, you may download it [here](https://github.com/lcandy2/gitingest-extension/releases).  
 Issues and feature requests are welcome to the repo.
 
-## 💡 Command Line usage
+## 💡 Command line usage
+
 
 The `gitingest` command line tool allows you to analyze codebases and create a text dump of their contents.
 
@@ -51,7 +55,7 @@ The `gitingest` command line tool allows you to analyze codebases and create a t
 # Basic usage
 gitingest /path/to/directory
 
-# From url
+# From URL
 gitingest https://github.com/cyclotruc/gitingest
 
 # See more options
@@ -111,8 +115,8 @@ Gitingest aims to be friendly for first time contributors, with a simple python 
 
 ### Ways to help (non-technical)
 
-- Provide your feedback and ideas on discord
-- Open an Issue on github to report a bug / submit an feature request
+- Provide your feedback and ideas on Discord
+- Open an issue on GitHub to report a bug / submit a feature request
 - Talk about Gitingest on social media
 
 ### How to submit a PR
@@ -128,14 +132,14 @@ Gitingest aims to be friendly for first time contributors, with a simple python 
 
 ### Run web UI locally
 
-1. Clone the repository
+1. Clone the repository:
 
    ```bash
    git clone https://github.com/cyclotruc/gitingest.git
    cd gitingest
    ```
 
-2. Install dependencies
+2. Install dependencies:
 
    ```bash
    pip install -r requirements-dev.txt
@@ -151,7 +155,7 @@ Gitingest aims to be friendly for first time contributors, with a simple python 
    uvicorn main:app --reload
    ```
 
-4. Run unit tests
+4. Run unit tests:
 
    ```bash
    pytest
@@ -161,13 +165,13 @@ The application should be available at `http://localhost:8000`
 
 ### Working on the CLI
 
-1. Install the package in dev mode
+1. Install the package in dev mode:
 
    ```bash
    pip install -e .
    ```
 
-2. Run the CLI
+2. Run the CLI:
 
    ```bash
    gitingest --help

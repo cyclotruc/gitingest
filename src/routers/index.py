@@ -1,3 +1,5 @@
+""" This module defines the FastAPI router for the home page of the application. """
+
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -59,13 +61,13 @@ async def index_post(
     ----------
     request : Request
         The incoming request object, which provides context for rendering the response.
-    input_text : str, optional
+    input_text : str
         The input text provided by the user for processing, by default taken from the form.
-    max_file_size : int, optional
+    max_file_size : int
         The maximum allowed file size for the input, specified by the user.
-    pattern_type : str, optional
+    pattern_type : str
         The type of pattern used for the query, specified by the user.
-    pattern : str, optional
+    pattern : str
         The pattern string used in the query, specified by the user.
 
     Returns

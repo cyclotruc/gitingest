@@ -37,22 +37,9 @@
         </title>
         <script src="https://cdn.tailwindcss.com"></script>
         <script src="/static/js/utils.js"></script>
-        <script src="/static/js/snow.js"></script>
-        <style>
-        #snow-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            pointer-events: none;
-            z-index: 10;
-            width: 100%;
-            height: 100%;
-        }
-        </style>
         {% block extra_head %}{% endblock %}
     </head>
     <body class="bg-[#FFFDF8] min-h-screen flex flex-col">
-        <canvas id="snow-canvas"></canvas>
         {% include 'components/navbar.jinja' %}
         <!-- Main content wrapper -->
         <main class="flex-1 w-full">

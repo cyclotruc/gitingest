@@ -1,10 +1,12 @@
+""" Tests for the parse_query module. """
+
 import pytest
 
 from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
 from gitingest.parse_query import _parse_patterns, _parse_url, parse_query
 
 
-def test_parse_url_valid() -> None:
+def test_parse_url_valid_https() -> None:
     test_cases = [
         "https://github.com/user/repo",
         "https://gitlab.com/user/repo",
@@ -15,6 +17,19 @@ def test_parse_url_valid() -> None:
         assert result["user_name"] == "user"
         assert result["repo_name"] == "repo"
         assert result["url"] == url
+
+
+def test_parse_url_valid_http() -> None:
+    test_cases = [
+        "http://github.com/user/repo",
+        "http://gitlab.com/user/repo",
+        "http://bitbucket.org/user/repo",
+    ]
+    for url in test_cases:
+        result = _parse_url(url)
+        assert result["user_name"] == "user"
+        assert result["repo_name"] == "repo"
+        assert result["slug"] == "user-repo"
 
 
 def test_parse_url_invalid() -> None:
@@ -140,3 +155,11 @@ def test_parse_query_uuid_uniqueness() -> None:
     result1 = parse_query(path, max_file_size=100, from_web=False)
     result2 = parse_query(path, max_file_size=100, from_web=False)
     assert result1["id"] != result2["id"]
+
+
+def test_parse_url_with_query_and_fragment() -> None:
+    url = "https://github.com/user/repo?arg=value#fragment"
+    result = _parse_url(url)
+    assert result["user_name"] == "user"
+    assert result["repo_name"] == "repo"
+    assert result["url"] == "https://github.com/user/repo"  # URL should be cleaned
