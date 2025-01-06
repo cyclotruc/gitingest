@@ -25,6 +25,7 @@ def sample_query() -> dict[str, Any]:
 
 @pytest.fixture
 def temp_directory(tmp_path: Path) -> Path:
+    """
     # Creates the following structure:
     # test_repo/
     # ├── file1.txt
@@ -39,6 +40,7 @@ def temp_directory(tmp_path: Path) -> Path:
     # |   └── file_dir1.txt
     # └── dir2/
     #     └── file_dir2.txt
+    """
 
     test_dir = tmp_path / "test_repo"
     test_dir.mkdir()
