@@ -5,6 +5,7 @@ import os
 import shutil
 import time
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from api_analytics.fastapi import Analytics
 from dotenv import load_dotenv
@@ -36,71 +37,59 @@ async def remove_old_repositories():
 
     The repository URL is extracted from the first .txt file in each directory,
     assuming the filename format: "owner-repository.txt"
-
-    Returns
-    -------
-    None
-        This coroutine never returns, it runs indefinitely until cancelled.
     """
     while True:
         try:
-            if not os.path.exists(TMP_BASE_PATH):
+            if not TMP_BASE_PATH.exists():
                 await asyncio.sleep(60)
                 continue
 
             current_time = time.time()
 
-            for folder in os.listdir(TMP_BASE_PATH):
-                folder_path = os.path.join(TMP_BASE_PATH, folder)
-
-                # Skip if folder is not old enough
-                if current_time - os.path.getctime(folder_path) <= DELETE_REPO_AFTER:
+            for folder in TMP_BASE_PATH.iterdir():
+                if not folder.is_dir():
                     continue
 
-                await process_folder(folder_path)
+                # Skip if folder is not old enough
+                if current_time - folder.stat().st_ctime <= DELETE_REPO_AFTER:
+                    continue
+
+                await process_folder(folder)
 
         except Exception as e:
             print(f"Error in remove_old_repositories: {str(e)}")
 
         await asyncio.sleep(60)
 
-    return
 
-
-async def process_folder(folder_path: str) -> None:
+async def process_folder(folder: Path) -> None:
     """
     Process a single folder for deletion and logging.
 
     Parameters
     ----------
-    folder_path : str
+    folder : Path
         The path to the folder to be processed.
-
-    Returns
-    -------
-    None
-        This function doesn't return anything but performs side effects.
     """
     # Try to log repository URL before deletion
     try:
-        txt_files = [f for f in os.listdir(folder_path) if f.endswith(".txt")]
-        if txt_files:
-            filename = txt_files[0].replace(".txt", "")
-            if "-" in filename:
-                owner, repo = filename.split("-", 1)
-                repo_url = f"https://github.com/{owner}/{repo}"
-                with open("history.txt", "a", encoding="utf-8") as history:
-                    history.write(f"{repo_url}\n")
+        txt_files = [f for f in folder.iterdir() if f.suffix == ".txt"]
+
+        # Extract owner and repository name from the filename
+        if txt_files and "-" in (filename := txt_files[0].stem):
+            owner, repo = filename.split("-", 1)
+            repo_url = f"https://github.com/{owner}/{repo}"
+            with open("history.txt", mode="a", encoding="utf-8") as history:
+                history.write(f"{repo_url}\n")
+
     except Exception as e:
-        print(f"Error logging repository URL for {folder_path}: {str(e)}")
+        print(f"Error logging repository URL for {folder}: {str(e)}")
 
     # Delete the folder
     try:
-        shutil.rmtree(folder_path)
+        shutil.rmtree(folder)
     except Exception as e:
-        print(f"Error deleting {folder_path}: {str(e)}")
-
-    return
+        print(f"Error deleting {folder}: {str(e)}")
 
 
 @asynccontextmanager

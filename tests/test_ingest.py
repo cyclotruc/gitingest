@@ -7,7 +7,8 @@ from gitingest.ingest_from_query import _extract_files_content, _scan_directory
 
 
 def test_scan_directory(temp_directory: Path, sample_query: dict[str, Any]) -> None:
-    result = _scan_directory(str(temp_directory), query=sample_query)
+    sample_query["local_path"] = temp_directory
+    result = _scan_directory(temp_directory, query=sample_query)
     if result is None:
         assert False, "Result is None"
 
@@ -18,7 +19,8 @@ def test_scan_directory(temp_directory: Path, sample_query: dict[str, Any]) -> N
 
 
 def test_extract_files_content(temp_directory: Path, sample_query: dict[str, Any]) -> None:
-    nodes = _scan_directory(str(temp_directory), query=sample_query)
+    sample_query["local_path"] = temp_directory
+    nodes = _scan_directory(temp_directory, query=sample_query)
     if nodes is None:
         assert False, "Nodes is None"
     files = _extract_files_content(query=sample_query, node=nodes, max_file_size=1_000_000)

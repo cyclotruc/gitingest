@@ -86,7 +86,7 @@ async def process_query(
         )
         clone_config = CloneConfig(
             url=query["url"],
-            local_path=query["local_path"],
+            local_path=str(query["local_path"]),
             commit=query.get("commit"),
             branch=query.get("branch"),
         )
