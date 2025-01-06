@@ -7,6 +7,7 @@ from typing import Any
 import tiktoken
 
 from gitingest.exceptions import AlreadyVisitedError, MaxFileSizeReachedError, MaxFilesReachedError
+from gitingest.notebook_utils import process_notebook
 
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 MAX_DIRECTORY_DEPTH = 20  # Maximum depth of directory traversal
@@ -158,7 +159,10 @@ def _read_file_content(file_path: Path) -> str:
         The content of the file, or an error message if the file could not be read.
     """
     try:
-        with file_path.open(encoding="utf-8", errors="ignore") as f:
+        if file_path.suffix == ".ipynb":
+            return process_notebook(file_path)
+
+        with open(file_path, encoding="utf-8", errors="ignore") as f:
             return f.read()
     except OSError as e:
         return f"Error reading file: {e}"
@@ -819,7 +823,7 @@ def _ingest_directory(path: Path, query: dict[str, Any]) -> tuple[str, str, str]
     return summary, tree, files_content
 
 
-def ingest_from_query(query: dict[str, Any]) -> tuple[str, str, str]:
+def run_ingest_query(query: dict[str, Any]) -> tuple[str, str, str]:
     """
     Main entry point for analyzing a codebase directory or single file.
 

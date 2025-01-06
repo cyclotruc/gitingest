@@ -1,5 +1,6 @@
 """ This module contains fixtures for the tests. """
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -72,3 +73,18 @@ def temp_directory(tmp_path: Path) -> Path:
     (dir2 / "file_dir2.txt").write_text("Hello from dir2")
 
     return test_dir
+
+
+@pytest.fixture
+def write_notebook(tmp_path: Path):
+    """
+    A helper fixture that returns a function for writing arbitrary notebook content to a temporary .ipynb file.
+    """
+
+    def _write_notebook(name: str, content: dict) -> Path:
+        notebook_path = tmp_path / name
+        with notebook_path.open("w", encoding="utf-8") as f:
+            json.dump(content, f)
+        return notebook_path
+
+    return _write_notebook
