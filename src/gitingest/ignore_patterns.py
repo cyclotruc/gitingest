@@ -1,4 +1,4 @@
-""" Default ignore patterns for GitIngest. """
+""" Default ignore patterns for Gitingest. """
 
 DEFAULT_IGNORE_PATTERNS: list[str] = [
     # Python
