@@ -21,6 +21,7 @@ async def process_query(
     slider_position: int,
     pattern_type: str = "exclude",
     pattern: str = "",
+    branch: str = None,
     is_index: bool = False,
 ) -> _TemplateResponse:
     """
@@ -41,6 +42,8 @@ async def process_query(
         Type of pattern to use, either "include" or "exclude" (default is "exclude").
     pattern : str
         Pattern to include or exclude in the query, depending on the pattern type.
+    branch : str
+        The branch to clone, by default None.
     is_index : bool
         Flag indicating whether the request is for the index page (default is False).
 
@@ -88,14 +91,13 @@ async def process_query(
             url=query["url"],
             local_path=query["local_path"],
             commit=query.get("commit"),
-            branch=query.get("branch"),
+            branch=branch or query.get("branch"),
         )
         await clone_repo(clone_config)
         summary, tree, content = ingest_from_query(query)
         with open(f"{clone_config.local_path}.txt", "w", encoding="utf-8") as f:
             f.write(tree + "\n" + content)
     except Exception as e:
-        # hack to print error message when query is not defined
         if "query" in locals() and query is not None and isinstance(query, dict):
             _print_error(query["url"], e, max_file_size, pattern_type, pattern)
         else:

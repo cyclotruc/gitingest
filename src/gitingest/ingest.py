@@ -15,6 +15,7 @@ def ingest(
     include_patterns: list[str] | str | None = None,
     exclude_patterns: list[str] | str | None = None,
     output: str | None = None,
+    branch: str | None = None,
 ) -> tuple[str, str, str]:
     """
     Main entry point for ingesting a source and processing its contents.
@@ -36,6 +37,8 @@ def ingest(
         Pattern or list of patterns specifying which files to exclude. If `None`, no files are excluded.
     output : str | None, optional
         File path where the summary and content should be written. If `None`, the results are not written to a file.
+    branch : str | None, optional
+        The branch to clone and ingest. If `None`, the default branch is used.
 
     Returns
     -------
@@ -65,7 +68,7 @@ def ingest(
                 url=query["url"],
                 local_path=query["local_path"],
                 commit=query.get("commit"),
-                branch=query.get("branch"),
+                branch=branch,  # Pass the branch to CloneConfig
             )
             clone_result = clone_repo(clone_config)
 
@@ -82,7 +85,7 @@ def ingest(
 
         return summary, tree, content
     finally:
-        # Clean up the temporary directory if it was created
+        # Clean up temporary directories
         if query["url"]:
             # Clean up the temporary directory under /tmp/gitingest
             cleanup_path = "/tmp/gitingest"

@@ -1,5 +1,6 @@
 """ Tests for the clone module. """
 
+import os
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -171,3 +172,43 @@ async def test_check_repo_exists_with_redirect() -> None:
         mock_exec.return_value = mock_process
 
         assert await _check_repo_exists(url)
+
+
+@pytest.mark.asyncio
+async def test_clone_specific_branch(tmp_path):
+    repo_url = "https://github.com/cyclotruc/gitingest.git"
+    branch_name = "main"
+    local_path = tmp_path / "gitingest"
+
+    config = CloneConfig(url=repo_url, local_path=str(local_path), branch=branch_name)
+    await clone_repo(config)
+
+    # Assertions
+    assert local_path.exists(), "The repository was not cloned successfully."
+    assert local_path.is_dir(), "The cloned repository path is not a directory."
+
+    # Check the current branch
+    current_branch = os.popen(f"git -C {local_path} branch --show-current").read().strip()
+    assert current_branch == branch_name, f"Expected branch '{branch_name}', got '{current_branch}'."
+
+
+@pytest.mark.asyncio
+async def test_clone_branch_with_slashes(tmp_path):
+    repo_url = "https://github.com/cyclotruc/gitingest.git"
+    branch_name = "feat/logo"
+    local_path = tmp_path / "gitingest"
+
+    config = CloneConfig(url=repo_url, local_path=str(local_path), branch=branch_name)
+    with patch("gitingest.clone._check_repo_exists", return_value=True):
+        with patch("gitingest.clone._run_git_command", new_callable=AsyncMock) as mock_exec:
+            await clone_repo(config)
+            mock_exec.assert_called_once_with(
+                "git",
+                "clone",
+                "--depth=1",
+                "--single-branch",
+                "--branch",
+                branch_name,
+                repo_url,
+                str(local_path),
+            )

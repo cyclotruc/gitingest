@@ -14,12 +14,14 @@ from gitingest.ingest_from_query import MAX_FILE_SIZE
 @click.option("--max-size", "-s", default=MAX_FILE_SIZE, help="Maximum file size to process in bytes")
 @click.option("--exclude-pattern", "-e", multiple=True, help="Patterns to exclude")
 @click.option("--include-pattern", "-i", multiple=True, help="Patterns to include")
+@click.option("--branch", "-b", default=None, help="Branch to clone and ingest")
 def main(
     source: str,
     output: str | None,
     max_size: int,
     exclude_pattern: tuple[str, ...],
     include_pattern: tuple[str, ...],
+    branch: str | None,
 ) -> None:
     """
     Analyze a directory or repository and create a text dump of its contents.
@@ -41,6 +43,8 @@ def main(
         A tuple of patterns to exclude during the analysis. Files matching these patterns will be ignored.
     include_pattern : tuple[str, ...]
         A tuple of patterns to include during the analysis. Only files matching these patterns will be processed.
+    branch : str | None
+        The branch to clone (optional).
 
     Raises
     ------
@@ -54,7 +58,7 @@ def main(
 
         if not output:
             output = "digest.txt"
-        summary, _, _ = ingest(source, max_size, include_patterns, exclude_patterns, output=output)
+        summary, _, _ = ingest(source, max_size, include_patterns, exclude_patterns, output=output, branch=branch)
 
         click.echo(f"Analysis complete! Output written to: {output}")
         click.echo("\nSummary:")
