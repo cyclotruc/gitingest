@@ -56,6 +56,12 @@ function handleSubmit(event, showLoading = false) {
         formData.append('pattern', pattern.value);
     }
 
+    const branch = document.getElementById('branch');
+    if (branch) {
+        formData.delete('branch');
+        formData.append('branch', branch.value);
+    }
+
     const originalContent = submitButton.innerHTML;
     const currentStars = document.getElementById('github-stars')?.textContent;
 

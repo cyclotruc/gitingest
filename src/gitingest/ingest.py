@@ -14,8 +14,8 @@ def ingest(
     max_file_size: int = 10 * 1024 * 1024,  # 10 MB
     include_patterns: list[str] | str | None = None,
     exclude_patterns: list[str] | str | None = None,
-    output: str | None = None,
     branch: str | None = None,
+    output: str | None = None,
 ) -> tuple[str, str, str]:
     """
     Main entry point for ingesting a source and processing its contents.
@@ -35,10 +35,10 @@ def ingest(
         Pattern or list of patterns specifying which files to include. If `None`, all files are included.
     exclude_patterns : list[str] | str | None, optional
         Pattern or list of patterns specifying which files to exclude. If `None`, no files are excluded.
-    output : str | None, optional
-        File path where the summary and content should be written. If `None`, the results are not written to a file.
     branch : str | None, optional
         The branch to clone and ingest. If `None`, the default branch is used.
+    output : str | None, optional
+        File path where the summary and content should be written. If `None`, the results are not written to a file.
 
     Returns
     -------
@@ -68,7 +68,7 @@ def ingest(
                 url=query["url"],
                 local_path=query["local_path"],
                 commit=query.get("commit"),
-                branch=branch,  # Pass the branch to CloneConfig
+                branch=branch,
             )
             clone_result = clone_repo(clone_config)
 
