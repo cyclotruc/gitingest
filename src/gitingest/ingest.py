@@ -4,6 +4,7 @@ import asyncio
 import inspect
 import shutil
 
+from config import TMP_BASE_PATH
 from gitingest.clone import CloneConfig, clone_repo
 from gitingest.ingest_from_query import ingest_from_query
 from gitingest.parse_query import parse_query
@@ -63,7 +64,7 @@ def ingest(
             # Extract relevant fields for CloneConfig
             clone_config = CloneConfig(
                 url=query["url"],
-                local_path=query["local_path"],
+                local_path=str(query["local_path"]),
                 commit=query.get("commit"),
                 branch=query.get("branch"),
             )
@@ -84,6 +85,5 @@ def ingest(
     finally:
         # Clean up the temporary directory if it was created
         if query["url"]:
-            # Clean up the temporary directory under /tmp/gitingest
-            cleanup_path = "/tmp/gitingest"
-            shutil.rmtree(cleanup_path, ignore_errors=True)
+            # Clean up the temporary directory
+            shutil.rmtree(TMP_BASE_PATH, ignore_errors=True)

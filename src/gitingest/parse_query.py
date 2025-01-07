@@ -4,13 +4,14 @@ import os
 import re
 import string
 import uuid
+from pathlib import Path
 from typing import Any
 from urllib.parse import unquote, urlparse
 
+from config import TMP_BASE_PATH
 from gitingest.exceptions import InvalidPatternError
 from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
 
-TMP_BASE_PATH: str = "/tmp/gitingest"
 HEX_DIGITS = set(string.hexdigits)
 
 
@@ -22,7 +23,7 @@ def parse_query(
     ignore_patterns: list[str] | str | None = None,
 ) -> dict[str, Any]:
     """
-    Parses the input source to construct a query dictionary with specified parameters.
+    Parse the input source to construct a query dictionary with specified parameters.
 
     This function processes the provided source (either a URL or file path) and builds a
     query dictionary that includes information such as the source URL, maximum file size,
@@ -78,7 +79,7 @@ def parse_query(
 
 def _parse_url(url: str) -> dict[str, Any]:
     """
-    Parses a GitHub repository URL into a structured query dictionary.
+    Parse a GitHub repository URL into a structured query dictionary.
 
     This function extracts relevant information from a GitHub URL, such as the username,
     repository name, commit, branch, and subpath, and returns them in a structured format.
@@ -99,8 +100,9 @@ def _parse_url(url: str) -> dict[str, Any]:
     ValueError
         If the URL is invalid or does not correspond to a valid Git repository.
     """
-    url = url.split(" ")[0]
-    url = unquote(url)  # Decode URL-encoded characters
+    # Clean up the URL
+    url = url.split(" ")[0]  # remove trailing text
+    url = unquote(url)  # decode URL-encoded characters
 
     if not url.startswith(("https://", "http://")):
         url = "https://" + url
@@ -129,16 +131,17 @@ def _parse_url(url: str) -> dict[str, Any]:
         "branch": None,
         "commit": None,
         "subpath": "/",
-        "local_path": f"{TMP_BASE_PATH}/{_id}/{slug}",
+        "local_path": Path(TMP_BASE_PATH) / _id / slug,
         "url": f"https://{domain}/{user_name}/{repo_name}",
         "slug": slug,
         "id": _id,
     }
 
-    # If this is an issues page, return early without processing subpath
+    # If this is an issues page or pull requests, return early without processing subpath
     if len(path_parts) > 2 and (path_parts[2] == "issues" or path_parts[2] == "pull"):
         return parsed
 
+    # If no extra path parts, just return
     if len(path_parts) < 4:
         return parsed
 
@@ -230,8 +233,10 @@ def _parse_patterns(pattern: list[str] | str) -> list[str]:
     for p in patterns:
         parsed_patterns.extend(re.split(",| ", p))
 
+    # Filter out any empty strings
     parsed_patterns = [p for p in parsed_patterns if p != ""]
 
+    # Validate and normalize each pattern
     for p in parsed_patterns:
         if not _is_valid_pattern(p):
             raise InvalidPatternError(p)
@@ -258,7 +263,7 @@ def _override_ignore_patterns(ignore_patterns: list[str], include_patterns: list
     return list(set(ignore_patterns) - set(include_patterns))
 
 
-def _parse_path(path: str) -> dict[str, Any]:
+def _parse_path(path_str: str) -> dict[str, Any]:
     """
     Parses a file path into a structured query dictionary.
 
@@ -268,7 +273,7 @@ def _parse_path(path: str) -> dict[str, Any]:
 
     Parameters
     ----------
-    path : str
+    path_str : str
         The file path to parse.
 
     Returns
@@ -276,10 +281,11 @@ def _parse_path(path: str) -> dict[str, Any]:
     dict[str, Any]
         A dictionary containing parsed details such as the local file path and slug.
     """
+    path_obj = Path(path_str).resolve()
     query = {
         "url": None,
-        "local_path": os.path.abspath(path),
-        "slug": os.path.basename(os.path.dirname(path)) + "/" + os.path.basename(path),
+        "local_path": path_obj,
+        "slug": f"{path_obj.parent.name}/{path_obj.name}",
         "subpath": "/",
         "id": str(uuid.uuid4()),
     }

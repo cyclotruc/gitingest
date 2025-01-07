@@ -1,7 +1,5 @@
 """ This module contains the FastAPI router for downloading a digest file. """
 
-import os
-
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 
@@ -13,7 +11,7 @@ router = APIRouter()
 @router.get("/download/{digest_id}")
 async def download_ingest(digest_id: str) -> Response:
     """
-    Downloads a .txt file associated with a given digest ID.
+    Download a .txt file associated with a given digest ID.
 
     This function searches for a `.txt` file in a directory corresponding to the provided
     digest ID. If a file is found, it is read and returned as a downloadable attachment.
@@ -37,13 +35,13 @@ async def download_ingest(digest_id: str) -> Response:
     HTTPException
         If the digest directory is not found or if no `.txt` file exists in the directory.
     """
-    directory = f"{TMP_BASE_PATH}/{digest_id}"
+    directory = TMP_BASE_PATH / digest_id
 
     try:
-        if not os.path.exists(directory):
+        if not directory.exists():
             raise FileNotFoundError("Directory not found")
 
-        txt_files = [f for f in os.listdir(directory) if f.endswith(".txt")]
+        txt_files = [f for f in directory.iterdir() if f.suffix == ".txt"]
         if not txt_files:
             raise FileNotFoundError("No .txt file found")
 
@@ -53,11 +51,11 @@ async def download_ingest(digest_id: str) -> Response:
     # Find the first .txt file in the directory
     first_file = txt_files[0]
 
-    with open(f"{directory}/{first_file}", encoding="utf-8") as f:
+    with first_file.open(encoding="utf-8") as f:
         content = f.read()
 
     return Response(
         content=content,
         media_type="text/plain",
-        headers={"Content-Disposition": f"attachment; filename={first_file}"},
+        headers={"Content-Disposition": f"attachment; filename={first_file.name}"},
     )

@@ -1,4 +1,4 @@
-""" Utility functions for the GitIngest package. """
+""" Utility functions for the Gitingest package. """
 
 import asyncio
 import functools

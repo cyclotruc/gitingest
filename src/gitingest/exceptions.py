@@ -1,4 +1,4 @@
-""" Custom exceptions for the GitIngest package. """
+""" Custom exceptions for the Gitingest package. """
 
 
 class InvalidPatternError(ValueError):

@@ -1,5 +1,7 @@
 """ Tests for the parse_query module. """
 
+from pathlib import Path
+
 import pytest
 
 from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
@@ -175,7 +177,8 @@ def test_parse_query_local_path() -> None:
     """
     path = "/home/user/project"
     result = parse_query(path, max_file_size=100, from_web=False)
-    assert result["local_path"] == "/home/user/project"
+    tail = Path("home/user/project")
+    assert result["local_path"].parts[-len(tail.parts) :] == tail.parts
     assert result["id"] is not None
     assert result["slug"] == "user/project"
 
@@ -187,7 +190,8 @@ def test_parse_query_relative_path() -> None:
     """
     path = "./project"
     result = parse_query(path, max_file_size=100, from_web=False)
-    assert result["local_path"].endswith("project")
+    tail = Path("project")
+    assert result["local_path"].parts[-len(tail.parts) :] == tail.parts
     assert result["slug"].endswith("project")
 
 

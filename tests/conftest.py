@@ -11,7 +11,7 @@ def sample_query() -> dict[str, Any]:
     return {
         "user_name": "test_user",
         "repo_name": "test_repo",
-        "local_path": "/tmp/test_repo",
+        "local_path": Path("/tmp/test_repo").resolve(),
         "subpath": "/",
         "branch": "main",
         "commit": None,
