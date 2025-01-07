@@ -2,8 +2,9 @@
 
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 
-from gitingest.ingest_from_query import _extract_files_content, _scan_directory
+from gitingest.ingest_from_query import _extract_files_content, _read_file_content, _scan_directory
 
 
 def test_scan_directory(temp_directory: Path, sample_query: dict[str, Any]) -> None:
@@ -35,6 +36,25 @@ def test_extract_files_content(temp_directory: Path, sample_query: dict[str, Any
     assert any("file_subdir.txt" in p for p in paths)
     assert any("file_dir1.txt" in p for p in paths)
     assert any("file_dir2.txt" in p for p in paths)
+
+
+def test_read_file_content_with_notebook(tmp_path: Path):
+    notebook_path = tmp_path / "dummy_notebook.ipynb"
+    notebook_path.write_text("{}", encoding="utf-8")  # minimal JSON
+
+    # Patch the symbol as it is used in ingest_from_query
+    with patch("gitingest.ingest_from_query.process_notebook") as mock_process:
+        _read_file_content(notebook_path)
+        mock_process.assert_called_once_with(notebook_path)
+
+
+def test_read_file_content_with_non_notebook(tmp_path: Path):
+    py_file_path = tmp_path / "dummy_file.py"
+    py_file_path.write_text("print('Hello')", encoding="utf-8")
+
+    with patch("gitingest.ingest_from_query.process_notebook") as mock_process:
+        _read_file_content(py_file_path)
+        mock_process.assert_not_called()
 
 
 # TODO: test with include patterns: ['*.txt']

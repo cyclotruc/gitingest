@@ -78,12 +78,12 @@ def temp_directory(tmp_path: Path) -> Path:
 @pytest.fixture
 def write_notebook(tmp_path: Path):
     """
-    A helper fixture that returns a function for writing arbitrary notebook content to a temporary .ipynb file.
+    A fixture that returns a helper function to write a .ipynb notebook file at runtime with given content.
     """
 
-    def _write_notebook(name: str, content: dict) -> Path:
+    def _write_notebook(name: str, content: dict[str, Any]) -> Path:
         notebook_path = tmp_path / name
-        with notebook_path.open("w", encoding="utf-8") as f:
+        with notebook_path.open(mode="w", encoding="utf-8") as f:
             json.dump(content, f)
         return notebook_path
 
