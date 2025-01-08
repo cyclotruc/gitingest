@@ -66,11 +66,6 @@ repos:
       - id: isort
         description: "Sort imports alphabetically, and automatically separated into sections and by type."
 
-  - repo: https://github.com/hadialqattan/pycln
-    rev: v2.4.0
-    hooks:
-      - id: pycln
-        description: "Remove unused import statements."
 
   - repo: https://github.com/djlint/djLint
     rev: v1.36.4

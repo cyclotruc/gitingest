@@ -8,7 +8,7 @@
         <meta name="description"
               content="Replace 'hub' with 'ingest' in any Github Url for a prompt-friendly text">
         <meta name="keywords"
-              content="GitIngest, AI tools, LLM integration, Ingest, Digest, Context, Prompt, Git workflow, codebase extraction, Git repository, Git automation, Summarize, prompt-friendly">
+              content="Gitingest, AI tools, LLM integration, Ingest, Digest, Context, Prompt, Git workflow, codebase extraction, Git repository, Git automation, Summarize, prompt-friendly">
         <meta name="robots" content="index, follow">
         <!-- Favicons -->
         <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
@@ -20,39 +20,26 @@
               sizes="180x180"
               href="/static/apple-touch-icon.png">
         <!-- Web App Meta -->
-        <meta name="apple-mobile-web-app-title" content="GitIngest">
-        <meta name="application-name" content="GitIngest">
+        <meta name="apple-mobile-web-app-title" content="Gitingest">
+        <meta name="application-name" content="Gitingest">
         <meta name="theme-color" content="#FCA847">
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="default">
         <!-- OpenGraph Meta Tags -->
-        <meta property="og:title" content="Git ingest">
+        <meta property="og:title" content="Gitingest">
         <meta property="og:description"
               content="Replace 'hub' with 'ingest' in any Github Url for a prompt-friendly text">
         <meta property="og:type" content="website">
         <meta property="og:url" content="{{ request.url }}">
         <meta property="og:image" content="/static/og-image.png">
         <title>
-            {% block title %}Git ingest{% endblock %}
+            {% block title %}Gitingest{% endblock %}
         </title>
         <script src="https://cdn.tailwindcss.com"></script>
         <script src="/static/js/utils.js"></script>
-        <script src="/static/js/snow.js"></script>
-        <style>
-        #snow-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            pointer-events: none;
-            z-index: 10;
-            width: 100%;
-            height: 100%;
-        }
-        </style>
         {% block extra_head %}{% endblock %}
     </head>
     <body class="bg-[#FFFDF8] min-h-screen flex flex-col">
-        <canvas id="snow-canvas"></canvas>
         {% include 'components/navbar.jinja' %}
         <!-- Main content wrapper -->
         <main class="flex-1 w-full">

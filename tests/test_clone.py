@@ -9,6 +9,10 @@ from gitingest.clone import CloneConfig, _check_repo_exists, clone_repo
 
 @pytest.mark.asyncio
 async def test_clone_repo_with_commit() -> None:
+    """
+    Test the `clone_repo` function when a specific commit hash is provided.
+    Verifies that the repository is cloned and checked out to the specified commit.
+    """
     clone_config = CloneConfig(
         url="https://github.com/user/repo",
         local_path="/tmp/repo",
@@ -28,6 +32,10 @@ async def test_clone_repo_with_commit() -> None:
 
 @pytest.mark.asyncio
 async def test_clone_repo_without_commit() -> None:
+    """
+    Test the `clone_repo` function when no commit hash is provided.
+    Verifies that only the repository clone operation is performed.
+    """
     query = CloneConfig(url="https://github.com/user/repo", local_path="/tmp/repo", commit=None, branch="main")
 
     with patch("gitingest.clone._check_repo_exists", return_value=True) as mock_check:
@@ -43,6 +51,10 @@ async def test_clone_repo_without_commit() -> None:
 
 @pytest.mark.asyncio
 async def test_clone_repo_nonexistent_repository() -> None:
+    """
+    Test the `clone_repo` function when the repository does not exist.
+    Verifies that a ValueError is raised with an appropriate error message.
+    """
     clone_config = CloneConfig(
         url="https://github.com/user/nonexistent-repo",
         local_path="/tmp/repo",
@@ -57,6 +69,10 @@ async def test_clone_repo_nonexistent_repository() -> None:
 
 @pytest.mark.asyncio
 async def test_check_repo_exists() -> None:
+    """
+    Test the `_check_repo_exists` function to verify if a repository exists.
+    Covers cases for existing repositories, non-existing repositories (404), and failed requests.
+    """
     url = "https://github.com/user/repo"
 
     with patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_exec:
@@ -80,6 +96,10 @@ async def test_check_repo_exists() -> None:
 
 @pytest.mark.asyncio
 async def test_clone_repo_invalid_url() -> None:
+    """
+    Test the `clone_repo` function when an invalid or empty URL is provided.
+    Verifies that a ValueError is raised with an appropriate error message.
+    """
     clone_config = CloneConfig(
         url="",
         local_path="/tmp/repo",
@@ -90,6 +110,10 @@ async def test_clone_repo_invalid_url() -> None:
 
 @pytest.mark.asyncio
 async def test_clone_repo_invalid_local_path() -> None:
+    """
+    Test the `clone_repo` function when an invalid or empty local path is provided.
+    Verifies that a ValueError is raised with an appropriate error message.
+    """
     clone_config = CloneConfig(
         url="https://github.com/user/repo",
         local_path="",
@@ -100,6 +124,10 @@ async def test_clone_repo_invalid_local_path() -> None:
 
 @pytest.mark.asyncio
 async def test_clone_repo_with_custom_branch() -> None:
+    """
+    Test the `clone_repo` function when a custom branch is specified.
+    Verifies that the repository is cloned with the specified branch using a shallow clone.
+    """
     clone_config = CloneConfig(
         url="https://github.com/user/repo",
         local_path="/tmp/repo",
@@ -122,6 +150,10 @@ async def test_clone_repo_with_custom_branch() -> None:
 
 @pytest.mark.asyncio
 async def test_git_command_failure() -> None:
+    """
+    Test the `clone_repo` function when a Git command fails during execution.
+    Verifies that a RuntimeError is raised with an appropriate error message.
+    """
     clone_config = CloneConfig(
         url="https://github.com/user/repo",
         local_path="/tmp/repo",
@@ -134,6 +166,10 @@ async def test_git_command_failure() -> None:
 
 @pytest.mark.asyncio
 async def test_clone_repo_default_shallow_clone() -> None:
+    """
+    Test the `clone_repo` function with default shallow clone behavior.
+    Verifies that the repository is cloned with `--depth=1` and `--single-branch` options.
+    """
     clone_config = CloneConfig(
         url="https://github.com/user/repo",
         local_path="/tmp/repo",
@@ -148,6 +184,10 @@ async def test_clone_repo_default_shallow_clone() -> None:
 
 @pytest.mark.asyncio
 async def test_clone_repo_commit_without_branch() -> None:
+    """
+    Test the `clone_repo` function when a commit hash is provided but no branch is specified.
+    Verifies that the repository is cloned and checked out to the specified commit.
+    """
     clone_config = CloneConfig(
         url="https://github.com/user/repo",
         local_path="/tmp/repo",
@@ -163,6 +203,10 @@ async def test_clone_repo_commit_without_branch() -> None:
 
 @pytest.mark.asyncio
 async def test_check_repo_exists_with_redirect() -> None:
+    """
+    Test the `_check_repo_exists` function for handling HTTP redirects (302 Found).
+    Verifies that it correctly identifies the repository's existence.
+    """
     url = "https://github.com/user/repo"
     with patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_exec:
         mock_process = AsyncMock()

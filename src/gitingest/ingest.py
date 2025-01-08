@@ -4,8 +4,9 @@ import asyncio
 import inspect
 import shutil
 
+from config import TMP_BASE_PATH
 from gitingest.clone import CloneConfig, clone_repo
-from gitingest.ingest_from_query import ingest_from_query
+from gitingest.ingest_from_query import run_ingest_query
 from gitingest.parse_query import parse_query
 
 
@@ -63,7 +64,7 @@ def ingest(
             # Extract relevant fields for CloneConfig
             clone_config = CloneConfig(
                 url=query["url"],
-                local_path=query["local_path"],
+                local_path=str(query["local_path"]),
                 commit=query.get("commit"),
                 branch=query.get("branch"),
             )
@@ -74,7 +75,7 @@ def ingest(
             else:
                 raise TypeError("clone_repo did not return a coroutine as expected.")
 
-        summary, tree, content = ingest_from_query(query)
+        summary, tree, content = run_ingest_query(query)
 
         if output is not None:
             with open(output, "w", encoding="utf-8") as f:
@@ -84,6 +85,5 @@ def ingest(
     finally:
         # Clean up the temporary directory if it was created
         if query["url"]:
-            # Clean up the temporary directory under /tmp/gitingest
-            cleanup_path = "/tmp/gitingest"
-            shutil.rmtree(cleanup_path, ignore_errors=True)
+            # Clean up the temporary directory
+            shutil.rmtree(TMP_BASE_PATH, ignore_errors=True)

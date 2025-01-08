@@ -1,5 +1,6 @@
 """ This module contains fixtures for the tests. """
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -11,7 +12,7 @@ def sample_query() -> dict[str, Any]:
     return {
         "user_name": "test_user",
         "repo_name": "test_repo",
-        "local_path": "/tmp/test_repo",
+        "local_path": Path("/tmp/test_repo").resolve(),
         "subpath": "/",
         "branch": "main",
         "commit": None,
@@ -25,6 +26,7 @@ def sample_query() -> dict[str, Any]:
 
 @pytest.fixture
 def temp_directory(tmp_path: Path) -> Path:
+    """
     # Creates the following structure:
     # test_repo/
     # ├── file1.txt
@@ -39,6 +41,7 @@ def temp_directory(tmp_path: Path) -> Path:
     # |   └── file_dir1.txt
     # └── dir2/
     #     └── file_dir2.txt
+    """
 
     test_dir = tmp_path / "test_repo"
     test_dir.mkdir()
@@ -70,3 +73,18 @@ def temp_directory(tmp_path: Path) -> Path:
     (dir2 / "file_dir2.txt").write_text("Hello from dir2")
 
     return test_dir
+
+
+@pytest.fixture
+def write_notebook(tmp_path: Path):
+    """
+    A fixture that returns a helper function to write a .ipynb notebook file at runtime with given content.
+    """
+
+    def _write_notebook(name: str, content: dict[str, Any]) -> Path:
+        notebook_path = tmp_path / name
+        with notebook_path.open(mode="w", encoding="utf-8") as f:
+            json.dump(content, f)
+        return notebook_path
+
+    return _write_notebook

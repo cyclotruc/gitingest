@@ -8,7 +8,7 @@ from starlette.templating import _TemplateResponse
 
 from config import EXAMPLE_REPOS, MAX_DISPLAY_SIZE
 from gitingest.clone import CloneConfig, clone_repo
-from gitingest.ingest_from_query import ingest_from_query
+from gitingest.ingest_from_query import run_ingest_query
 from gitingest.parse_query import parse_query
 from server_utils import Colors, log_slider_to_size
 
@@ -86,12 +86,12 @@ async def process_query(
         )
         clone_config = CloneConfig(
             url=query["url"],
-            local_path=query["local_path"],
+            local_path=str(query["local_path"]),
             commit=query.get("commit"),
             branch=query.get("branch"),
         )
         await clone_repo(clone_config)
-        summary, tree, content = ingest_from_query(query)
+        summary, tree, content = run_ingest_query(query)
         with open(f"{clone_config.local_path}.txt", "w", encoding="utf-8") as f:
             f.write(tree + "\n" + content)
     except Exception as e:
