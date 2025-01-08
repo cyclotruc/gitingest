@@ -42,8 +42,8 @@ def test_read_file_content_with_notebook(tmp_path: Path):
     notebook_path = tmp_path / "dummy_notebook.ipynb"
     notebook_path.write_text("{}", encoding="utf-8")  # minimal JSON
 
-    # Patch the symbol as it is used in ingest_from_query
-    with patch("gitingest.ingest_from_query.process_notebook") as mock_process:
+    # Patch the symbol as it is used in query_ingestion
+    with patch("gitingest.query_ingestion.process_notebook") as mock_process:
         _read_file_content(notebook_path)
         mock_process.assert_called_once_with(notebook_path)
 
@@ -52,7 +52,7 @@ def test_read_file_content_with_non_notebook(tmp_path: Path):
     py_file_path = tmp_path / "dummy_file.py"
     py_file_path.write_text("print('Hello')", encoding="utf-8")
 
-    with patch("gitingest.ingest_from_query.process_notebook") as mock_process:
+    with patch("gitingest.query_ingestion.process_notebook") as mock_process:
         _read_file_content(py_file_path)
         mock_process.assert_not_called()
 
