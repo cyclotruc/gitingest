@@ -66,6 +66,16 @@ def test_parse_query_basic() -> None:
         assert "*.txt" in result["ignore_patterns"]
 
 
+def test_parse_query_mixed_case() -> None:
+    """
+    Test `parse_query` with mixed case URLs.
+    """
+    url = "Https://GitHub.COM/UsEr/rEpO"
+    result = parse_query(url, max_file_size=50, from_web=True)
+    assert result["user_name"] == "user"
+    assert result["repo_name"] == "repo"
+
+
 def test_parse_query_include_pattern() -> None:
     """
     Test `parse_query` with an include pattern.
