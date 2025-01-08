@@ -1,10 +1,10 @@
-""" Tests for the ingest_from_query module """
+""" Tests for the query_ingestion module """
 
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
-from gitingest.ingest_from_query import _extract_files_content, _read_file_content, _scan_directory
+from gitingest.query_ingestion import _extract_files_content, _read_file_content, _scan_directory
 
 
 def test_scan_directory(temp_directory: Path, sample_query: dict[str, Any]) -> None:

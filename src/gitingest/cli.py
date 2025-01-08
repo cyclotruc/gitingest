@@ -4,8 +4,8 @@
 
 import click
 
-from gitingest.ingest import ingest
-from gitingest.ingest_from_query import MAX_FILE_SIZE
+from gitingest.query_ingestion import MAX_FILE_SIZE
+from gitingest.repository_ingest import ingest
 
 
 @click.command()

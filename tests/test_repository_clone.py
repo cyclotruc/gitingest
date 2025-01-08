@@ -1,10 +1,10 @@
-""" Tests for the clone module. """
+""" Tests for the repository_clone module. """
 
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from gitingest.clone import CloneConfig, _check_repo_exists, clone_repo
+from gitingest.repository_clone import CloneConfig, _check_repo_exists, clone_repo
 
 
 @pytest.mark.asyncio
@@ -20,8 +20,8 @@ async def test_clone_repo_with_commit() -> None:
         branch="main",
     )
 
-    with patch("gitingest.clone._check_repo_exists", return_value=True) as mock_check:
-        with patch("gitingest.clone._run_git_command", new_callable=AsyncMock) as mock_exec:
+    with patch("gitingest.repository_clone._check_repo_exists", return_value=True) as mock_check:
+        with patch("gitingest.repository_clone._run_git_command", new_callable=AsyncMock) as mock_exec:
             mock_process = AsyncMock()
             mock_process.communicate.return_value = (b"output", b"error")
             mock_exec.return_value = mock_process
@@ -38,8 +38,8 @@ async def test_clone_repo_without_commit() -> None:
     """
     query = CloneConfig(url="https://github.com/user/repo", local_path="/tmp/repo", commit=None, branch="main")
 
-    with patch("gitingest.clone._check_repo_exists", return_value=True) as mock_check:
-        with patch("gitingest.clone._run_git_command", new_callable=AsyncMock) as mock_exec:
+    with patch("gitingest.repository_clone._check_repo_exists", return_value=True) as mock_check:
+        with patch("gitingest.repository_clone._run_git_command", new_callable=AsyncMock) as mock_exec:
             mock_process = AsyncMock()
             mock_process.communicate.return_value = (b"output", b"error")
             mock_exec.return_value = mock_process
@@ -61,7 +61,7 @@ async def test_clone_repo_nonexistent_repository() -> None:
         commit=None,
         branch="main",
     )
-    with patch("gitingest.clone._check_repo_exists", return_value=False) as mock_check:
+    with patch("gitingest.repository_clone._check_repo_exists", return_value=False) as mock_check:
         with pytest.raises(ValueError, match="Repository not found"):
             await clone_repo(clone_config)
             mock_check.assert_called_once_with(clone_config.url)
@@ -133,8 +133,8 @@ async def test_clone_repo_with_custom_branch() -> None:
         local_path="/tmp/repo",
         branch="feature-branch",
     )
-    with patch("gitingest.clone._check_repo_exists", return_value=True):
-        with patch("gitingest.clone._run_git_command", new_callable=AsyncMock) as mock_exec:
+    with patch("gitingest.repository_clone._check_repo_exists", return_value=True):
+        with patch("gitingest.repository_clone._run_git_command", new_callable=AsyncMock) as mock_exec:
             await clone_repo(clone_config)
             mock_exec.assert_called_once_with(
                 "git",
@@ -158,8 +158,8 @@ async def test_git_command_failure() -> None:
         url="https://github.com/user/repo",
         local_path="/tmp/repo",
     )
-    with patch("gitingest.clone._check_repo_exists", return_value=True):
-        with patch("gitingest.clone._run_git_command", side_effect=RuntimeError("Git command failed")):
+    with patch("gitingest.repository_clone._check_repo_exists", return_value=True):
+        with patch("gitingest.repository_clone._run_git_command", side_effect=RuntimeError("Git command failed")):
             with pytest.raises(RuntimeError, match="Git command failed"):
                 await clone_repo(clone_config)
 
@@ -174,8 +174,8 @@ async def test_clone_repo_default_shallow_clone() -> None:
         url="https://github.com/user/repo",
         local_path="/tmp/repo",
     )
-    with patch("gitingest.clone._check_repo_exists", return_value=True):
-        with patch("gitingest.clone._run_git_command", new_callable=AsyncMock) as mock_exec:
+    with patch("gitingest.repository_clone._check_repo_exists", return_value=True):
+        with patch("gitingest.repository_clone._run_git_command", new_callable=AsyncMock) as mock_exec:
             await clone_repo(clone_config)
             mock_exec.assert_called_once_with(
                 "git", "clone", "--depth=1", "--single-branch", clone_config.url, clone_config.local_path
@@ -193,8 +193,8 @@ async def test_clone_repo_commit_without_branch() -> None:
         local_path="/tmp/repo",
         commit="a" * 40,  # Simulating a valid commit hash
     )
-    with patch("gitingest.clone._check_repo_exists", return_value=True):
-        with patch("gitingest.clone._run_git_command", new_callable=AsyncMock) as mock_exec:
+    with patch("gitingest.repository_clone._check_repo_exists", return_value=True):
+        with patch("gitingest.repository_clone._run_git_command", new_callable=AsyncMock) as mock_exec:
             await clone_repo(clone_config)
             assert mock_exec.call_count == 2  # Clone and checkout calls
             mock_exec.assert_any_call("git", "clone", "--single-branch", clone_config.url, clone_config.local_path)

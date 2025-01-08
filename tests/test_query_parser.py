@@ -1,11 +1,11 @@
-""" Tests for the parse_query module. """
+""" Tests for the query_parser module. """
 
 from pathlib import Path
 
 import pytest
 
 from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
-from gitingest.parse_query import _parse_patterns, _parse_url, parse_query
+from gitingest.query_parser import _parse_patterns, _parse_url, parse_query
 
 
 def test_parse_url_valid_https() -> None:

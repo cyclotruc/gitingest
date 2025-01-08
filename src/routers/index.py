@@ -5,7 +5,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from config import EXAMPLE_REPOS
-from process_query import process_query
+from query_processor import process_query
 from server_utils import limiter
 
 router = APIRouter()

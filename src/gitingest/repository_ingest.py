@@ -5,9 +5,9 @@ import inspect
 import shutil
 
 from config import TMP_BASE_PATH
-from gitingest.clone import CloneConfig, clone_repo
-from gitingest.ingest_from_query import run_ingest_query
-from gitingest.parse_query import parse_query
+from gitingest.query_ingestion import run_ingest_query
+from gitingest.query_parser import parse_query
+from gitingest.repository_clone import CloneConfig, clone_repo
 
 
 def ingest(
