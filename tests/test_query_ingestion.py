@@ -57,7 +57,26 @@ def test_read_file_content_with_non_notebook(tmp_path: Path):
         mock_process.assert_not_called()
 
 
-# TODO: test with include patterns: ['*.txt']
+# Test that when using a ['*.txt'] as include pattern, only .txt files are processed & .py files are excluded
+def test_include_txt_pattern(temp_directory: Path, sample_query: dict[str, Any]) -> None:
+    sample_query["local_path"] = temp_directory
+    sample_query["include_patterns"] = ["*.txt"]
+
+    result = _scan_directory(temp_directory, query=sample_query)
+    assert result is not None, "Result should not be None"
+
+    files = _extract_files_content(query=sample_query, node=result, max_file_size=1_000_000)
+    file_paths = [f["path"] for f in files]
+    assert len(files) == 5, "Should have found exactly 5 .txt files"
+    assert all(path.endswith(".txt") for path in file_paths), "Should only include .txt files"
+
+    expected_files = ["file1.txt", "subfile1.txt", "file_subdir.txt", "file_dir1.txt", "file_dir2.txt"]
+    for expected_file in expected_files:
+        assert any(expected_file in path for path in file_paths), f"Missing expected file: {expected_file}"
+
+    assert not any(path.endswith(".py") for path in file_paths), "Should not include .py files"
+
+
 # TODO: test with wrong include patterns: ['*.qwerty']
 
 
