@@ -77,7 +77,7 @@ async def process_query(
     }
 
     try:
-        query = parse_query(
+        query = await parse_query(
             source=input_text,
             max_file_size=max_file_size,
             from_web=True,

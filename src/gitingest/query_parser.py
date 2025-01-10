@@ -15,7 +15,7 @@ from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
 HEX_DIGITS = set(string.hexdigits)
 
 
-def parse_query(
+async def parse_query(
     source: str,
     max_file_size: int,
     from_web: bool,

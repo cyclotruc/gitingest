@@ -14,7 +14,7 @@ from gitingest.repository_ingest import ingest
 @click.option("--max-size", "-s", default=MAX_FILE_SIZE, help="Maximum file size to process in bytes")
 @click.option("--exclude-pattern", "-e", multiple=True, help="Patterns to exclude")
 @click.option("--include-pattern", "-i", multiple=True, help="Patterns to include")
-def main(
+async def main(
     source: str,
     output: str | None,
     max_size: int,
@@ -54,7 +54,7 @@ def main(
 
         if not output:
             output = "digest.txt"
-        summary, _, _ = ingest(source, max_size, include_patterns, exclude_patterns, output=output)
+        summary, _, _ = await ingest(source, max_size, include_patterns, exclude_patterns, output=output)
 
         click.echo(f"Analysis complete! Output written to: {output}")
         click.echo("\nSummary:")

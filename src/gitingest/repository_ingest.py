@@ -10,7 +10,7 @@ from gitingest.query_parser import parse_query
 from gitingest.repository_clone import CloneConfig, clone_repo
 
 
-def ingest(
+async def ingest(
     source: str,
     max_file_size: int = 10 * 1024 * 1024,  # 10 MB
     include_patterns: list[str] | str | None = None,
@@ -52,7 +52,7 @@ def ingest(
         If `clone_repo` does not return a coroutine, or if the `source` is of an unsupported type.
     """
     try:
-        query = parse_query(
+        query = await parse_query(
             source=source,
             max_file_size=max_file_size,
             from_web=False,
