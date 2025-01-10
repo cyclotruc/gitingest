@@ -5,12 +5,12 @@ from pathlib import Path
 import pytest
 
 from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
-from gitingest.query_parser import _parse_patterns, _parse_url, parse_query
+from gitingest.query_parser import _parse_patterns, _parse_repo_source, parse_query
 
 
 async def test_parse_url_valid_https() -> None:
     """
-    Test `_parse_url` with valid HTTPS URLs from supported platforms (GitHub, GitLab, Bitbucket, Gitea).
+    Test `_parse_repo_source` with valid HTTPS URLs from supported platforms (GitHub, GitLab, Bitbucket, Gitea).
     Verifies that user and repository names are correctly extracted.
     """
     test_cases = [
@@ -19,7 +19,7 @@ async def test_parse_url_valid_https() -> None:
         "https://bitbucket.org/user/repo",
     ]
     for url in test_cases:
-        result = await _parse_url(url)
+        result = await _parse_repo_source(url)
         assert result["user_name"] == "user"
         assert result["repo_name"] == "repo"
         assert result["url"] == url
@@ -27,7 +27,7 @@ async def test_parse_url_valid_https() -> None:
 
 async def test_parse_url_valid_http() -> None:
     """
-    Test `_parse_url` with valid HTTP URLs from supported platforms.
+    Test `_parse_repo_source` with valid HTTP URLs from supported platforms.
     Verifies that user and repository names, as well as the slug, are correctly extracted.
     """
     test_cases = [
@@ -36,7 +36,7 @@ async def test_parse_url_valid_http() -> None:
         "http://bitbucket.org/user/repo",
     ]
     for url in test_cases:
-        result = await _parse_url(url)
+        result = await _parse_repo_source(url)
         assert result["user_name"] == "user"
         assert result["repo_name"] == "repo"
         assert result["slug"] == "user-repo"
@@ -44,12 +44,12 @@ async def test_parse_url_valid_http() -> None:
 
 async def test_parse_url_invalid() -> None:
     """
-    Test `_parse_url` with an invalid URL that does not include a repository structure.
+    Test `_parse_repo_source` with an invalid URL that does not include a repository structure.
     Verifies that a ValueError is raised with an appropriate error message.
     """
     url = "https://github.com"
     with pytest.raises(ValueError, match="Invalid repository URL"):
-        await _parse_url(url)
+        await _parse_repo_source(url)
 
 
 async def test_parse_query_basic() -> None:
@@ -99,11 +99,11 @@ async def test_parse_query_invalid_pattern() -> None:
 
 async def test_parse_url_with_subpaths() -> None:
     """
-    Test `_parse_url` with a URL containing a branch and subpath.
+    Test `_parse_repo_source` with a URL containing a branch and subpath.
     Verifies that user name, repository name, branch, and subpath are correctly extracted.
     """
     url = "https://github.com/user/repo/tree/main/subdir/file"
-    result = await _parse_url(url)
+    result = await _parse_repo_source(url)
     assert result["user_name"] == "user"
     assert result["repo_name"] == "repo"
     assert result["branch"] == "main"
@@ -112,12 +112,12 @@ async def test_parse_url_with_subpaths() -> None:
 
 async def test_parse_url_invalid_repo_structure() -> None:
     """
-    Test `_parse_url` with an invalid repository structure in the URL.
+    Test `_parse_repo_source` with an invalid repository structure in the URL.
     Verifies that a ValueError is raised with an appropriate error message.
     """
     url = "https://github.com/user"
     with pytest.raises(ValueError, match="Invalid repository URL"):
-        await _parse_url(url)
+        await _parse_repo_source(url)
 
 
 def test_parse_patterns_valid() -> None:
@@ -216,14 +216,14 @@ async def test_parse_query_empty_source() -> None:
 
 async def test_parse_url_branch_and_commit_distinction() -> None:
     """
-    Test `_parse_url` with URLs containing either a branch name or a commit hash.
+    Test `_parse_repo_source` with URLs containing either a branch name or a commit hash.
     Verifies that the branch and commit are correctly distinguished.
     """
     url_branch = "https://github.com/user/repo/tree/main"
     url_commit = "https://github.com/user/repo/tree/abcd1234abcd1234abcd1234abcd1234abcd1234"
 
-    result_branch = await _parse_url(url_branch)
-    result_commit = await _parse_url(url_commit)
+    result_branch = await _parse_repo_source(url_branch)
+    result_commit = await _parse_repo_source(url_commit)
 
     assert result_branch["branch"] == "main"
     assert result_branch["commit"] is None
@@ -244,11 +244,11 @@ async def test_parse_query_uuid_uniqueness() -> None:
 
 async def test_parse_url_with_query_and_fragment() -> None:
     """
-    Test `_parse_url` with a URL containing query parameters and a fragment.
+    Test `_parse_repo_source` with a URL containing query parameters and a fragment.
     Verifies that the URL is cleaned and other fields are correctly extracted.
     """
     url = "https://github.com/user/repo?arg=value#fragment"
-    result = await _parse_url(url)
+    result = await _parse_repo_source(url)
     assert result["user_name"] == "user"
     assert result["repo_name"] == "repo"
     assert result["url"] == "https://github.com/user/repo"  # URL should be cleaned

@@ -53,7 +53,7 @@ async def parse_query(
 
     # Determine the parsing method based on the source type
     if from_web or source.startswith("https://") or "github.com" in source:
-        query = _parse_url(source)
+        query = _parse_repo_source(source)
     else:
         query = _parse_path(source)
 
@@ -80,7 +80,7 @@ async def parse_query(
     return query
 
 
-def _parse_url(url: str) -> dict[str, Any]:
+def _parse_repo_source(url: str) -> dict[str, Any]:
     """
     Parse a GitHub repository URL into a structured query dictionary.
 
@@ -165,7 +165,7 @@ def _parse_url(url: str) -> dict[str, Any]:
 
 def _is_valid_git_commit_hash(commit: str) -> bool:
     """
-    Validates if the provided string is a valid Git commit hash.
+    Validate if the provided string is a valid Git commit hash.
 
     This function checks if the commit hash is a 40-character string consisting only
     of hexadecimal digits, which is the standard format for Git commit hashes.
@@ -185,7 +185,7 @@ def _is_valid_git_commit_hash(commit: str) -> bool:
 
 def _normalize_pattern(pattern: str) -> str:
     """
-    Normalizes the given pattern by removing leading separators and appending a wildcard.
+    Normalize the given pattern by removing leading separators and appending a wildcard.
 
     This function processes the pattern string by stripping leading directory separators
     and appending a wildcard (`*`) if the pattern ends with a separator.
@@ -249,7 +249,7 @@ def _parse_patterns(pattern: list[str] | str) -> list[str]:
 
 def _override_ignore_patterns(ignore_patterns: list[str], include_patterns: list[str]) -> list[str]:
     """
-    Removes patterns from ignore_patterns that are present in include_patterns using set difference.
+    Remove patterns from ignore_patterns that are present in include_patterns using set difference.
 
     Parameters
     ----------
@@ -268,7 +268,7 @@ def _override_ignore_patterns(ignore_patterns: list[str], include_patterns: list
 
 def _parse_path(path_str: str) -> dict[str, Any]:
     """
-    Parses a file path into a structured query dictionary.
+    Parse a file path into a structured query dictionary.
 
     This function takes a file path and constructs a query dictionary that includes
     relevant details such as the absolute path and the slug (a combination of the
@@ -297,7 +297,7 @@ def _parse_path(path_str: str) -> dict[str, Any]:
 
 def _is_valid_pattern(pattern: str) -> bool:
     """
-    Validates if the given pattern contains only valid characters.
+    Validate if the given pattern contains only valid characters.
 
     This function checks if the pattern contains only alphanumeric characters or one
     of the following allowed characters: dash (`-`), underscore (`_`), dot (`.`),
