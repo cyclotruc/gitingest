@@ -111,6 +111,11 @@ async def _check_repo_exists(url: str) -> bool:
     -------
     bool
         True if the repository exists, False otherwise.
+
+    Raises
+    ------
+    RuntimeError
+        If the curl command returns an unexpected status code.
     """
     proc = await asyncio.create_subprocess_exec(
         "curl",
@@ -120,11 +125,20 @@ async def _check_repo_exists(url: str) -> bool:
         stderr=asyncio.subprocess.PIPE,
     )
     stdout, _ = await proc.communicate()
+
     if proc.returncode != 0:
         return False
-    # Check if stdout contains "404" status code
-    stdout_str = stdout.decode()
-    return "HTTP/1.1 404" not in stdout_str and "HTTP/2 404" not in stdout_str
+
+    response = stdout.decode()
+    status_code = _get_status_code(response)
+
+    if status_code in (200, 301):
+        return True
+
+    if status_code in (404, 302):
+        return False
+
+    raise RuntimeError(f"Unexpected status code: {status_code}")
 
 
 async def _run_git_command(*args: str) -> tuple[bytes, bytes]:
@@ -157,3 +171,22 @@ async def _run_git_command(*args: str) -> tuple[bytes, bytes]:
         raise RuntimeError(f"Git command failed: {' '.join(args)}\nError: {error_message}")
 
     return stdout, stderr
+
+
+def _get_status_code(response: str) -> int:
+    """
+    Extract the status code from an HTTP response.
+
+    Parameters
+    ----------
+    response : str
+        The HTTP response string.
+
+    Returns
+    -------
+    int
+        The status code of the response
+    """
+    status_line = response.splitlines()[0].strip()
+    status_code = int(status_line.split(" ", 2)[1])
+    return status_code

@@ -204,13 +204,31 @@ async def test_clone_repo_commit_without_branch() -> None:
 @pytest.mark.asyncio
 async def test_check_repo_exists_with_redirect() -> None:
     """
-    Test the `_check_repo_exists` function for handling HTTP redirects (302 Found).
-    Verifies that it correctly identifies the repository's existence.
+    Test the `_check_repo_exists` function when the repository URL returns a redirect response.
+
+    Verifies that the function returns False when a 302 Found response is received.
     """
     url = "https://github.com/user/repo"
     with patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_exec:
         mock_process = AsyncMock()
         mock_process.communicate.return_value = (b"HTTP/1.1 302 Found\n", b"")
+        mock_process.returncode = 0  # Simulate successful request
+        mock_exec.return_value = mock_process
+
+        assert await _check_repo_exists(url) is False
+
+
+@pytest.mark.asyncio
+async def test_check_repo_exists_with_permanent_redirect() -> None:
+    """
+    Test the `_check_repo_exists` function when the repository URL returns a redirect response.
+
+    Verifies that the function returns True when a 301 Found response is received.
+    """
+    url = "https://github.com/user/repo"
+    with patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_exec:
+        mock_process = AsyncMock()
+        mock_process.communicate.return_value = (b"HTTP/1.1 301 Found\n", b"")
         mock_process.returncode = 0  # Simulate successful request
         mock_exec.return_value = mock_process
 
