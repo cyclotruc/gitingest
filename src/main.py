@@ -78,7 +78,7 @@ async def process_folder(folder: Path) -> None:
         # Extract owner and repository name from the filename
         if txt_files and "-" in (filename := txt_files[0].stem):
             owner, repo = filename.split("-", 1)
-            repo_url = f"https://github.com/{owner}/{repo}"
+            repo_url = f"{owner}/{repo}"
             with open("history.txt", mode="a", encoding="utf-8") as history:
                 history.write(f"{repo_url}\n")
 

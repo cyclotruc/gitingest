@@ -252,3 +252,25 @@ async def test_parse_url_with_query_and_fragment() -> None:
     assert result["user_name"] == "user"
     assert result["repo_name"] == "repo"
     assert result["url"] == "https://github.com/user/repo"  # URL should be cleaned
+
+
+async def test_parse_url_unsupported_host() -> None:
+    url = "https://only-domain.com"
+    with pytest.raises(ValueError, match="Unknown domain 'only-domain.com' in URL"):
+        await _parse_repo_source(url)
+
+
+async def test_parse_query_with_branch() -> None:
+    url = "https://github.com/pandas-dev/pandas/blob/2.2.x/.github/ISSUE_TEMPLATE/documentation_improvement.yaml"
+    result = await parse_query(url, max_file_size=10**9, from_web=True)
+    assert result["user_name"] == "pandas-dev"
+    assert result["repo_name"] == "pandas"
+    assert result["url"] == "https://github.com/pandas-dev/pandas"
+    assert result["slug"] == "pandas-dev-pandas"
+    assert result["id"] is not None
+    print('result["subpath"]', result["subpath"])
+    print("/.github/ISSUE_TEMPLATE/documentation_improvement.yaml")
+    assert result["subpath"] == "/.github/ISSUE_TEMPLATE/documentation_improvement.yaml"
+    assert result["branch"] == "2.2.x"
+    assert result["commit"] is None
+    assert result["type"] == "blob"

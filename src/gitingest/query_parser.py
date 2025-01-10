@@ -11,8 +11,16 @@ from urllib.parse import unquote, urlparse
 from config import TMP_BASE_PATH
 from gitingest.exceptions import InvalidPatternError
 from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
+from gitingest.repository_clone import _check_repo_exists
 
-HEX_DIGITS = set(string.hexdigits)
+HEX_DIGITS: set[str] = set(string.hexdigits)
+
+KNOWN_GIT_HOSTS: list[str] = [
+    "github.com",
+    "gitlab.com",
+    "bitbucket.org",
+    "gitea.com",
+]
 
 
 async def parse_query(
@@ -48,16 +56,16 @@ async def parse_query(
         A dictionary containing the parsed query parameters, including 'max_file_size',
         'ignore_patterns', and 'include_patterns'.
     """
-    # Normalize and clean up the source string to make it case-insensitive
-    source = source.lower().strip()
 
     # Determine the parsing method based on the source type
-    if from_web or source.startswith("https://") or "github.com" in source:
-        query = _parse_repo_source(source)
+    if from_web or urlparse(source).scheme in ("https", "http") or any(h in source for h in KNOWN_GIT_HOSTS):
+        # We either have a full URL or a domain-less slug
+        query = await _parse_repo_source(source)
     else:
+        # Local path scenario
         query = _parse_path(source)
 
-    # Process ignore patterns
+    # Combine ignore patterns
     ignore_patterns_list = DEFAULT_IGNORE_PATTERNS.copy()
     if ignore_patterns:
         ignore_patterns_list += _parse_patterns(ignore_patterns)
@@ -69,7 +77,6 @@ async def parse_query(
     else:
         parsed_include = None
 
-    # Update the query dictionary with max_file_size and processed patterns
     query.update(
         {
             "max_file_size": max_file_size,
@@ -80,52 +87,54 @@ async def parse_query(
     return query
 
 
-def _parse_repo_source(url: str) -> dict[str, Any]:
+async def _parse_repo_source(source: str) -> dict[str, Any]:
     """
-    Parse a GitHub repository URL into a structured query dictionary.
+    Parse a repository URL into a structured query dictionary.
 
-    This function extracts relevant information from a GitHub URL, such as the username,
-    repository name, commit, branch, and subpath, and returns them in a structured format.
+    If source is:
+      - A fully qualified URL (https://gitlab.com/...), parse & verify that domain
+      - A URL missing 'https://' (gitlab.com/...), add 'https://' and parse
+      - A 'slug' (like 'pandas-dev/pandas'), attempt known domains until we find one that exists.
 
     Parameters
     ----------
-    url : str
-        The GitHub URL to parse.
+    source : str
+        The URL or domain-less slug to parse.
 
     Returns
     -------
     dict[str, Any]
-        A dictionary containing the parsed details of the GitHub repository, including
-        the username, repository name, commit, branch, and other relevant information.
-
-    Raises
-    ------
-    ValueError
-        If the URL is invalid or does not correspond to a valid Git repository.
+        A dictionary containing the parsed details of the repository, including the username,
+        repository name, commit, branch, and other relevant information.
     """
-    # Clean up the URL
-    url = url.split(" ")[0]  # remove trailing text
-    url = unquote(url)  # decode URL-encoded characters
+    source = unquote(source)
 
-    if not url.startswith(("https://", "http://")):
-        url = "https://" + url
+    # Attempt to parse
+    parsed_url = urlparse(source)
 
-    # Parse URL and reconstruct it without query parameters and fragments
-    parsed_url = urlparse(url)
-    url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
+    if parsed_url.scheme:
+        _validate_scheme(parsed_url.scheme)
+        _validate_host(parsed_url.netloc.lower())
 
-    # Extract domain and path
-    url_parts = url.split("/")
-    domain = url_parts[2]
-    path_parts = url_parts[3:]
+    else:  # Will be of the form 'host/user/repo' or 'user/repo'
+        tmp_host = source.split("/")[0].lower()
+        if "." in tmp_host:
+            _validate_host(tmp_host)
+        else:
+            # No scheme, no domain => user typed "user/repo", so we'll guess the domain.
+            host = await try_domains_for_user_and_repo(*_get_user_and_repo_from_path(source))
+            source = f"{host}/{source}"
 
-    if len(path_parts) < 2:
-        raise ValueError("Invalid repository URL. Please provide a valid Git repository URL.")
+        source = "https://" + source
+        parsed_url = urlparse(source)
 
-    user_name = path_parts[0]
-    repo_name = path_parts[1]
+    host = parsed_url.netloc.lower()
+    user_name, repo_name = _get_user_and_repo_from_path(parsed_url.path)
+
     _id = str(uuid.uuid4())
     slug = f"{user_name}-{repo_name}"
+    local_path = Path(TMP_BASE_PATH) / _id / slug
+    url = f"https://{host}/{user_name}/{repo_name}"
 
     parsed = {
         "user_name": user_name,
@@ -134,31 +143,39 @@ def _parse_repo_source(url: str) -> dict[str, Any]:
         "branch": None,
         "commit": None,
         "subpath": "/",
-        "local_path": Path(TMP_BASE_PATH) / _id / slug,
-        "url": f"https://{domain}/{user_name}/{repo_name}",
-        "slug": slug,
+        "local_path": local_path,
+        "url": url,
+        "slug": slug,  # e.g. "pandas-dev-pandas"
         "id": _id,
     }
 
-    # If this is an issues page or pull requests, return early without processing subpath
-    if len(path_parts) > 2 and (path_parts[2] == "issues" or path_parts[2] == "pull"):
+    remaining_parts = parsed_url.path.strip("/").split("/")[2:]
+
+    if not remaining_parts:
         return parsed
+
+    possible_type = remaining_parts.pop(0)  # e.g. 'issues', 'pull', 'tree', 'blob'
 
     # If no extra path parts, just return
-    if len(path_parts) < 4:
+    if not remaining_parts:
         return parsed
 
-    parsed["type"] = path_parts[2]  # Usually 'tree' or 'blob'
-    commit = path_parts[3]
+    # If this is an issues page or pull requests, return early without processing subpath
+    if remaining_parts and possible_type in ("issues", "pull"):
+        return parsed
 
-    if _is_valid_git_commit_hash(commit):
-        parsed["commit"] = commit
-        if len(path_parts) > 4:
-            parsed["subpath"] += "/".join(path_parts[4:])
+    parsed["type"] = possible_type
+
+    # Commit or branch
+    commit_or_branch = remaining_parts.pop(0)
+    if _is_valid_git_commit_hash(commit_or_branch):
+        parsed["commit"] = commit_or_branch
     else:
-        parsed["branch"] = commit
-        if len(path_parts) > 4:
-            parsed["subpath"] += "/".join(path_parts[4:])
+        parsed["branch"] = commit_or_branch
+
+    # Subpath if anything left
+    if remaining_parts:
+        parsed["subpath"] += "/".join(remaining_parts)
 
     return parsed
 
@@ -314,3 +331,92 @@ def _is_valid_pattern(pattern: str) -> bool:
         True if the pattern is valid, otherwise False.
     """
     return all(c.isalnum() or c in "-_./+*" for c in pattern)
+
+
+async def try_domains_for_user_and_repo(user_name: str, repo_name: str) -> str:
+    """
+    Attempt to find a valid repository host for the given user_name and repo_name.
+
+    Parameters
+    ----------
+    user_name : str
+        The username or owner of the repository.
+    repo_name : str
+        The name of the repository.
+
+    Returns
+    -------
+    str
+        The domain of the valid repository host.
+
+    Raises
+    ------
+    ValueError
+        If no valid repository host is found for the given user_name and repo_name.
+    """
+    for domain in KNOWN_GIT_HOSTS:
+        candidate = f"https://{domain}/{user_name}/{repo_name}"
+        if await _check_repo_exists(candidate):
+            return domain
+    raise ValueError(f"Could not find a valid repository host for '{user_name}/{repo_name}'.")
+
+
+def _get_user_and_repo_from_path(path: str) -> tuple[str, str]:
+    """
+    Extract the user and repository names from a given path.
+
+    Parameters
+    ----------
+    path : str
+        The path to extract the user and repository names from.
+
+    Returns
+    -------
+    tuple[str, str]
+        A tuple containing the user and repository names.
+
+    Raises
+    ------
+    ValueError
+        If the path does not contain at least two parts.
+    """
+    path_parts = path.lower().strip("/").split("/")
+    if len(path_parts) < 2:
+        raise ValueError(f"Invalid repository URL '{path}'")
+    return path_parts[0], path_parts[1]
+
+
+def _validate_host(host: str) -> None:
+    """
+    Validate the given host against the known Git hosts.
+
+    Parameters
+    ----------
+    host : str
+        The host to validate.
+
+    Raises
+    ------
+    ValueError
+        If the host is not a known Git host.
+    """
+    if host not in KNOWN_GIT_HOSTS:
+        raise ValueError(f"Unknown domain '{host}' in URL")
+
+
+def _validate_scheme(scheme: str) -> None:
+    """
+    Validate the given scheme against the known schemes.
+
+    Parameters
+    ----------
+    scheme : str
+        The scheme to validate.
+
+    Raises
+    ------
+    ValueError
+        If the scheme is not 'http' or 'https'.
+    """
+    if scheme not in ("https", "http"):
+        raise ValueError(f"Invalid URL scheme '{scheme}' in URL")
