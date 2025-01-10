@@ -15,7 +15,7 @@ templates = Jinja2Templates(directory="templates")
 @router.get("/", response_class=HTMLResponse)
 async def home(request: Request) -> HTMLResponse:
     """
-    Renders the home page with example repositories and default parameters.
+    Render the home page with example repositories and default parameters.
 
     This endpoint serves the home page of the application, rendering the `index.jinja` template
     and providing it with a list of example repositories and default file size values.
@@ -51,7 +51,7 @@ async def index_post(
     pattern: str = Form(...),
 ) -> HTMLResponse:
     """
-    Processes the form submission with user input for query parameters.
+    Process the form submission with user input for query parameters.
 
     This endpoint handles POST requests from the home page form. It processes the user-submitted
     input (e.g., text, file size, pattern type) and invokes the `process_query` function to handle

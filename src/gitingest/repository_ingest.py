@@ -27,7 +27,7 @@ def ingest(
     Parameters
     ----------
     source : str
-        The source to analyze, which can be a URL (for a GitHub repository) or a local directory path.
+        The source to analyze, which can be a URL (for a Git repository) or a local directory path.
     max_file_size : int
         Maximum allowed file size for file ingestion. Files larger than this size are ignored, by default
         10*1024*1024 (10 MB).

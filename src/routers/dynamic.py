@@ -14,29 +14,29 @@ templates = Jinja2Templates(directory="templates")
 @router.get("/{full_path:path}")
 async def catch_all(request: Request, full_path: str) -> HTMLResponse:
     """
-    Renders a page with a GitHub URL based on the provided path.
+    Render a page with a Git URL based on the provided path.
 
-    This endpoint catches all GET requests with a dynamic path, constructs a GitHub URL
-    using the `full_path` parameter, and renders the `github.jinja` template with that URL.
+    This endpoint catches all GET requests with a dynamic path, constructs a Git URL
+    using the `full_path` parameter, and renders the `git.jinja` template with that URL.
 
     Parameters
     ----------
     request : Request
         The incoming request object, which provides context for rendering the response.
     full_path : str
-        The full path extracted from the URL, which is used to build the GitHub URL.
+        The full path extracted from the URL, which is used to build the Git URL.
 
     Returns
     -------
     HTMLResponse
-        An HTML response containing the rendered template, with the GitHub URL
+        An HTML response containing the rendered template, with the Git URL
         and other default parameters such as loading state and file size.
     """
     return templates.TemplateResponse(
-        "github.jinja",
+        "git.jinja",
         {
             "request": request,
-            "github_url": f"https://github.com/{full_path}",
+            "repo_url": full_path,
             "loading": True,
             "default_file_size": 243,
         },
@@ -53,7 +53,7 @@ async def process_catch_all(
     pattern: str = Form(...),
 ) -> HTMLResponse:
     """
-    Processes the form submission with user input for query parameters.
+    Process the form submission with user input for query parameters.
 
     This endpoint handles POST requests, processes the input parameters (e.g., text, file size, pattern),
     and calls the `process_query` function to handle the query logic, returning the result as an HTML response.

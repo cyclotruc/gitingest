@@ -37,7 +37,7 @@ class CloneConfig:
 @async_timeout(CLONE_TIMEOUT)
 async def clone_repo(config: CloneConfig) -> tuple[bytes, bytes]:
     """
-    Clones a repository to a local path based on the provided configuration.
+    Clone a repository to a local path based on the provided configuration.
 
     This function handles the process of cloning a Git repository to the local file system.
     It can clone a specific branch or commit if provided, and it raises exceptions if
@@ -55,7 +55,7 @@ async def clone_repo(config: CloneConfig) -> tuple[bytes, bytes]:
     Returns
     -------
     tuple[bytes, bytes]
-        A tuple containing the stdout and stderr of the git commands executed.
+        A tuple containing the stdout and stderr of the Git commands executed.
 
     Raises
     ------
@@ -101,13 +101,12 @@ async def clone_repo(config: CloneConfig) -> tuple[bytes, bytes]:
 
 async def _check_repo_exists(url: str) -> bool:
     """
-    Check if a repository exists at the given URL using an HTTP HEAD request.
+    Check if a Git repository exists at the provided URL.
 
     Parameters
     ----------
     url : str
-        The URL of the repository.
-
+        The URL of the Git repository to check.
     Returns
     -------
     bool
@@ -130,22 +129,22 @@ async def _check_repo_exists(url: str) -> bool:
 
 async def _run_git_command(*args: str) -> tuple[bytes, bytes]:
     """
-    Executes a git command asynchronously and captures its output.
+    Execute a Git command asynchronously and captures its output.
 
     Parameters
     ----------
     *args : str
-        The git command and its arguments to execute.
+        The Git command and its arguments to execute.
 
     Returns
     -------
     tuple[bytes, bytes]
-        A tuple containing the stdout and stderr of the git command.
+        A tuple containing the stdout and stderr of the Git command.
 
     Raises
     ------
     RuntimeError
-        If the git command exits with a non-zero status.
+        If the Git command exits with a non-zero status.
     """
     proc = await asyncio.create_subprocess_exec(
         *args,

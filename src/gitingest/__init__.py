@@ -1,4 +1,4 @@
-""" Gitingest: A package for ingesting data from git repositories. """
+""" Gitingest: A package for ingesting data from Git repositories. """
 
 from gitingest.query_ingestion import run_ingest_query
 from gitingest.query_parser import parse_query

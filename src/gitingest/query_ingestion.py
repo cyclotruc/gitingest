@@ -170,7 +170,9 @@ def _read_file_content(file_path: Path) -> str:
 
 def _sort_children(children: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """
-    Sort children nodes with:
+    Sort the children nodes of a directory according to a specific order.
+
+    Order of sorting:
     1. README.md first
     2. Regular files (not starting with dot)
     3. Hidden files (starting with dot)

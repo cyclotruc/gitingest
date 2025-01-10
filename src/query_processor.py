@@ -26,7 +26,7 @@ async def process_query(
     """
     Process a query by parsing input, cloning a repository, and generating a summary.
 
-    Handle user input, process GitHub repository data, and prepare
+    Handle user input, process Git repository data, and prepare
     a response for rendering a template with the processed results or an error message.
 
     Parameters
@@ -34,7 +34,7 @@ async def process_query(
     request : Request
         The HTTP request object.
     input_text : str
-        Input text provided by the user, typically a GitHub repository URL or slug.
+        Input text provided by the user, typically a Git repository URL or slug.
     slider_position : int
         Position of the slider, representing the maximum file size in the query.
     pattern_type : str
@@ -63,13 +63,13 @@ async def process_query(
     else:
         raise ValueError(f"Invalid pattern type: {pattern_type}")
 
-    template = "index.jinja" if is_index else "github.jinja"
+    template = "index.jinja" if is_index else "git.jinja"
     template_response = partial(templates.TemplateResponse, name=template)
     max_file_size = log_slider_to_size(slider_position)
 
     context = {
         "request": request,
-        "github_url": input_text,
+        "repo_url": input_text,
         "examples": EXAMPLE_REPOS if is_index else [],
         "default_file_size": slider_position,
         "pattern_type": pattern_type,
