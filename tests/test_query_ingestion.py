@@ -77,7 +77,22 @@ def test_include_txt_pattern(temp_directory: Path, sample_query: dict[str, Any])
     assert not any(path.endswith(".py") for path in file_paths), "Should not include .py files"
 
 
-# TODO: test with wrong include patterns: ['*.qwerty']
+def test_include_nonexistent_extension(temp_directory: Path, sample_query: dict[str, Any]) -> None:
+    sample_query["local_path"] = temp_directory
+    sample_query["include_patterns"] = ["*.query"]  # Is a Non existant extension ?
+
+    result = _scan_directory(temp_directory, query=sample_query)
+    assert result is not None, "Result should not be None"
+
+    # Extract the files content & set file limit cap
+    files = _extract_files_content(query=sample_query, node=result, max_file_size=1_000_000)
+    # Verify no file processed with wrong extension
+    assert len(files) == 0, "Should not find any files with .qwerty extension"
+
+    assert result["type"] == "directory"
+    assert result["file_count"] == 0
+    assert result["dir_count"] == 0
+    assert len(result["children"]) == 0
 
 
 # single folder patterns
