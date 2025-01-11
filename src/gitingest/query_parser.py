@@ -20,6 +20,7 @@ KNOWN_GIT_HOSTS: list[str] = [
     "gitlab.com",
     "bitbucket.org",
     "gitea.com",
+    "codeberg.org",
 ]
 
 

@@ -48,6 +48,16 @@ from gitingest.query_parser import parse_query
             "xorm",
             "https://gitea.com/xorm/xorm",
         ),
+        (
+            [
+                "https://codeberg.org/forgejo/forgejo",
+                "codeberg.org/forgejo/forgejo",
+                "forgejo/forgejo",
+            ],
+            "forgejo",
+            "forgejo",
+            "https://codeberg.org/forgejo/forgejo",
+        ),
     ],
 )
 @pytest.mark.asyncio
