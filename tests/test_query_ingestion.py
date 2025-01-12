@@ -97,66 +97,59 @@ def test_include_nonexistent_extension(temp_directory: Path, sample_query: dict[
 
 # single folder patterns
 def test_include_src_star_pattern(temp_directory: Path, sample_query: dict[str, Any]) -> None:
-
+    """
+    Test that when using 'src/*' as include pattern, files under the src directory
+    are included.
+    Note: Windows is not supported - test converts Windows paths to Unix-style for validation.
+    """
     sample_query["local_path"] = temp_directory
-    sample_query["include_patterns"] = ["src/*"]  # Without leading slash
+    sample_query["include_patterns"] = ["src/*"]
 
     result = _scan_directory(temp_directory, query=sample_query)
     assert result is not None, "Result should not be None"
 
     files = _extract_files_content(query=sample_query, node=result, max_file_size=1_000_000)
-    assert len(files) == 4, "Should find all files under src directory"
-
-    # Normalize paths to use platform-specific separator
-    file_paths = {str(Path(f["path"])) for f in files}  # Using set and Path for normalization
-    expected_paths = {
-        str(Path("src/subfile1.txt")),
-        str(Path("src/subfile2.py")),
-        str(Path("src/subdir/file_subdir.txt")),
-        str(Path("src/subdir/file_subdir.py")),
-    }
+    # Convert Windows paths to Unix-style for test validation
+    file_paths = {f["path"].replace("\\", "/") for f in files}
+    expected_paths = {"src/subfile1.txt", "src/subfile2.py", "src/subdir/file_subdir.txt", "src/subdir/file_subdir.py"}
     assert file_paths == expected_paths, "Missing or unexpected files in result"
 
 
 def test_include_src_recursive(temp_directory: Path, sample_query: dict[str, Any]) -> None:
-
+    """
+    Test that when using 'src/**' as include pattern, all files under src
+    directory are included recursively.
+    Note: Windows is not supported - test converts Windows paths to Unix-style for validation.
+    """
     sample_query["local_path"] = temp_directory
-    sample_query["include_patterns"] = ["src/**"]  # Use ** for recursive matching
+    sample_query["include_patterns"] = ["src/**"]
 
     result = _scan_directory(temp_directory, query=sample_query)
     assert result is not None, "Result should not be None"
 
     files = _extract_files_content(query=sample_query, node=result, max_file_size=1_000_000)
-    assert len(files) == 4, "Should find all files under src/"
-
-    file_paths = {str(Path(f["path"])) for f in files}
-    expected_paths = {
-        str(Path("src/subfile1.txt")),
-        str(Path("src/subfile2.py")),
-        str(Path("src/subdir/file_subdir.txt")),
-        str(Path("src/subdir/file_subdir.py")),
-    }
+    # Convert Windows paths to Unix-style for test validation
+    file_paths = {f["path"].replace("\\", "/") for f in files}
+    expected_paths = {"src/subfile1.txt", "src/subfile2.py", "src/subdir/file_subdir.txt", "src/subdir/file_subdir.py"}
     assert file_paths == expected_paths, "Missing or unexpected files in result"
 
 
 def test_include_src_wildcard_prefix(temp_directory: Path, sample_query: dict[str, Any]) -> None:
-
+    """
+    Test that when using 'src*' as include pattern, it matches the src directory
+    and any paths that start with 'src'.
+    Note: Windows is not supported - test converts Windows paths to Unix-style for validation.
+    """
     sample_query["local_path"] = temp_directory
-    sample_query["include_patterns"] = ["src*"]  # Without leading slash
+    sample_query["include_patterns"] = ["src*"]
 
     result = _scan_directory(temp_directory, query=sample_query)
     assert result is not None, "Result should not be None"
 
     files = _extract_files_content(query=sample_query, node=result, max_file_size=1_000_000)
-    assert len(files) == 4, "Should find all files under paths starting with src"
-
-    file_paths = {str(Path(f["path"])) for f in files}
-    expected_paths = {
-        str(Path("src/subfile1.txt")),
-        str(Path("src/subfile2.py")),
-        str(Path("src/subdir/file_subdir.txt")),
-        str(Path("src/subdir/file_subdir.py")),
-    }
+    # Convert Windows paths to Unix-style for test validation
+    file_paths = {f["path"].replace("\\", "/") for f in files}
+    expected_paths = {"src/subfile1.txt", "src/subfile2.py", "src/subdir/file_subdir.txt", "src/subdir/file_subdir.py"}
     assert file_paths == expected_paths, "Missing or unexpected files in result"
 
 
