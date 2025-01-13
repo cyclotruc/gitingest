@@ -6,7 +6,12 @@ from typing import Any
 
 import tiktoken
 
-from gitingest.exceptions import AlreadyVisitedError, MaxFileSizeReachedError, MaxFilesReachedError
+from gitingest.exceptions import (
+    AlreadyVisitedError,
+    InvalidNotebookError,
+    MaxFileSizeReachedError,
+    MaxFilesReachedError,
+)
 from gitingest.notebook_utils import process_notebook
 
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
@@ -164,7 +169,7 @@ def _read_file_content(file_path: Path) -> str:
 
         with open(file_path, encoding="utf-8", errors="ignore") as f:
             return f.read()
-    except OSError as e:
+    except (OSError, InvalidNotebookError) as e:
         return f"Error reading file: {e}"
 
 

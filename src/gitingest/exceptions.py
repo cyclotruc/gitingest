@@ -49,3 +49,10 @@ class AlreadyVisitedError(Exception):
 
     def __init__(self, path: str) -> None:
         super().__init__(f"Symlink target already visited: {path}")
+
+
+class InvalidNotebookError(Exception):
+    """Exception raised when a Jupyter notebook is invalid or cannot be processed."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)

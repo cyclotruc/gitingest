@@ -70,16 +70,11 @@ def test_process_notebook_with_worksheets(write_notebook):
 def test_process_notebook_multiple_worksheets(write_notebook):
     """
     Test a notebook containing multiple 'worksheets'.
-
-    If multiple worksheets are present:
-    - Only process the first sheet's cells.
-    - DeprecationWarning for worksheets
-    - UserWarning for ignoring extra worksheets
     """
     multi_worksheets = {
         "worksheets": [
             {"cells": [{"cell_type": "markdown", "source": ["# First Worksheet"]}]},
-            {"cells": [{"cell_type": "code", "source": ['print("Ignored Worksheet")']}]},
+            {"cells": [{"cell_type": "code", "source": ["# Second Worksheet"]}]},
         ]
     }
 
@@ -93,15 +88,26 @@ def test_process_notebook_multiple_worksheets(write_notebook):
     nb_multi = write_notebook("multiple_worksheets.ipynb", multi_worksheets)
     nb_single = write_notebook("single_worksheet.ipynb", single_worksheet)
 
-    with pytest.warns(DeprecationWarning, match="Worksheets are deprecated as of IPEP-17."):
-        with pytest.warns(UserWarning, match="Multiple worksheets are not supported."):
+    with pytest.warns(
+        DeprecationWarning, match="Worksheets are deprecated as of IPEP-17. Consider updating the notebook."
+    ):
+        with pytest.warns(
+            UserWarning, match="Multiple worksheets detected. Combining all worksheets into a single script."
+        ):
             result_multi = process_notebook(nb_multi)
 
-    with pytest.warns(DeprecationWarning, match="Worksheets are deprecated as of IPEP-17."):
+    with pytest.warns(
+        DeprecationWarning, match="Worksheets are deprecated as of IPEP-17. Consider updating the notebook."
+    ):
         result_single = process_notebook(nb_single)
 
     # The second worksheet (with code) should have been ignored
-    assert result_multi == result_single, "Second worksheet was ignored, results match."
+    assert result_multi != result_single, "The multi-worksheet notebook should have more content."
+    assert len(result_multi) > len(result_single), "The multi-worksheet notebook should have more content."
+    assert "# First Worksheet" in result_single, "First worksheet content should be present."
+    assert "# Second Worksheet" not in result_single, "Second worksheet content should be absent."
+    assert "# First Worksheet" in result_multi, "First worksheet content should be present."
+    assert "# Second Worksheet" in result_multi, "Second worksheet content should be present."
 
 
 def test_process_notebook_code_only(write_notebook):
@@ -204,3 +210,58 @@ def test_process_notebook_invalid_cell_type(write_notebook):
 
     with pytest.raises(ValueError, match="Unknown cell type: unknown"):
         process_notebook(nb_path)
+
+
+def test_process_notebook_with_output(write_notebook):
+    """
+    Test a notebook with code cells and outputs.
+
+    The outputs should be included as comments if `include_output=True`.
+    """
+    notebook_content = {
+        "cells": [
+            {
+                "cell_type": "code",
+                "source": [
+                    "import matplotlib.pyplot as plt\n",
+                    "print('my_data')\n",
+                    "my_data = [1, 2, 3, 4, 5]\n",
+                    "plt.plot(my_data)\n",
+                    "my_data",
+                ],
+                "outputs": [
+                    {"output_type": "stream", "text": ["my_data"]},
+                    {"output_type": "execute_result", "data": {"text/plain": ["[1, 2, 3, 4, 5]"]}},
+                    {"output_type": "display_data", "data": {"text/plain": ["<Figure size 640x480 with 1 Axes>"]}},
+                ],
+            }
+        ]
+    }
+
+    nb_path = write_notebook("with_output.ipynb", notebook_content)
+    with_output = process_notebook(nb_path, include_output=True)
+    without_output = process_notebook(nb_path, include_output=False)
+
+    expected_source = "\n".join(
+        [
+            "# Jupyter notebook converted to Python script.\n",
+            "import matplotlib.pyplot as plt",
+            "print('my_data')",
+            "my_data = [1, 2, 3, 4, 5]",
+            "plt.plot(my_data)",
+            "my_data\n",
+        ]
+    )
+    expected_output = "\n".join(
+        [
+            "# Output:",
+            "#   my_data",
+            "#   [1, 2, 3, 4, 5]",
+            "#   <Figure size 640x480 with 1 Axes>\n",
+        ]
+    )
+
+    expected_combined = expected_source + expected_output
+
+    assert with_output == expected_combined, "Expected source code and output as comments."
+    assert without_output == expected_source, "Expected source code only."
