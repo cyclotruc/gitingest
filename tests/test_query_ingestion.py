@@ -77,14 +77,81 @@ def test_include_txt_pattern(temp_directory: Path, sample_query: dict[str, Any])
     assert not any(path.endswith(".py") for path in file_paths), "Should not include .py files"
 
 
-# TODO: test with wrong include patterns: ['*.qwerty']
+def test_include_nonexistent_extension(temp_directory: Path, sample_query: dict[str, Any]) -> None:
+    sample_query["local_path"] = temp_directory
+    sample_query["include_patterns"] = ["*.query"]  # Is a Non existant extension ?
+
+    result = _scan_directory(temp_directory, query=sample_query)
+    assert result is not None, "Result should not be None"
+
+    # Extract the files content & set file limit cap
+    files = _extract_files_content(query=sample_query, node=result, max_file_size=1_000_000)
+    # Verify no file processed with wrong extension
+    assert len(files) == 0, "Should not find any files with .qwerty extension"
+
+    assert result["type"] == "directory"
+    assert result["file_count"] == 0
+    assert result["dir_count"] == 0
+    assert len(result["children"]) == 0
 
 
 # single folder patterns
-# TODO: test with include patterns: ['src/*']
-# TODO: test with include patterns: ['/src/*']
-# TODO: test with include patterns: ['/src/']
-# TODO: test with include patterns: ['/src*']
+def test_include_src_star_pattern(temp_directory: Path, sample_query: dict[str, Any]) -> None:
+    """
+    Test that when using 'src/*' as include pattern, files under the src directory
+    are included.
+    Note: Windows is not supported - test converts Windows paths to Unix-style for validation.
+    """
+    sample_query["local_path"] = temp_directory
+    sample_query["include_patterns"] = ["src/*"]
+
+    result = _scan_directory(temp_directory, query=sample_query)
+    assert result is not None, "Result should not be None"
+
+    files = _extract_files_content(query=sample_query, node=result, max_file_size=1_000_000)
+    # Convert Windows paths to Unix-style for test validation
+    file_paths = {f["path"].replace("\\", "/") for f in files}
+    expected_paths = {"src/subfile1.txt", "src/subfile2.py", "src/subdir/file_subdir.txt", "src/subdir/file_subdir.py"}
+    assert file_paths == expected_paths, "Missing or unexpected files in result"
+
+
+def test_include_src_recursive(temp_directory: Path, sample_query: dict[str, Any]) -> None:
+    """
+    Test that when using 'src/**' as include pattern, all files under src
+    directory are included recursively.
+    Note: Windows is not supported - test converts Windows paths to Unix-style for validation.
+    """
+    sample_query["local_path"] = temp_directory
+    sample_query["include_patterns"] = ["src/**"]
+
+    result = _scan_directory(temp_directory, query=sample_query)
+    assert result is not None, "Result should not be None"
+
+    files = _extract_files_content(query=sample_query, node=result, max_file_size=1_000_000)
+    # Convert Windows paths to Unix-style for test validation
+    file_paths = {f["path"].replace("\\", "/") for f in files}
+    expected_paths = {"src/subfile1.txt", "src/subfile2.py", "src/subdir/file_subdir.txt", "src/subdir/file_subdir.py"}
+    assert file_paths == expected_paths, "Missing or unexpected files in result"
+
+
+def test_include_src_wildcard_prefix(temp_directory: Path, sample_query: dict[str, Any]) -> None:
+    """
+    Test that when using 'src*' as include pattern, it matches the src directory
+    and any paths that start with 'src'.
+    Note: Windows is not supported - test converts Windows paths to Unix-style for validation.
+    """
+    sample_query["local_path"] = temp_directory
+    sample_query["include_patterns"] = ["src*"]
+
+    result = _scan_directory(temp_directory, query=sample_query)
+    assert result is not None, "Result should not be None"
+
+    files = _extract_files_content(query=sample_query, node=result, max_file_size=1_000_000)
+    # Convert Windows paths to Unix-style for test validation
+    file_paths = {f["path"].replace("\\", "/") for f in files}
+    expected_paths = {"src/subfile1.txt", "src/subfile2.py", "src/subdir/file_subdir.txt", "src/subdir/file_subdir.py"}
+    assert file_paths == expected_paths, "Missing or unexpected files in result"
+
 
 # multiple patterns
 # TODO: test with multiple include patterns: ['*.txt', '*.py']
