@@ -140,7 +140,7 @@ def _is_text_file(file_path: Path) -> bool:
         return False
 
 
-def _read_file_content(file_path: Path) -> str:
+def _read_file_content(file_path: Path , parse_output_notebook: bool = True) -> str:
     """
     Read the content of a file.
 
@@ -152,6 +152,8 @@ def _read_file_content(file_path: Path) -> str:
     ----------
     file_path : Path
         The path to the file to read.
+    parse_output_notebook : bool
+        Whether to parse the output of the notebook-cells.
 
     Returns
     -------
@@ -160,7 +162,7 @@ def _read_file_content(file_path: Path) -> str:
     """
     try:
         if file_path.suffix == ".ipynb":
-            return process_notebook(file_path)
+            return process_notebook(file_path, parse_output_notebook)
 
         with open(file_path, encoding="utf-8", errors="ignore") as f:
             return f.read()

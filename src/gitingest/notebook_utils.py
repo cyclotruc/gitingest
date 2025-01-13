@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 
-def process_notebook(file: Path) -> str:
+def process_notebook(file: Path,parse_output_notebook:bool) -> str:
     """
     Process a Jupyter notebook file and return an executable Python script as a string.
 
@@ -45,6 +45,7 @@ def process_notebook(file: Path) -> str:
         notebook = worksheets[0]
 
     result = []
+    cell_count=0
 
     for cell in notebook["cells"]:
         cell_type = cell.get("cell_type")
@@ -60,6 +61,24 @@ def process_notebook(file: Path) -> str:
         # Convert Markdown and raw cells to multi-line comments
         if cell_type in ("markdown", "raw"):
             str_ = f'"""\n{str_}\n"""'
+
+        # Extract Output from cell
+        if parse_output_notebook and (("outputs" in cell) and (cell["outputs"] != [])):
+            sample_output=""
+            for output in cell["outputs"]:
+                if output["output_type"] == "stream" and output["text"] != []:
+                    sample_output += "".join(output["text"]) + "\n"
+                elif (output["output_type"] in ["execute_result","display_data"]) and ("data" in output) and ("text/plain" in output["data"]):
+                    sample_output += "".join(output["data"]["text/plain"]) + "\n"
+                elif (output["output_type"]=="error" and ("evalue" in output) ):
+                    sample_output += f"{output.get("ename","Error")} : " + "".join(output["evalue"]) + "\n"
+            str_ += f'\n# Output:\n"""{sample_output}"""\n'
+
+        # Add Cell Info
+        cell_count+=1 
+        str_ = f"# Cell {cell_count} ; Type : ({cell_type})\n" + str_
+ 
+
 
         result.append(str_)
 
