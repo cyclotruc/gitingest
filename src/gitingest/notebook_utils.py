@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 
-def process_notebook(file: Path,parse_output_notebook:bool) -> str:
+def process_notebook(file: Path , parse_notebook_output: bool = True) -> str:
     """
     Process a Jupyter notebook file and return an executable Python script as a string.
 
@@ -63,7 +63,7 @@ def process_notebook(file: Path,parse_output_notebook:bool) -> str:
             str_ = f'"""\n{str_}\n"""'
 
         # Extract Output from cell
-        if parse_output_notebook and (("outputs" in cell) and (cell["outputs"] != [])):
+        if parse_notebook_output and (("outputs" in cell) and (cell["outputs"] != [])):
             sample_output=""
             for output in cell["outputs"]:
                 if output["output_type"] == "stream" and output["text"] != []:

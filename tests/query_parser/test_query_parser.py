@@ -17,6 +17,9 @@ async def test_parse_url_valid_https() -> None:
         "https://github.com/user/repo",
         "https://gitlab.com/user/repo",
         "https://bitbucket.org/user/repo",
+        "https://gitea.com/user/repo",
+        "https://codeberg.com/user/repo",
+        "https://gitingest.com/user/repo",
     ]
     for url in test_cases:
         result = await _parse_repo_source(url)
@@ -34,6 +37,8 @@ async def test_parse_url_valid_http() -> None:
         "http://github.com/user/repo",
         "http://gitlab.com/user/repo",
         "http://bitbucket.org/user/repo",
+        "https://gitingest.com/user/repo",
+        "http://gitea.com/user/repo",
     ]
     for url in test_cases:
         result = await _parse_repo_source(url)
