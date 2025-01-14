@@ -176,3 +176,7 @@ The application should be available at `http://localhost:8000`.
    ```bash
    gitingest --help
    ```
+
+## Project Growth
+
+[![Star History Chart](https://api.star-history.com/svg?repos=cyclotruc/gitingest&type=Date)](https://star-history.com/#cyclotruc/gitingest&Date)
