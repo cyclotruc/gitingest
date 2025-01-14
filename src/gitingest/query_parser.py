@@ -4,6 +4,7 @@ import os
 import re
 import string
 import uuid
+import warnings
 from pathlib import Path
 from typing import Any
 from urllib.parse import unquote, urlparse
@@ -172,36 +173,35 @@ async def _parse_repo_source(source: str) -> dict[str, Any]:
     if _is_valid_git_commit_hash(commit_or_branch):
         parsed["commit"] = commit_or_branch
         parsed["subpath"] += "/".join(remaining_parts[1:])
-
     else:
         parsed["branch"] = await _configure_branch_and_subpath(remaining_parts, url)
         parsed["subpath"] += "/".join(remaining_parts)
     return parsed
 
-async def _configure_branch_and_subpath(remaining_parts: list[str],url: str) -> str | None:
+
+async def _configure_branch_and_subpath(remaining_parts: list[str], url: str) -> str | None:
     """
-    Find the branch name from the remaining parts of the URL path.
+    Configure the branch and subpath based on the remaining parts of the URL.
     Parameters
     ----------
     remaining_parts : list[str]
-        List of path parts extracted from the URL.
+        The remaining parts of the URL path.
     url : str
-        The repository URL to determine branches.
-
+        The URL of the repository.
     Returns
     -------
-    str (branch name) or None
+    str | None
+        The branch name if found, otherwise None.
 
     """
     try:
         # Fetch the list of branches from the remote repository
         branches: list[str] = await fetch_remote_branch_list(url)
     except Exception as e:
-        print(f"Warning: Failed to fetch branch list: {str(e)}")
-        return remaining_parts.pop(0) if remaining_parts else None
+        warnings.warn(f"Warning: Failed to fetch branch list: {str(e)}")
+        return remaining_parts.pop(0)
 
     branch = []
-
     while remaining_parts:
         branch.append(remaining_parts.pop(0))
         branch_name = "/".join(branch)
@@ -209,6 +209,7 @@ async def _configure_branch_and_subpath(remaining_parts: list[str],url: str) -> 
             return branch_name
 
     return None
+
 
 def _is_valid_git_commit_hash(commit: str) -> bool:
     """

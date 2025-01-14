@@ -144,27 +144,25 @@ async def _check_repo_exists(url: str) -> bool:
 @async_timeout(TIMEOUT)
 async def fetch_remote_branch_list(url: str) -> list[str]:
     """
-    Get the list of branches from the remote repo.
-
+    Fetch the list of branches from a remote Git repository.
     Parameters
     ----------
     url : str
-       The URL of the repository.
-
+        The URL of the Git repository to fetch branches from.
     Returns
     -------
     list[str]
-      list of the branches in the remote repository
+        A list of branch names available in the remote repository.
     """
     fetch_branches_command = ["git", "ls-remote", "--heads", url]
-    stdout, stderr = await _run_git_command(*fetch_branches_command)
+    stdout, _ = await _run_git_command(*fetch_branches_command)
     stdout_decoded = stdout.decode()
 
     return [
-            line.split('refs/heads/', 1)[1]
-            for line in stdout_decoded.splitlines()
-            if line.strip() and 'refs/heads/' in line
-        ]
+        line.split("refs/heads/", 1)[1]
+        for line in stdout_decoded.splitlines()
+        if line.strip() and "refs/heads/" in line
+    ]
 
 
 async def _run_git_command(*args: str) -> tuple[bytes, bytes]:
