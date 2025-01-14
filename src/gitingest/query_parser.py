@@ -190,7 +190,7 @@ async def _configure_branch_and_subpath(remaining_parts: list[str],url: str) -> 
 
     Returns
     -------
-    str(branch name) or None
+    str (branch name) or None
 
     """
     try:
@@ -198,7 +198,7 @@ async def _configure_branch_and_subpath(remaining_parts: list[str],url: str) -> 
         branches: list[str] = await fetch_remote_branch_list(url)
     except Exception as e:
         print(f"Warning: Failed to fetch branch list: {str(e)}")
-        return remaining_parts.pop(0)
+        return remaining_parts.pop(0) if remaining_parts else None
 
     branch = []
 
