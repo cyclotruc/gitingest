@@ -57,7 +57,7 @@ async def remove_old_repositories():
                 await process_folder(folder)
 
         except Exception as e:
-            print(f"Error in remove_old_repositories: {str(e)}")
+            print(f"Error in remove_old_repositories: {e}")
 
         await asyncio.sleep(60)
 
@@ -83,13 +83,13 @@ async def process_folder(folder: Path) -> None:
                 history.write(f"{repo_url}\n")
 
     except Exception as e:
-        print(f"Error logging repository URL for {folder}: {str(e)}")
+        print(f"Error logging repository URL for {folder}: {e}")
 
     # Delete the folder
     try:
         shutil.rmtree(folder)
     except Exception as e:
-        print(f"Error deleting {folder}: {str(e)}")
+        print(f"Error deleting {folder}: {e}")
 
 
 @asynccontextmanager

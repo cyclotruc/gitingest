@@ -1,6 +1,6 @@
 """ Default ignore patterns for Gitingest. """
 
-DEFAULT_IGNORE_PATTERNS: list[str] = [
+DEFAULT_IGNORE_PATTERNS: set[str] = {
     # Python
     "*.pyc",
     "*.pyo",
@@ -29,18 +29,17 @@ DEFAULT_IGNORE_PATTERNS: list[str] = [
     "*.war",
     "*.ear",
     "*.nar",
-    "target/",
     ".gradle/",
     "build/",
     ".settings/",
-    ".project",
     ".classpath",
     "gradle-app.setting",
     "*.gradle",
+    # IDEs and editors / Java
+    ".project",
     # C/C++
     "*.o",
     "*.obj",
-    "*.so",
     "*.dll",
     "*.dylib",
     "*.exe",
@@ -68,14 +67,13 @@ DEFAULT_IGNORE_PATTERNS: list[str] = [
     ".ruby-gemset",
     ".rvmrc",
     # Rust
-    "target/",
     "Cargo.lock",
     "**/*.rs.bk",
+    # Java / Rust
+    "target/",
     # Go
-    "bin/",
     "pkg/",
     # .NET/C#
-    "bin/",
     "obj/",
     "*.suo",
     "*.user",
@@ -83,6 +81,8 @@ DEFAULT_IGNORE_PATTERNS: list[str] = [
     "*.sln.docstates",
     "packages/",
     "*.nupkg",
+    # Go / .NET / C#
+    "bin/",
     # Version control
     ".git",
     ".svn",
@@ -112,12 +112,9 @@ DEFAULT_IGNORE_PATTERNS: list[str] = [
     ".idea",
     ".vscode",
     ".vs",
-    "*.swp",
     "*.swo",
     "*.swn",
     ".settings",
-    ".project",
-    ".classpath",
     "*.sublime-*",
     # Temporary and cache files
     "*.log",
@@ -140,9 +137,6 @@ DEFAULT_IGNORE_PATTERNS: list[str] = [
     "*.egg",
     "*.whl",
     "*.so",
-    "*.dylib",
-    "*.dll",
-    "*.class",
     # Documentation
     "site-packages",
     ".docusaurus",
@@ -159,4 +153,4 @@ DEFAULT_IGNORE_PATTERNS: list[str] = [
     "*.tfstate*",
     ## Dependencies in various languages
     "vendor/",
-]
+}

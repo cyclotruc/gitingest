@@ -1,14 +1,14 @@
 """ Tests for the query_ingestion module """
 
 from pathlib import Path
-from typing import Any
 from unittest.mock import patch
 
 from gitingest.query_ingestion import _extract_files_content, _read_file_content, _scan_directory, run_ingest_query
+from gitingest.query_parser import ParsedQuery
 
 
-def test_scan_directory(temp_directory: Path, sample_query: dict[str, Any]) -> None:
-    sample_query["local_path"] = temp_directory
+def test_scan_directory(temp_directory: Path, sample_query: ParsedQuery) -> None:
+    sample_query.local_path = temp_directory
     result = _scan_directory(temp_directory, query=sample_query)
     if result is None:
         assert False, "Result is None"
@@ -19,12 +19,13 @@ def test_scan_directory(temp_directory: Path, sample_query: dict[str, Any]) -> N
     assert len(result["children"]) == 5  # file1.txt, file2.py, src, dir1, dir2
 
 
-def test_extract_files_content(temp_directory: Path, sample_query: dict[str, Any]) -> None:
-    sample_query["local_path"] = temp_directory
+def test_extract_files_content(temp_directory: Path, sample_query: ParsedQuery) -> None:
+    sample_query.local_path = temp_directory
+
     nodes = _scan_directory(temp_directory, query=sample_query)
     if nodes is None:
         assert False, "Nodes is None"
-    files = _extract_files_content(query=sample_query, node=nodes, max_file_size=1_000_000)
+    files = _extract_files_content(query=sample_query, node=nodes)
     assert len(files) == 8  # All .txt and .py files
 
     # Check for presence of key files
@@ -58,14 +59,14 @@ def test_read_file_content_with_non_notebook(tmp_path: Path):
 
 
 # Test that when using a ['*.txt'] as include pattern, only .txt files are processed & .py files are excluded
-def test_include_txt_pattern(temp_directory: Path, sample_query: dict[str, Any]) -> None:
-    sample_query["local_path"] = temp_directory
-    sample_query["include_patterns"] = ["*.txt"]
+def test_include_txt_pattern(temp_directory: Path, sample_query: ParsedQuery) -> None:
+    sample_query.local_path = temp_directory
+    sample_query.include_patterns = {"*.txt"}
 
     result = _scan_directory(temp_directory, query=sample_query)
     assert result is not None, "Result should not be None"
 
-    files = _extract_files_content(query=sample_query, node=result, max_file_size=1_000_000)
+    files = _extract_files_content(query=sample_query, node=result)
     file_paths = [f["path"] for f in files]
     assert len(files) == 5, "Should have found exactly 5 .txt files"
     assert all(path.endswith(".txt") for path in file_paths), "Should only include .txt files"
@@ -77,15 +78,15 @@ def test_include_txt_pattern(temp_directory: Path, sample_query: dict[str, Any])
     assert not any(path.endswith(".py") for path in file_paths), "Should not include .py files"
 
 
-def test_include_nonexistent_extension(temp_directory: Path, sample_query: dict[str, Any]) -> None:
-    sample_query["local_path"] = temp_directory
-    sample_query["include_patterns"] = ["*.query"]  # Is a Non existant extension ?
+def test_include_nonexistent_extension(temp_directory: Path, sample_query: ParsedQuery) -> None:
+    sample_query.local_path = temp_directory
+    sample_query.include_patterns = {"*.query"}  # Is a Non existant extension ?
 
     result = _scan_directory(temp_directory, query=sample_query)
     assert result is not None, "Result should not be None"
 
     # Extract the files content & set file limit cap
-    files = _extract_files_content(query=sample_query, node=result, max_file_size=1_000_000)
+    files = _extract_files_content(query=sample_query, node=result)
     # Verify no file processed with wrong extension
     assert len(files) == 0, "Should not find any files with .qwerty extension"
 
@@ -96,70 +97,70 @@ def test_include_nonexistent_extension(temp_directory: Path, sample_query: dict[
 
 
 # single folder patterns
-def test_include_src_star_pattern(temp_directory: Path, sample_query: dict[str, Any]) -> None:
+def test_include_src_star_pattern(temp_directory: Path, sample_query: ParsedQuery) -> None:
     """
     Test that when using 'src/*' as include pattern, files under the src directory
     are included.
     Note: Windows is not supported - test converts Windows paths to Unix-style for validation.
     """
-    sample_query["local_path"] = temp_directory
-    sample_query["include_patterns"] = ["src/*"]
+    sample_query.local_path = temp_directory
+    sample_query.include_patterns = {"src/*"}
 
     result = _scan_directory(temp_directory, query=sample_query)
     assert result is not None, "Result should not be None"
 
-    files = _extract_files_content(query=sample_query, node=result, max_file_size=1_000_000)
+    files = _extract_files_content(query=sample_query, node=result)
     # Convert Windows paths to Unix-style for test validation
     file_paths = {f["path"].replace("\\", "/") for f in files}
     expected_paths = {"src/subfile1.txt", "src/subfile2.py", "src/subdir/file_subdir.txt", "src/subdir/file_subdir.py"}
     assert file_paths == expected_paths, "Missing or unexpected files in result"
 
 
-def test_include_src_recursive(temp_directory: Path, sample_query: dict[str, Any]) -> None:
+def test_include_src_recursive(temp_directory: Path, sample_query: ParsedQuery) -> None:
     """
     Test that when using 'src/**' as include pattern, all files under src
     directory are included recursively.
     Note: Windows is not supported - test converts Windows paths to Unix-style for validation.
     """
-    sample_query["local_path"] = temp_directory
-    sample_query["include_patterns"] = ["src/**"]
+    sample_query.local_path = temp_directory
+    sample_query.include_patterns = {"src/**"}
 
     result = _scan_directory(temp_directory, query=sample_query)
     assert result is not None, "Result should not be None"
 
-    files = _extract_files_content(query=sample_query, node=result, max_file_size=1_000_000)
+    files = _extract_files_content(query=sample_query, node=result)
     # Convert Windows paths to Unix-style for test validation
     file_paths = {f["path"].replace("\\", "/") for f in files}
     expected_paths = {"src/subfile1.txt", "src/subfile2.py", "src/subdir/file_subdir.txt", "src/subdir/file_subdir.py"}
     assert file_paths == expected_paths, "Missing or unexpected files in result"
 
 
-def test_include_src_wildcard_prefix(temp_directory: Path, sample_query: dict[str, Any]) -> None:
+def test_include_src_wildcard_prefix(temp_directory: Path, sample_query: ParsedQuery) -> None:
     """
     Test that when using 'src*' as include pattern, it matches the src directory
     and any paths that start with 'src'.
     Note: Windows is not supported - test converts Windows paths to Unix-style for validation.
     """
-    sample_query["local_path"] = temp_directory
-    sample_query["include_patterns"] = ["src*"]
+    sample_query.local_path = temp_directory
+    sample_query.include_patterns = {"src*"}
 
     result = _scan_directory(temp_directory, query=sample_query)
     assert result is not None, "Result should not be None"
 
-    files = _extract_files_content(query=sample_query, node=result, max_file_size=1_000_000)
+    files = _extract_files_content(query=sample_query, node=result)
     # Convert Windows paths to Unix-style for test validation
     file_paths = {f["path"].replace("\\", "/") for f in files}
     expected_paths = {"src/subfile1.txt", "src/subfile2.py", "src/subdir/file_subdir.txt", "src/subdir/file_subdir.py"}
     assert file_paths == expected_paths, "Missing or unexpected files in result"
 
 
-def test_run_ingest_query(temp_directory: Path, sample_query: dict[str, Any]) -> None:
+def test_run_ingest_query(temp_directory: Path, sample_query: ParsedQuery) -> None:
     """
     Test the run_ingest_query function to ensure it processes the directory correctly.
     """
-    sample_query["local_path"] = temp_directory
-    sample_query["subpath"] = "/"
-    sample_query["type"] = None
+    sample_query.local_path = temp_directory
+    sample_query.subpath = "/"
+    sample_query.type = None
 
     summary, _, content = run_ingest_query(sample_query)
 

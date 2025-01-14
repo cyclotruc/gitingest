@@ -6,15 +6,15 @@ import shutil
 
 from config import TMP_BASE_PATH
 from gitingest.query_ingestion import run_ingest_query
-from gitingest.query_parser import parse_query
+from gitingest.query_parser import ParsedQuery, parse_query
 from gitingest.repository_clone import CloneConfig, clone_repo
 
 
 async def ingest(
     source: str,
     max_file_size: int = 10 * 1024 * 1024,  # 10 MB
-    include_patterns: list[str] | str | None = None,
-    exclude_patterns: list[str] | str | None = None,
+    include_patterns: set[str] | str | None = None,
+    exclude_patterns: set[str] | str | None = None,
     output: str | None = None,
 ) -> tuple[str, str, str]:
     """
@@ -31,10 +31,10 @@ async def ingest(
     max_file_size : int
         Maximum allowed file size for file ingestion. Files larger than this size are ignored, by default
         10*1024*1024 (10 MB).
-    include_patterns : list[str] | str | None, optional
-        Pattern or list of patterns specifying which files to include. If `None`, all files are included.
-    exclude_patterns : list[str] | str | None, optional
-        Pattern or list of patterns specifying which files to exclude. If `None`, no files are excluded.
+    include_patterns : set[str] | str | None, optional
+        Pattern or set of patterns specifying which files to include. If `None`, all files are included.
+    exclude_patterns : set[str] | str | None, optional
+        Pattern or set of patterns specifying which files to exclude. If `None`, no files are excluded.
     output : str | None, optional
         File path where the summary and content should be written. If `None`, the results are not written to a file.
 
@@ -52,21 +52,21 @@ async def ingest(
         If `clone_repo` does not return a coroutine, or if the `source` is of an unsupported type.
     """
     try:
-        query = await parse_query(
+        parsed_query: ParsedQuery = await parse_query(
             source=source,
             max_file_size=max_file_size,
             from_web=False,
             include_patterns=include_patterns,
             ignore_patterns=exclude_patterns,
         )
-        if query["url"]:
 
+        if parsed_query.url:
             # Extract relevant fields for CloneConfig
             clone_config = CloneConfig(
-                url=query["url"],
-                local_path=str(query["local_path"]),
-                commit=query.get("commit"),
-                branch=query.get("branch"),
+                url=parsed_query.url,
+                local_path=str(parsed_query.local_path),
+                commit=parsed_query.commit,
+                branch=parsed_query.branch,
             )
             clone_result = clone_repo(clone_config)
 
@@ -75,7 +75,7 @@ async def ingest(
             else:
                 raise TypeError("clone_repo did not return a coroutine as expected.")
 
-        summary, tree, content = run_ingest_query(query)
+        summary, tree, content = run_ingest_query(parsed_query)
 
         if output is not None:
             with open(output, "w", encoding="utf-8") as f:
@@ -84,6 +84,6 @@ async def ingest(
         return summary, tree, content
     finally:
         # Clean up the temporary directory if it was created
-        if query["url"]:
+        if parsed_query.url:
             # Clean up the temporary directory
             shutil.rmtree(TMP_BASE_PATH, ignore_errors=True)

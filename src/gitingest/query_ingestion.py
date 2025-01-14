@@ -6,6 +6,7 @@ from typing import Any
 
 import tiktoken
 
+from config import MAX_DIRECTORY_DEPTH, MAX_FILES, MAX_TOTAL_SIZE_BYTES
 from gitingest.exceptions import (
     AlreadyVisitedError,
     InvalidNotebookError,
@@ -13,14 +14,10 @@ from gitingest.exceptions import (
     MaxFilesReachedError,
 )
 from gitingest.notebook_utils import process_notebook
-
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
-MAX_DIRECTORY_DEPTH = 20  # Maximum depth of directory traversal
-MAX_FILES = 10_000  # Maximum number of files to process
-MAX_TOTAL_SIZE_BYTES = 500 * 1024 * 1024  # 500 MB
+from gitingest.query_parser import ParsedQuery
 
 
-def _should_include(path: Path, base_path: Path, include_patterns: list[str]) -> bool:
+def _should_include(path: Path, base_path: Path, include_patterns: set[str]) -> bool:
     """
     Determine if the given file or directory path matches any of the include patterns.
 
@@ -33,8 +30,8 @@ def _should_include(path: Path, base_path: Path, include_patterns: list[str]) ->
         The absolute path of the file or directory to check.
     base_path : Path
         The base directory from which the relative path is calculated.
-    include_patterns : list[str]
-        A list of patterns to check against the relative path.
+    include_patterns : set[str]
+        A set of patterns to check against the relative path.
 
     Returns
     -------
@@ -54,7 +51,7 @@ def _should_include(path: Path, base_path: Path, include_patterns: list[str]) ->
     return False
 
 
-def _should_exclude(path: Path, base_path: Path, ignore_patterns: list[str]) -> bool:
+def _should_exclude(path: Path, base_path: Path, ignore_patterns: set[str]) -> bool:
     """
     Determine if the given file or directory path matches any of the ignore patterns.
 
@@ -68,8 +65,8 @@ def _should_exclude(path: Path, base_path: Path, ignore_patterns: list[str]) -> 
         The absolute path of the file or directory to check.
     base_path : Path
         The base directory from which the relative path is calculated.
-    ignore_patterns : list[str]
-        A list of patterns to check against the relative path.
+    ignore_patterns : set[str]
+        A set of patterns to check against the relative path.
 
     Returns
     -------
@@ -221,7 +218,7 @@ def _sort_children(children: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 def _scan_directory(
     path: Path,
-    query: dict[str, Any],
+    query: ParsedQuery,
     seen_paths: set[Path] | None = None,
     depth: int = 0,
     stats: dict[str, int] | None = None,
@@ -237,8 +234,8 @@ def _scan_directory(
     ----------
     path : Path
         The path of the directory to scan.
-    query : dict[str, Any]
-        A dictionary containing the query parameters, such as include and ignore patterns.
+    query : ParsedQuery
+        The parsed query object containing information about the repository and query parameters.
     seen_paths : set[Path] | None, optional
         A set to track already visited paths, by default None.
     depth : int
@@ -287,23 +284,9 @@ def _scan_directory(
         "ignore_content": False,
     }
 
-    ignore_patterns = query["ignore_patterns"]
-    base_path = query["local_path"]
-    include_patterns = query["include_patterns"]
-
     try:
         for item in path.iterdir():
-            _process_item(
-                item=item,
-                query=query,
-                result=result,
-                seen_paths=seen_paths,
-                stats=stats,
-                depth=depth,
-                ignore_patterns=ignore_patterns,
-                base_path=base_path,
-                include_patterns=include_patterns,
-            )
+            _process_item(item=item, query=query, result=result, seen_paths=seen_paths, stats=stats, depth=depth)
     except MaxFilesReachedError:
         print(f"Maximum file limit ({MAX_FILES}) reached.")
     except PermissionError:
@@ -315,13 +298,11 @@ def _scan_directory(
 
 def _process_symlink(
     item: Path,
-    query: dict[str, Any],
+    query: ParsedQuery,
     result: dict[str, Any],
     seen_paths: set[Path],
     stats: dict[str, int],
     depth: int,
-    base_path: Path,
-    include_patterns: list[str],
 ) -> None:
     """
     Process a symlink in the file system.
@@ -333,8 +314,8 @@ def _process_symlink(
     ----------
     item : Path
         The full path of the symlink.
-    query : dict[str, Any]
-        The query dictionary containing the parameters.
+    query : ParsedQuery
+        The parsed query object containing information about the repository and query parameters.
     result : dict[str, Any]
         The dictionary to accumulate the results.
     seen_paths : set[str]
@@ -343,10 +324,6 @@ def _process_symlink(
         The dictionary to track statistics such as file count and size.
     depth : int
         The current depth in the directory traversal.
-    base_path : Path
-        The base path used for validation of the symlink.
-    include_patterns : list[str]
-        A list of include patterns for file filtering.
 
     Raises
     ------
@@ -357,7 +334,8 @@ def _process_symlink(
     MaxFilesReachedError
         If the number of files exceeds the maximum limit.
     """
-    if not _is_safe_symlink(item, base_path):
+
+    if not _is_safe_symlink(item, query.local_path):
         raise AlreadyVisitedError(str(item))
 
     real_path = item.resolve()
@@ -398,7 +376,7 @@ def _process_symlink(
             depth=depth + 1,
             stats=stats,
         )
-        if subdir and (not include_patterns or subdir["file_count"] > 0):
+        if subdir and (not query.include_patterns or subdir["file_count"] > 0):
             # rename the subdir to reflect the symlink name
             subdir["name"] = item.name
             subdir["path"] = str(item)
@@ -460,14 +438,11 @@ def _process_file(item: Path, result: dict[str, Any], stats: dict[str, int]) -> 
 
 def _process_item(
     item: Path,
-    query: dict[str, Any],
+    query: ParsedQuery,
     result: dict[str, Any],
     seen_paths: set[Path],
     stats: dict[str, int],
     depth: int,
-    ignore_patterns: list[str],
-    base_path: Path,
-    include_patterns: list[str],
 ) -> None:
     """
     Process a file or directory item within a directory.
@@ -479,8 +454,8 @@ def _process_item(
     ----------
     item : Path
         The full path of the file or directory to process.
-    query : dict[str, Any]
-        A dictionary of query parameters, including the base path and patterns.
+    query : ParsedQuery
+        The parsed query object containing information about the repository and query parameters.
     result : dict[str, Any]
         The result dictionary to accumulate processed file/directory data.
     seen_paths : set[Path]
@@ -489,39 +464,29 @@ def _process_item(
         A dictionary of statistics like the total file count and size.
     depth : int
         The current depth of directory traversal.
-    ignore_patterns : list[str]
-        A list of patterns to exclude files or directories.
-    base_path : Path
-        The base directory used for relative path calculations.
-    include_patterns : list[str]
-        A list of patterns to include files or directories.
     """
-    if _should_exclude(item, base_path, ignore_patterns):
+
+    if not query.ignore_patterns or _should_exclude(item, query.local_path, query.ignore_patterns):
         return
 
-    if item.is_file() and query["include_patterns"] and not _should_include(item, base_path, include_patterns):
+    if (
+        item.is_file()
+        and query.include_patterns
+        and not _should_include(item, query.local_path, query.include_patterns)
+    ):
         result["ignore_content"] = True
         return
 
     try:
         if item.is_symlink():
-            _process_symlink(
-                item=item,
-                query=query,
-                result=result,
-                seen_paths=seen_paths,
-                stats=stats,
-                depth=depth,
-                base_path=base_path,
-                include_patterns=include_patterns,
-            )
+            _process_symlink(item=item, query=query, result=result, seen_paths=seen_paths, stats=stats, depth=depth)
 
         if item.is_file():
             _process_file(item=item, result=result, stats=stats)
 
         elif item.is_dir():
             subdir = _scan_directory(path=item, query=query, seen_paths=seen_paths, depth=depth + 1, stats=stats)
-            if subdir and (not include_patterns or subdir["file_count"] > 0):
+            if subdir and (not query.include_patterns or subdir["file_count"] > 0):
                 result["children"].append(subdir)
                 result["size"] += subdir["size"]
                 result["file_count"] += subdir["file_count"]
@@ -532,9 +497,8 @@ def _process_item(
 
 
 def _extract_files_content(
-    query: dict[str, Any],
+    query: ParsedQuery,
     node: dict[str, Any],
-    max_file_size: int,
     files: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     """
@@ -545,12 +509,10 @@ def _extract_files_content(
 
     Parameters
     ----------
-    query : dict[str, Any]
-        A dictionary containing the query parameters, including the base path of the repository.
+    query : ParsedQuery
+        The parsed query object containing information about the repository and query parameters.
     node : dict[str, Any]
         The current directory or file node being processed.
-    max_file_size : int
-        The maximum file size in bytes for which content should be extracted.
     files : list[dict[str, Any]] | None, optional
         A list to collect the extracted files' information, by default None.
 
@@ -563,12 +525,12 @@ def _extract_files_content(
         files = []
 
     if node["type"] == "file" and node["content"] != "[Non-text file]":
-        if node["size"] > max_file_size:
+        if node["size"] > query.max_file_size:
             content = None
         else:
             content = node["content"]
 
-        relative_path = Path(node["path"]).relative_to(query["local_path"])
+        relative_path = Path(node["path"]).relative_to(query.local_path)
 
         files.append(
             {
@@ -579,7 +541,7 @@ def _extract_files_content(
         )
     elif node["type"] == "directory":
         for child in node["children"]:
-            _extract_files_content(query=query, node=child, max_file_size=max_file_size, files=files)
+            _extract_files_content(query=query, node=child, files=files)
 
     return files
 
@@ -588,7 +550,7 @@ def _create_file_content_string(files: list[dict[str, Any]]) -> str:
     """
     Create a formatted string of file contents with separators.
 
-    This function takes a list of files and generates a formatted string where each file’s
+    This function takes a list of files and generates a formatted string where each file's
     content is separated by a divider.
 
     Parameters
@@ -617,7 +579,7 @@ def _create_file_content_string(files: list[dict[str, Any]]) -> str:
     return output
 
 
-def _create_summary_string(query: dict[str, Any], nodes: dict[str, Any]) -> str:
+def _create_summary_string(query: ParsedQuery, nodes: dict[str, Any]) -> str:
     """
     Create a summary string with file counts and content size.
 
@@ -626,8 +588,8 @@ def _create_summary_string(query: dict[str, Any], nodes: dict[str, Any]) -> str:
 
     Parameters
     ----------
-    query : dict[str, Any]
-        Dictionary containing query parameters like repository name, commit, branch, and subpath.
+    query : ParsedQuery
+        The parsed query object containing information about the repository and query parameters.
     nodes : dict[str, Any]
         Dictionary representing the directory structure, including file and directory counts.
 
@@ -636,24 +598,24 @@ def _create_summary_string(query: dict[str, Any], nodes: dict[str, Any]) -> str:
     str
         Summary string containing details such as repository name, file count, and other query-specific information.
     """
-    if "user_name" in query:
-        summary = f"Repository: {query['user_name']}/{query['repo_name']}\n"
+    if query.user_name:
+        summary = f"Repository: {query.user_name}/{query.repo_name}\n"
     else:
-        summary = f"Repository: {query['slug']}\n"
+        summary = f"Repository: {query.slug}\n"
 
     summary += f"Files analyzed: {nodes['file_count']}\n"
 
-    if "subpath" in query and query["subpath"] != "/":
-        summary += f"Subpath: {query['subpath']}\n"
-    if "commit" in query and query["commit"]:
-        summary += f"Commit: {query['commit']}\n"
-    elif "branch" in query and query["branch"] != "main" and query["branch"] != "master" and query["branch"]:
-        summary += f"Branch: {query['branch']}\n"
+    if query.subpath != "/":
+        summary += f"Subpath: {query.subpath}\n"
+    if query.commit:
+        summary += f"Commit: {query.commit}\n"
+    elif query.branch and query.branch not in ("main", "master"):
+        summary += f"Branch: {query.branch}\n"
 
     return summary
 
 
-def _create_tree_structure(query: dict[str, Any], node: dict[str, Any], prefix: str = "", is_last: bool = True) -> str:
+def _create_tree_structure(query: ParsedQuery, node: dict[str, Any], prefix: str = "", is_last: bool = True) -> str:
     """
     Create a tree-like string representation of the file structure.
 
@@ -662,8 +624,8 @@ def _create_tree_structure(query: dict[str, Any], node: dict[str, Any], prefix: 
 
     Parameters
     ----------
-    query : dict[str, Any]
-        A dictionary containing query parameters like repository name and subpath.
+    query : ParsedQuery
+        The parsed query object containing information about the repository and query parameters.
     node : dict[str, Any]
         The current directory or file node being processed.
     prefix : str
@@ -679,7 +641,7 @@ def _create_tree_structure(query: dict[str, Any], node: dict[str, Any], prefix: 
     tree = ""
 
     if not node["name"]:
-        node["name"] = query["slug"]
+        node["name"] = query.slug
 
     if node["name"]:
         current_prefix = "└── " if is_last else "├── "
@@ -729,7 +691,7 @@ def _generate_token_string(context_string: str) -> str | None:
     return str(total_tokens)
 
 
-def _ingest_single_file(path: Path, query: dict[str, Any]) -> tuple[str, str, str]:
+def _ingest_single_file(path: Path, query: ParsedQuery) -> tuple[str, str, str]:
     """
     Ingest a single file and return its summary, directory structure, and content.
 
@@ -740,8 +702,8 @@ def _ingest_single_file(path: Path, query: dict[str, Any]) -> tuple[str, str, st
     ----------
     path : Path
         The path of the file to ingest.
-    query : dict[str, Any]
-        A dictionary containing query parameters, such as the maximum file size.
+    query : ParsedQuery
+        The parsed query object containing information about the repository and query parameters.
 
     Returns
     -------
@@ -760,12 +722,12 @@ def _ingest_single_file(path: Path, query: dict[str, Any]) -> tuple[str, str, st
         raise ValueError(f"File {path} is not a text file")
 
     file_size = path.stat().st_size
-    if file_size > query["max_file_size"]:
+    if file_size > query.max_file_size:
         content = "[Content ignored: file too large]"
     else:
         content = _read_file_content(path)
 
-    relative_path = path.relative_to(query["local_path"])
+    relative_path = path.relative_to(query.local_path)
 
     file_info = {
         "path": str(relative_path),
@@ -774,7 +736,7 @@ def _ingest_single_file(path: Path, query: dict[str, Any]) -> tuple[str, str, st
     }
 
     summary = (
-        f"Repository: {query['user_name']}/{query['repo_name']}\n"
+        f"Repository: {query.user_name}/{query.repo_name}\n"
         f"File: {path.name}\n"
         f"Size: {file_size:,} bytes\n"
         f"Lines: {len(content.splitlines()):,}\n"
@@ -790,7 +752,7 @@ def _ingest_single_file(path: Path, query: dict[str, Any]) -> tuple[str, str, st
     return summary, tree, files_content
 
 
-def _ingest_directory(path: Path, query: dict[str, Any]) -> tuple[str, str, str]:
+def _ingest_directory(path: Path, query: ParsedQuery) -> tuple[str, str, str]:
     """
     Ingest an entire directory and return its summary, directory structure, and file contents.
 
@@ -801,8 +763,8 @@ def _ingest_directory(path: Path, query: dict[str, Any]) -> tuple[str, str, str]
     ----------
     path : Path
         The path of the directory to ingest.
-    query : dict[str, Any]
-        A dictionary containing query parameters, including maximum file size.
+    query : ParsedQuery
+        The parsed query object containing information about the repository and query parameters.
 
     Returns
     -------
@@ -818,7 +780,7 @@ def _ingest_directory(path: Path, query: dict[str, Any]) -> tuple[str, str, str]
     if not nodes:
         raise ValueError(f"No files found in {path}")
 
-    files = _extract_files_content(query=query, node=nodes, max_file_size=query["max_file_size"])
+    files = _extract_files_content(query=query, node=nodes)
     summary = _create_summary_string(query, nodes)
     tree = "Directory structure:\n" + _create_tree_structure(query, nodes)
     files_content = _create_file_content_string(files)
@@ -830,17 +792,18 @@ def _ingest_directory(path: Path, query: dict[str, Any]) -> tuple[str, str, str]
     return summary, tree, files_content
 
 
-def run_ingest_query(query: dict[str, Any]) -> tuple[str, str, str]:
+def run_ingest_query(query: ParsedQuery) -> tuple[str, str, str]:
     """
-    Main entry point for analyzing a codebase directory or single file.
+    Run the ingestion process for a parsed query.
 
-    This function processes a file or directory based on the provided query, extracting its contents
-    and generating a summary, directory structure, and file content, along with token estimations.
+    This is the main entry point for analyzing a codebase directory or single file. It processes the query
+    parameters, reads the file or directory content, and generates a summary, directory structure, and file content,
+    along with token estimations.
 
     Parameters
     ----------
-    query : dict[str, Any]
-        A dictionary containing parameters like local path, subpath, file type, etc.
+    query : ParsedQuery
+        The parsed query object containing information about the repository and query parameters.
 
     Returns
     -------
@@ -852,11 +815,11 @@ def run_ingest_query(query: dict[str, Any]) -> tuple[str, str, str]:
     ValueError
         If the specified path cannot be found or if the file is not a text file.
     """
-    path = query["local_path"] / query["subpath"].lstrip("/")
+    path = query.local_path / query.subpath.lstrip("/")
     if not path.exists():
-        raise ValueError(f"{query['slug']} cannot be found")
+        raise ValueError(f"{query.slug} cannot be found")
 
-    if query.get("type") == "blob":
+    if query.type and query.type == "blob":
         return _ingest_single_file(path, query)
 
     return _ingest_directory(path, query)
