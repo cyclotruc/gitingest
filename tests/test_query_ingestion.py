@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
-from gitingest.query_ingestion import _extract_files_content, _read_file_content, _scan_directory
+from gitingest.query_ingestion import _extract_files_content, _read_file_content, _scan_directory, run_ingest_query
 
 
 def test_scan_directory(temp_directory: Path, sample_query: dict[str, Any]) -> None:
@@ -151,6 +151,28 @@ def test_include_src_wildcard_prefix(temp_directory: Path, sample_query: dict[st
     file_paths = {f["path"].replace("\\", "/") for f in files}
     expected_paths = {"src/subfile1.txt", "src/subfile2.py", "src/subdir/file_subdir.txt", "src/subdir/file_subdir.py"}
     assert file_paths == expected_paths, "Missing or unexpected files in result"
+
+
+def test_run_ingest_query(temp_directory: Path, sample_query: dict[str, Any]) -> None:
+    """
+    Test the run_ingest_query function to ensure it processes the directory correctly.
+    """
+    sample_query["local_path"] = temp_directory
+    sample_query["subpath"] = "/"
+    sample_query["type"] = None
+
+    summary, _, content = run_ingest_query(sample_query)
+
+    assert "Repository: test_user/test_repo" in summary
+    assert "Files analyzed: 8" in summary
+    assert "src/subfile1.txt" in content
+    assert "src/subfile2.py" in content
+    assert "src/subdir/file_subdir.txt" in content
+    assert "src/subdir/file_subdir.py" in content
+    assert "file1.txt" in content
+    assert "file2.py" in content
+    assert "dir1/file_dir1.txt" in content
+    assert "dir2/file_dir2.txt" in content
 
 
 # multiple patterns
