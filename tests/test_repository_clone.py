@@ -1,9 +1,11 @@
 """ Tests for the repository_clone module. """
 
+import asyncio
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from gitingest.exceptions import AsyncTimeoutError
 from gitingest.repository_clone import CloneConfig, _check_repo_exists, clone_repo
 
 
@@ -233,3 +235,18 @@ async def test_check_repo_exists_with_permanent_redirect() -> None:
         mock_exec.return_value = mock_process
 
         assert await _check_repo_exists(url)
+
+
+@pytest.mark.asyncio
+async def test_clone_repo_with_timeout() -> None:
+    """
+    Test the `clone_repo` function when the cloning process exceeds the timeout limit.
+    Verifies that an AsyncTimeoutError is raised.
+    """
+    clone_config = CloneConfig(url="https://github.com/user/repo", local_path="/tmp/repo")
+
+    with patch("gitingest.repository_clone._check_repo_exists", return_value=True):
+        with patch("gitingest.repository_clone._run_git_command", new_callable=AsyncMock) as mock_exec:
+            mock_exec.side_effect = asyncio.TimeoutError
+            with pytest.raises(AsyncTimeoutError, match="Operation timed out after"):
+                await clone_repo(clone_config)
