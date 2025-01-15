@@ -97,6 +97,18 @@ If you are hosting it on a domain, you can specify the allowed hostnames via env
    ALLOWED_HOSTS="example.com, localhost, 127.0.0.1"
    ```
 
+## ✔️ Contributing to Gitingest
+
+### Non-technical ways to contribute
+
+- **Create an Issue**: If you find a bug or have an idea for a new feature, please [create an issue](https://github.com/cyclotruc/gitingest/issues/new) on GitHub. This will help us track and prioritize your request.
+- **Spread the Word**: If you like Gitingest, please share it with your friends, colleagues, and on social media. This will help us grow the community and make Gitingest even better.
+- **Use Gitingest**: The best feedback comes from real-world usage! If you encounter any issues or have ideas for improvement, please let us know by [creating an issue](https://github.com/cyclotruc/gitingest/issues/new) on GitHub or by reaching out to us on [Discord](https://discord.com/invite/zerRaGK9EC).
+
+### Technical ways to contribute
+
+Gitingest aims to be friendly for first time contributors, with a simple python and html codebase. If you need any help while working with the code, reach out to us on [Discord](https://discord.com/invite/zerRaGK9EC). For detailed instructions on how to make a pull request, see [CONTRIBUTING.md](./CONTRIBUTING.md).
+
 ## 🛠️ Stack
 
 - [Tailwind CSS](https://tailwindcss.com) - Frontend
@@ -108,74 +120,6 @@ If you are hosting it on a domain, you can specify the allowed hostnames via env
 ### Looking for a JavaScript/Node package?
 
 Check out the NPM alternative 📦 Repomix: <https://github.com/yamadashy/repomix>
-
-## ✔️ Contributing to Gitingest
-
-Gitingest aims to be friendly for first time contributors, with a simple python and html codebase. If you need any help while working with the code, reach out to us on [Discord](https://discord.com/invite/zerRaGK9EC).
-
-### Ways to help (non-technical)
-
-- Provide your feedback and ideas on Discord
-- Open an issue on GitHub to report a bug / submit a feature request
-- Talk about Gitingest on social media
-
-### How to submit a PR
-
-1. Fork the repository & clone it locally
-2. Setup the dev environment (see Development section bellow)
-3. Run unit tests with `pytest`
-4. Commit your changes and run `pre-commit`
-5. Open a pull request on GitHub for review and feedback
-6. (Optionnal) Invite project maintainer to your branch for easier collaboration
-
-## 🔧 Development
-
-### Run web UI locally
-
-1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/cyclotruc/gitingest.git
-   cd gitingest
-   ```
-
-2. Install dependencies:
-
-   ```bash
-   pip install -r requirements-dev.txt
-   python -m venv .venv
-   source .venv/bin/activate
-   pre-commit install
-   ```
-
-3. Run the application:
-
-   ```bash
-   cd src
-   uvicorn main:app --reload
-   ```
-
-4. Run unit tests:
-
-   ```bash
-   pytest
-   ```
-
-The application should be available at `http://localhost:8000`.
-
-### Working on the CLI
-
-1. Install the package in dev mode:
-
-   ```bash
-   pip install -e .
-   ```
-
-2. Run the CLI:
-
-   ```bash
-   gitingest --help
-   ```
 
 ## Project Growth
 
