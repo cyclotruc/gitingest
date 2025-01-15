@@ -6,13 +6,13 @@ from fastapi import Request
 from fastapi.templating import Jinja2Templates
 from starlette.templating import _TemplateResponse
 
-from config import EXAMPLE_REPOS, MAX_DISPLAY_SIZE
-from gitingest.query_ingestion import run_ingest_query
-from gitingest.query_parser import ParsedQuery, parse_query
-from gitingest.repository_clone import CloneConfig, clone_repo
-from server_utils import Colors, log_slider_to_size
+from core.config import EXAMPLE_REPOS, MAX_DISPLAY_SIZE
+from core.query_ingestion import run_ingest_query
+from core.query_parser import ParsedQuery, parse_query
+from core.repository_clone import CloneConfig, clone_repo
+from server.server_utils import Colors, log_slider_to_size
 
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory="server/templates")
 
 
 async def process_query(

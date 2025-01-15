@@ -2,7 +2,7 @@
 
 import pytest
 
-from gitingest.query_parser import parse_query
+from core.query_parser import parse_query
 
 
 @pytest.mark.parametrize(

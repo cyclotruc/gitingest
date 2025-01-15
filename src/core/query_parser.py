@@ -9,10 +9,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
-from config import MAX_FILE_SIZE, TMP_BASE_PATH
-from gitingest.exceptions import InvalidPatternError
-from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
-from gitingest.repository_clone import _check_repo_exists, fetch_remote_branch_list
+from core.config import MAX_FILE_SIZE, TMP_BASE_PATH
+from core.exceptions import InvalidPatternError
+from core.ignore_patterns import DEFAULT_IGNORE_PATTERNS
+from core.repository_clone import _check_repo_exists, fetch_remote_branch_list
 
 HEX_DIGITS: set[str] = set(string.hexdigits)
 
@@ -227,7 +227,7 @@ async def _configure_branch_and_subpath(remaining_parts: list[str], url: str) ->
         # Fetch the list of branches from the remote repository
         branches: list[str] = await fetch_remote_branch_list(url)
     except RuntimeError as e:
-        warnings.warn(f"Warning: Failed to fetch branch list: {e}")
+        warnings.warn(f"Warning: Failed to fetch branch list: {e}", UserWarning)
         return remaining_parts.pop(0)
 
     branch = []

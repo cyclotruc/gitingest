@@ -3,8 +3,8 @@
 from pathlib import Path
 from unittest.mock import patch
 
-from gitingest.query_ingestion import _extract_files_content, _read_file_content, _scan_directory, run_ingest_query
-from gitingest.query_parser import ParsedQuery
+from core.query_ingestion import _extract_files_content, _read_file_content, _scan_directory, run_ingest_query
+from core.query_parser import ParsedQuery
 
 
 def test_scan_directory(temp_directory: Path, sample_query: ParsedQuery) -> None:
@@ -44,7 +44,7 @@ def test_read_file_content_with_notebook(tmp_path: Path):
     notebook_path.write_text("{}", encoding="utf-8")  # minimal JSON
 
     # Patch the symbol as it is used in query_ingestion
-    with patch("gitingest.query_ingestion.process_notebook") as mock_process:
+    with patch("core.query_ingestion.process_notebook") as mock_process:
         _read_file_content(notebook_path)
         mock_process.assert_called_once_with(notebook_path)
 
@@ -53,7 +53,7 @@ def test_read_file_content_with_non_notebook(tmp_path: Path):
     py_file_path = tmp_path / "dummy_file.py"
     py_file_path.write_text("print('Hello')", encoding="utf-8")
 
-    with patch("gitingest.query_ingestion.process_notebook") as mock_process:
+    with patch("core.query_ingestion.process_notebook") as mock_process:
         _read_file_content(py_file_path)
         mock_process.assert_not_called()
 

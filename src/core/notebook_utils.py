@@ -6,7 +6,7 @@ from itertools import chain
 from pathlib import Path
 from typing import Any
 
-from gitingest.exceptions import InvalidNotebookError
+from core.exceptions import InvalidNotebookError
 
 
 def process_notebook(file: Path, include_output: bool = True) -> str:

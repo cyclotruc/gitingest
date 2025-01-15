@@ -3,7 +3,7 @@
 import asyncio
 from dataclasses import dataclass
 
-from gitingest.utils import async_timeout
+from core.utils import async_timeout
 
 TIMEOUT: int = 20
 

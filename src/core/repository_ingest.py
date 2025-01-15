@@ -4,10 +4,10 @@ import asyncio
 import inspect
 import shutil
 
-from config import TMP_BASE_PATH
-from gitingest.query_ingestion import run_ingest_query
-from gitingest.query_parser import ParsedQuery, parse_query
-from gitingest.repository_clone import CloneConfig, clone_repo
+from core.config import TMP_BASE_PATH
+from core.query_ingestion import run_ingest_query
+from core.query_parser import ParsedQuery, parse_query
+from core.repository_clone import CloneConfig, clone_repo
 
 
 async def ingest(

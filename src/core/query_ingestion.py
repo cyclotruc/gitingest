@@ -6,15 +6,10 @@ from typing import Any
 
 import tiktoken
 
-from config import MAX_DIRECTORY_DEPTH, MAX_FILES, MAX_TOTAL_SIZE_BYTES
-from gitingest.exceptions import (
-    AlreadyVisitedError,
-    InvalidNotebookError,
-    MaxFileSizeReachedError,
-    MaxFilesReachedError,
-)
-from gitingest.notebook_utils import process_notebook
-from gitingest.query_parser import ParsedQuery
+from core.config import MAX_DIRECTORY_DEPTH, MAX_FILES, MAX_TOTAL_SIZE_BYTES
+from core.exceptions import AlreadyVisitedError, InvalidNotebookError, MaxFileSizeReachedError, MaxFilesReachedError
+from core.notebook_utils import process_notebook
+from core.query_parser import ParsedQuery
 
 
 def _should_include(path: Path, base_path: Path, include_patterns: set[str]) -> bool:

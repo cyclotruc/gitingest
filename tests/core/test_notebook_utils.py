@@ -2,7 +2,7 @@
 
 import pytest
 
-from gitingest.notebook_utils import process_notebook
+from core.notebook_utils import process_notebook
 
 
 def test_process_notebook_all_cells(write_notebook):

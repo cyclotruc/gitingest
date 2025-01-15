@@ -5,7 +5,7 @@ import functools
 from collections.abc import Awaitable, Callable
 from typing import ParamSpec, TypeVar
 
-from gitingest.exceptions import AsyncTimeoutError
+from core.exceptions import AsyncTimeoutError
 
 T = TypeVar("T")
 P = ParamSpec("P")

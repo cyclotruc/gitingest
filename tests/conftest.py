@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 
-from gitingest.query_parser import ParsedQuery
+from core.query_parser import ParsedQuery
 
 
 @pytest.fixture

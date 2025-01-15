@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
-from gitingest.query_parser import _parse_patterns, _parse_repo_source, parse_query
+from core.ignore_patterns import DEFAULT_IGNORE_PATTERNS
+from core.query_parser import _parse_patterns, _parse_repo_source, parse_query
 
 
 async def test_parse_url_valid_https() -> None:
@@ -111,11 +111,9 @@ async def test_parse_url_with_subpaths() -> None:
     Verifies that user name, repository name, branch, and subpath are correctly extracted.
     """
     url = "https://github.com/user/repo/tree/main/subdir/file"
-    with patch("gitingest.repository_clone._run_git_command", new_callable=AsyncMock) as mock_run_git_command:
+    with patch("core.repository_clone._run_git_command", new_callable=AsyncMock) as mock_run_git_command:
         mock_run_git_command.return_value = (b"refs/heads/main\nrefs/heads/dev\nrefs/heads/feature-branch\n", b"")
-        with patch(
-            "gitingest.repository_clone.fetch_remote_branch_list", new_callable=AsyncMock
-        ) as mock_fetch_branches:
+        with patch("core.repository_clone.fetch_remote_branch_list", new_callable=AsyncMock) as mock_fetch_branches:
             mock_fetch_branches.return_value = ["main", "dev", "feature-branch"]
             parsed_query = await _parse_repo_source(url)
             assert parsed_query.user_name == "user"
@@ -237,11 +235,9 @@ async def test_parse_url_branch_and_commit_distinction() -> None:
     url_branch = "https://github.com/user/repo/tree/main"
     url_commit = "https://github.com/user/repo/tree/abcd1234abcd1234abcd1234abcd1234abcd1234"
 
-    with patch("gitingest.repository_clone._run_git_command", new_callable=AsyncMock) as mock_run_git_command:
+    with patch("core.repository_clone._run_git_command", new_callable=AsyncMock) as mock_run_git_command:
         mock_run_git_command.return_value = (b"refs/heads/main\nrefs/heads/dev\nrefs/heads/feature-branch\n", b"")
-        with patch(
-            "gitingest.repository_clone.fetch_remote_branch_list", new_callable=AsyncMock
-        ) as mock_fetch_branches:
+        with patch("core.repository_clone.fetch_remote_branch_list", new_callable=AsyncMock) as mock_fetch_branches:
             mock_fetch_branches.return_value = ["main", "dev", "feature-branch"]
 
             parsed_query_with_branch = await _parse_repo_source(url_branch)
@@ -310,13 +306,19 @@ async def test_parse_repo_source_with_failed_git_command(url, expected_branch, e
     Test `_parse_repo_source` when git command fails.
     Verifies that the function returns the first path component as the branch.
     """
-    with patch("gitingest.repository_clone.fetch_remote_branch_list", new_callable=AsyncMock) as mock_fetch_branches:
+    with patch("core.repository_clone.fetch_remote_branch_list", new_callable=AsyncMock) as mock_fetch_branches:
         mock_fetch_branches.side_effect = Exception("Failed to fetch branch list")
 
-        parsed_query = await _parse_repo_source(url)
+        with pytest.warns(
+            UserWarning,
+            match="Warning: Failed to fetch branch list: Git command failed: "
+            "git ls-remote --heads https://github.com/user/repo",
+        ):
 
-        assert parsed_query.branch == expected_branch
-        assert parsed_query.subpath == expected_subpath
+            parsed_query = await _parse_repo_source(url)
+
+    assert parsed_query.branch == expected_branch
+    assert parsed_query.subpath == expected_subpath
 
 
 @pytest.mark.asyncio
@@ -333,8 +335,8 @@ async def test_parse_repo_source_with_failed_git_command(url, expected_branch, e
 )
 async def test_parse_repo_source_with_various_url_patterns(url, expected_branch, expected_subpath):
     with (
-        patch("gitingest.repository_clone._run_git_command", new_callable=AsyncMock) as mock_run_git_command,
-        patch("gitingest.repository_clone.fetch_remote_branch_list", new_callable=AsyncMock) as mock_fetch_branches,
+        patch("core.repository_clone._run_git_command", new_callable=AsyncMock) as mock_run_git_command,
+        patch("core.repository_clone.fetch_remote_branch_list", new_callable=AsyncMock) as mock_fetch_branches,
     ):
 
         mock_run_git_command.return_value = (
