@@ -4,6 +4,7 @@ import os
 import re
 import string
 import uuid
+import warnings
 from pathlib import Path
 from typing import Any
 from urllib.parse import unquote, urlparse
@@ -11,7 +12,7 @@ from urllib.parse import unquote, urlparse
 from config import TMP_BASE_PATH
 from gitingest.exceptions import InvalidPatternError
 from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
-from gitingest.repository_clone import _check_repo_exists
+from gitingest.repository_clone import _check_repo_exists, fetch_remote_branch_list
 
 HEX_DIGITS: set[str] = set(string.hexdigits)
 
@@ -169,17 +170,46 @@ async def _parse_repo_source(source: str) -> dict[str, Any]:
     parsed["type"] = possible_type
 
     # Commit or branch
-    commit_or_branch = remaining_parts.pop(0)
+    commit_or_branch = remaining_parts[0]
     if _is_valid_git_commit_hash(commit_or_branch):
         parsed["commit"] = commit_or_branch
+        parsed["subpath"] += "/".join(remaining_parts[1:])
     else:
-        parsed["branch"] = commit_or_branch
-
-    # Subpath if anything left
-    if remaining_parts:
+        parsed["branch"] = await _configure_branch_and_subpath(remaining_parts, url)
         parsed["subpath"] += "/".join(remaining_parts)
-
     return parsed
+
+
+async def _configure_branch_and_subpath(remaining_parts: list[str], url: str) -> str | None:
+    """
+    Configure the branch and subpath based on the remaining parts of the URL.
+    Parameters
+    ----------
+    remaining_parts : list[str]
+        The remaining parts of the URL path.
+    url : str
+        The URL of the repository.
+    Returns
+    -------
+    str | None
+        The branch name if found, otherwise None.
+
+    """
+    try:
+        # Fetch the list of branches from the remote repository
+        branches: list[str] = await fetch_remote_branch_list(url)
+    except RuntimeError as e:
+        warnings.warn(f"Warning: Failed to fetch branch list: {str(e)}")
+        return remaining_parts.pop(0)
+
+    branch = []
+    while remaining_parts:
+        branch.append(remaining_parts.pop(0))
+        branch_name = "/".join(branch)
+        if branch_name in branches:
+            return branch_name
+
+    return None
 
 
 def _is_valid_git_commit_hash(commit: str) -> bool:

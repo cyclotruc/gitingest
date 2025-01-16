@@ -1,6 +1,7 @@
 """ Tests for the query_parser module. """
 
 from pathlib import Path
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -109,11 +110,17 @@ async def test_parse_url_with_subpaths() -> None:
     Verifies that user name, repository name, branch, and subpath are correctly extracted.
     """
     url = "https://github.com/user/repo/tree/main/subdir/file"
-    result = await _parse_repo_source(url)
-    assert result["user_name"] == "user"
-    assert result["repo_name"] == "repo"
-    assert result["branch"] == "main"
-    assert result["subpath"] == "/subdir/file"
+    with patch("gitingest.repository_clone._run_git_command", new_callable=AsyncMock) as mock_run_git_command:
+        mock_run_git_command.return_value = (b"refs/heads/main\nrefs/heads/dev\nrefs/heads/feature-branch\n", b"")
+        with patch(
+            "gitingest.repository_clone.fetch_remote_branch_list", new_callable=AsyncMock
+        ) as mock_fetch_branches:
+            mock_fetch_branches.return_value = ["main", "dev", "feature-branch"]
+            result = await _parse_repo_source(url)
+            assert result["user_name"] == "user"
+            assert result["repo_name"] == "repo"
+            assert result["branch"] == "main"
+            assert result["subpath"] == "/subdir/file"
 
 
 async def test_parse_url_invalid_repo_structure() -> None:
@@ -228,14 +235,20 @@ async def test_parse_url_branch_and_commit_distinction() -> None:
     url_branch = "https://github.com/user/repo/tree/main"
     url_commit = "https://github.com/user/repo/tree/abcd1234abcd1234abcd1234abcd1234abcd1234"
 
-    result_branch = await _parse_repo_source(url_branch)
-    result_commit = await _parse_repo_source(url_commit)
+    with patch("gitingest.repository_clone._run_git_command", new_callable=AsyncMock) as mock_run_git_command:
+        mock_run_git_command.return_value = (b"refs/heads/main\nrefs/heads/dev\nrefs/heads/feature-branch\n", b"")
+        with patch(
+            "gitingest.repository_clone.fetch_remote_branch_list", new_callable=AsyncMock
+        ) as mock_fetch_branches:
+            mock_fetch_branches.return_value = ["main", "dev", "feature-branch"]
 
-    assert result_branch["branch"] == "main"
-    assert result_branch["commit"] is None
+            result_branch = await _parse_repo_source(url_branch)
+            result_commit = await _parse_repo_source(url_commit)
+            assert result_branch["branch"] == "main"
+            assert result_branch["commit"] is None
 
-    assert result_commit["branch"] is None
-    assert result_commit["commit"] == "abcd1234abcd1234abcd1234abcd1234abcd1234"
+            assert result_commit["branch"] is None
+            assert result_commit["commit"] == "abcd1234abcd1234abcd1234abcd1234abcd1234"
 
 
 async def test_parse_query_uuid_uniqueness() -> None:
@@ -280,3 +293,55 @@ async def test_parse_query_with_branch() -> None:
     assert result["branch"] == "2.2.x"
     assert result["commit"] is None
     assert result["type"] == "blob"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "url, expected_branch, expected_subpath",
+    [
+        ("https://github.com/user/repo/tree/main/src", "main", "/src"),
+        ("https://github.com/user/repo/tree/fix1", "fix1", "/"),
+        ("https://github.com/user/repo/tree/nonexistent-branch/src", "nonexistent-branch", "/src"),
+    ],
+)
+async def test_parse_repo_source_with_failed_git_command(url, expected_branch, expected_subpath):
+    """
+    Test `_parse_repo_source` when git command fails.
+    Verifies that the function returns the first path component as the branch.
+    """
+    with patch("gitingest.repository_clone.fetch_remote_branch_list", new_callable=AsyncMock) as mock_fetch_branches:
+        mock_fetch_branches.side_effect = Exception("Failed to fetch branch list")
+
+        result = await _parse_repo_source(url)
+
+        assert result["branch"] == expected_branch
+        assert result["subpath"] == expected_subpath
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "url, expected_branch, expected_subpath",
+    [
+        ("https://github.com/user/repo/tree/feature/fix1/src", "feature/fix1", "/src"),
+        ("https://github.com/user/repo/tree/main/src", "main", "/src"),
+        ("https://github.com/user/repo", None, "/"),  # No
+        ("https://github.com/user/repo/tree/nonexistent-branch/src", None, "/"),  # Non-existent branch
+        ("https://github.com/user/repo/tree/fix", "fix", "/"),
+        ("https://github.com/user/repo/blob/fix/page.html", "fix", "/page.html"),
+    ],
+)
+async def test_parse_repo_source_with_various_url_patterns(url, expected_branch, expected_subpath):
+    with (
+        patch("gitingest.repository_clone._run_git_command", new_callable=AsyncMock) as mock_run_git_command,
+        patch("gitingest.repository_clone.fetch_remote_branch_list", new_callable=AsyncMock) as mock_fetch_branches,
+    ):
+
+        mock_run_git_command.return_value = (
+            b"refs/heads/feature/fix1\nrefs/heads/main\nrefs/heads/feature-branch\nrefs/heads/fix\n",
+            b"",
+        )
+        mock_fetch_branches.return_value = ["feature/fix1", "main", "feature-branch"]
+
+        result = await _parse_repo_source(url)
+        assert result["branch"] == expected_branch
+        assert result["subpath"] == expected_subpath

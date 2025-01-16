@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from gitingest.utils import async_timeout
 
-CLONE_TIMEOUT: int = 20
+TIMEOUT: int = 20
 
 
 @dataclass
@@ -34,7 +34,7 @@ class CloneConfig:
     branch: str | None = None
 
 
-@async_timeout(CLONE_TIMEOUT)
+@async_timeout(TIMEOUT)
 async def clone_repo(config: CloneConfig) -> tuple[bytes, bytes]:
     """
     Clone a repository to a local path based on the provided configuration.
@@ -139,6 +139,30 @@ async def _check_repo_exists(url: str) -> bool:
         return False
 
     raise RuntimeError(f"Unexpected status code: {status_code}")
+
+
+@async_timeout(TIMEOUT)
+async def fetch_remote_branch_list(url: str) -> list[str]:
+    """
+    Fetch the list of branches from a remote Git repository.
+    Parameters
+    ----------
+    url : str
+        The URL of the Git repository to fetch branches from.
+    Returns
+    -------
+    list[str]
+        A list of branch names available in the remote repository.
+    """
+    fetch_branches_command = ["git", "ls-remote", "--heads", url]
+    stdout, _ = await _run_git_command(*fetch_branches_command)
+    stdout_decoded = stdout.decode()
+
+    return [
+        line.split("refs/heads/", 1)[1]
+        for line in stdout_decoded.splitlines()
+        if line.strip() and "refs/heads/" in line
+    ]
 
 
 async def _run_git_command(*args: str) -> tuple[bytes, bytes]:
