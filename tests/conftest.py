@@ -6,22 +6,25 @@ from typing import Any
 
 import pytest
 
+from gitingest.query_parser import ParsedQuery
+
 
 @pytest.fixture
-def sample_query() -> dict[str, Any]:
-    return {
-        "user_name": "test_user",
-        "repo_name": "test_repo",
-        "local_path": Path("/tmp/test_repo").resolve(),
-        "subpath": "/",
-        "branch": "main",
-        "commit": None,
-        "max_file_size": 1_000_000,
-        "slug": "test_user/test_repo",
-        "ignore_patterns": ["*.pyc", "__pycache__", ".git"],
-        "include_patterns": None,
-        "pattern_type": "exclude",
-    }
+def sample_query() -> ParsedQuery:
+    return ParsedQuery(
+        user_name="test_user",
+        repo_name="test_repo",
+        url=None,
+        subpath="/",
+        local_path=Path("/tmp/test_repo").resolve(),
+        slug="test_user/test_repo",
+        id="id",
+        branch="main",
+        max_file_size=1_000_000,
+        ignore_patterns={"*.pyc", "__pycache__", ".git"},
+        include_patterns=None,
+        pattern_type="exclude",
+    )
 
 
 @pytest.fixture

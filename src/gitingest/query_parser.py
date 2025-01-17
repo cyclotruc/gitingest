@@ -5,11 +5,11 @@ import re
 import string
 import uuid
 import warnings
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 from urllib.parse import unquote, urlparse
 
-from config import TMP_BASE_PATH
+from config import MAX_FILE_SIZE, TMP_BASE_PATH
 from gitingest.exceptions import InvalidPatternError
 from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
 from gitingest.repository_clone import _check_repo_exists, fetch_remote_branch_list
@@ -26,19 +26,41 @@ KNOWN_GIT_HOSTS: list[str] = [
 ]
 
 
+@dataclass
+class ParsedQuery:  # pylint: disable=too-many-instance-attributes
+    """
+    Dataclass to store the parsed details of the repository or file path.
+    """
+
+    user_name: str | None
+    repo_name: str | None
+    subpath: str
+    local_path: Path
+    url: str | None
+    slug: str
+    id: str
+    type: str | None = None
+    branch: str | None = None
+    commit: str | None = None
+    max_file_size: int = MAX_FILE_SIZE
+    ignore_patterns: set[str] | None = None
+    include_patterns: set[str] | None = None
+    pattern_type: str | None = None
+
+
 async def parse_query(
     source: str,
     max_file_size: int,
     from_web: bool,
-    include_patterns: list[str] | str | None = None,
-    ignore_patterns: list[str] | str | None = None,
-) -> dict[str, Any]:
+    include_patterns: set[str] | str | None = None,
+    ignore_patterns: set[str] | str | None = None,
+) -> ParsedQuery:
     """
-    Parse the input source to construct a query dictionary with specified parameters.
+    Parse the input source (URL or path) to extract relevant details for the query.
 
-    This function processes the provided source (either a URL or file path) and builds a
-    query dictionary that includes information such as the source URL, maximum file size,
-    and any patterns to include or ignore. It handles both web and file-based sources.
+    This function parses the input source to extract details such as the username, repository name,
+    commit hash, branch name, and other relevant information. It also processes the include and ignore
+    patterns to filter the files and directories to include or exclude from the query.
 
     Parameters
     ----------
@@ -48,49 +70,55 @@ async def parse_query(
         The maximum file size in bytes to include.
     from_web : bool
         Flag indicating whether the source is a web URL.
-    include_patterns : list[str] | str | None, optional
-        Patterns to include, by default None. Can be a list of strings or a single string.
-    ignore_patterns : list[str] | str | None, optional
-        Patterns to ignore, by default None. Can be a list of strings or a single string.
+    include_patterns : set[str] | str | None, optional
+        Patterns to include, by default None. Can be a set of strings or a single string.
+    ignore_patterns : set[str] | str | None, optional
+        Patterns to ignore, by default None. Can be a set of strings or a single string.
 
     Returns
     -------
-    dict[str, Any]
-        A dictionary containing the parsed query parameters, including 'max_file_size',
-        'ignore_patterns', and 'include_patterns'.
+    ParsedQuery
+        A dataclass object containing the parsed details of the repository or file path.
     """
 
     # Determine the parsing method based on the source type
     if from_web or urlparse(source).scheme in ("https", "http") or any(h in source for h in KNOWN_GIT_HOSTS):
         # We either have a full URL or a domain-less slug
-        query = await _parse_repo_source(source)
+        parsed_query = await _parse_repo_source(source)
     else:
         # Local path scenario
-        query = _parse_path(source)
+        parsed_query = _parse_path(source)
 
-    # Combine ignore patterns
-    ignore_patterns_list = DEFAULT_IGNORE_PATTERNS.copy()
+    # Combine default ignore patterns + custom patterns
+    ignore_patterns_set = DEFAULT_IGNORE_PATTERNS.copy()
     if ignore_patterns:
-        ignore_patterns_list += _parse_patterns(ignore_patterns)
+        ignore_patterns_set.update(_parse_patterns(ignore_patterns))
 
     # Process include patterns and override ignore patterns accordingly
     if include_patterns:
         parsed_include = _parse_patterns(include_patterns)
-        ignore_patterns_list = _override_ignore_patterns(ignore_patterns_list, include_patterns=parsed_include)
+        ignore_patterns_set = _override_ignore_patterns(ignore_patterns_set, include_patterns=parsed_include)
     else:
         parsed_include = None
 
-    query.update(
-        {
-            "max_file_size": max_file_size,
-            "ignore_patterns": ignore_patterns_list,
-            "include_patterns": parsed_include,
-        }
+    return ParsedQuery(
+        user_name=parsed_query.user_name,
+        repo_name=parsed_query.repo_name,
+        url=parsed_query.url,
+        subpath=parsed_query.subpath,
+        local_path=parsed_query.local_path,
+        slug=parsed_query.slug,
+        id=parsed_query.id,
+        type=parsed_query.type,
+        branch=parsed_query.branch,
+        commit=parsed_query.commit,
+        max_file_size=max_file_size,
+        ignore_patterns=ignore_patterns_set,
+        include_patterns=parsed_include,
     )
-    return query
 
 
-async def _parse_repo_source(source: str) -> dict[str, Any]:
+async def _parse_repo_source(source: str) -> ParsedQuery:
     """
     Parse a repository URL into a structured query dictionary.
 
@@ -106,9 +134,8 @@ async def _parse_repo_source(source: str) -> dict[str, Any]:
 
     Returns
     -------
-    dict[str, Any]
-        A dictionary containing the parsed details of the repository, including the username,
-        repository name, commit, branch, and other relevant information.
+    ParsedQuery
+        A dictionary containing the parsed details of the repository.
     """
     source = unquote(source)
 
@@ -139,18 +166,15 @@ async def _parse_repo_source(source: str) -> dict[str, Any]:
     local_path = Path(TMP_BASE_PATH) / _id / slug
     url = f"https://{host}/{user_name}/{repo_name}"
 
-    parsed = {
-        "user_name": user_name,
-        "repo_name": repo_name,
-        "type": None,
-        "branch": None,
-        "commit": None,
-        "subpath": "/",
-        "local_path": local_path,
-        "url": url,
-        "slug": slug,  # e.g. "pandas-dev-pandas"
-        "id": _id,
-    }
+    parsed = ParsedQuery(
+        user_name=user_name,
+        repo_name=repo_name,
+        url=url,
+        subpath="/",
+        local_path=local_path,
+        slug=slug,
+        id=_id,
+    )
 
     remaining_parts = parsed_url.path.strip("/").split("/")[2:]
 
@@ -167,16 +191,20 @@ async def _parse_repo_source(source: str) -> dict[str, Any]:
     if remaining_parts and possible_type in ("issues", "pull"):
         return parsed
 
-    parsed["type"] = possible_type
+    parsed.type = possible_type
 
     # Commit or branch
     commit_or_branch = remaining_parts[0]
     if _is_valid_git_commit_hash(commit_or_branch):
-        parsed["commit"] = commit_or_branch
-        parsed["subpath"] += "/".join(remaining_parts[1:])
+        parsed.commit = commit_or_branch
+        remaining_parts.pop(0)
     else:
-        parsed["branch"] = await _configure_branch_and_subpath(remaining_parts, url)
-        parsed["subpath"] += "/".join(remaining_parts)
+        parsed.branch = await _configure_branch_and_subpath(remaining_parts, url)
+
+    # Subpath if anything left
+    if remaining_parts:
+        parsed.subpath += "/".join(remaining_parts)
+
     return parsed
 
 
@@ -199,7 +227,7 @@ async def _configure_branch_and_subpath(remaining_parts: list[str], url: str) ->
         # Fetch the list of branches from the remote repository
         branches: list[str] = await fetch_remote_branch_list(url)
     except RuntimeError as e:
-        warnings.warn(f"Warning: Failed to fetch branch list: {str(e)}")
+        warnings.warn(f"Warning: Failed to fetch branch list: {e}")
         return remaining_parts.pop(0)
 
     branch = []
@@ -255,22 +283,22 @@ def _normalize_pattern(pattern: str) -> str:
     return pattern
 
 
-def _parse_patterns(pattern: list[str] | str) -> list[str]:
+def _parse_patterns(pattern: set[str] | str) -> set[str]:
     """
     Parse and validate file/directory patterns for inclusion or exclusion.
 
-    Takes either a single pattern string or list of pattern strings and processes them into a normalized list.
+    Takes either a single pattern string or set of pattern strings and processes them into a normalized list.
     Patterns are split on commas and spaces, validated for allowed characters, and normalized.
 
     Parameters
     ----------
-    pattern : list[str] | str
-        Pattern(s) to parse - either a single string or list of strings
+    pattern : set[str] | str
+        Pattern(s) to parse - either a single string or set of strings
 
     Returns
     -------
-    list[str]
-        List of normalized pattern strings
+    set[str]
+        A set of normalized patterns.
 
     Raises
     ------
@@ -279,49 +307,45 @@ def _parse_patterns(pattern: list[str] | str) -> list[str]:
         dash (-), underscore (_), dot (.), forward slash (/), plus (+), and
         asterisk (*) are allowed.
     """
-    patterns = pattern if isinstance(pattern, list) else [pattern]
+    patterns = pattern if isinstance(pattern, set) else {pattern}
 
-    parsed_patterns = []
+    parsed_patterns: set[str] = set()
     for p in patterns:
-        parsed_patterns.extend(re.split(",| ", p))
+        parsed_patterns = parsed_patterns.union(set(re.split(",| ", p)))
 
-    # Filter out any empty strings
-    parsed_patterns = [p for p in parsed_patterns if p != ""]
+    # Remove empty string if present
+    parsed_patterns = parsed_patterns - {""}
 
     # Validate and normalize each pattern
     for p in parsed_patterns:
         if not _is_valid_pattern(p):
             raise InvalidPatternError(p)
 
-    return [_normalize_pattern(p) for p in parsed_patterns]
+    return {_normalize_pattern(p) for p in parsed_patterns}
 
 
-def _override_ignore_patterns(ignore_patterns: list[str], include_patterns: list[str]) -> list[str]:
+def _override_ignore_patterns(ignore_patterns: set[str], include_patterns: set[str]) -> set[str]:
     """
     Remove patterns from ignore_patterns that are present in include_patterns using set difference.
 
     Parameters
     ----------
-    ignore_patterns : list[str]
-        The list of patterns to potentially remove.
-    include_patterns : list[str]
-        The list of patterns to exclude from ignore_patterns.
+    ignore_patterns : set[str]
+        The set of ignore patterns to filter.
+    include_patterns : set[str]
+        The set of include patterns to remove from ignore_patterns.
 
     Returns
     -------
-    list[str]
-        A new list of ignore_patterns with specified patterns removed.
+    set[str]
+        The filtered set of ignore patterns.
     """
-    return list(set(ignore_patterns) - set(include_patterns))
+    return set(ignore_patterns) - set(include_patterns)
 
 
-def _parse_path(path_str: str) -> dict[str, Any]:
+def _parse_path(path_str: str) -> ParsedQuery:
     """
-    Parse a file path into a structured query dictionary.
-
-    This function takes a file path and constructs a query dictionary that includes
-    relevant details such as the absolute path and the slug (a combination of the
-    directory and file names).
+    Parse the given file path into a structured query dictionary.
 
     Parameters
     ----------
@@ -330,18 +354,19 @@ def _parse_path(path_str: str) -> dict[str, Any]:
 
     Returns
     -------
-    dict[str, Any]
-        A dictionary containing parsed details such as the local file path and slug.
+    ParsedQuery
+        A dictionary containing the parsed details of the file path.
     """
     path_obj = Path(path_str).resolve()
-    query = {
-        "url": None,
-        "local_path": path_obj,
-        "slug": f"{path_obj.parent.name}/{path_obj.name}",
-        "subpath": "/",
-        "id": str(uuid.uuid4()),
-    }
-    return query
+    return ParsedQuery(
+        user_name=None,
+        repo_name=None,
+        url=None,
+        subpath="/",
+        local_path=path_obj,
+        slug=f"{path_obj.parent.name}/{path_obj.name}",
+        id=str(uuid.uuid4()),
+    )
 
 
 def _is_valid_pattern(pattern: str) -> bool:

@@ -6,7 +6,7 @@ import asyncio
 
 import click
 
-from gitingest.query_ingestion import MAX_FILE_SIZE
+from config import MAX_FILE_SIZE
 from gitingest.repository_ingest import ingest
 
 
@@ -80,8 +80,8 @@ async def _async_main(
     """
     try:
         # Combine default and custom ignore patterns
-        exclude_patterns = list(exclude_pattern)
-        include_patterns = list(set(include_pattern))
+        exclude_patterns = set(exclude_pattern)
+        include_patterns = set(include_pattern)
 
         if not output:
             output = "digest.txt"
@@ -92,7 +92,7 @@ async def _async_main(
         click.echo(summary)
 
     except Exception as e:
-        click.echo(f"Error: {str(e)}", err=True)
+        click.echo(f"Error: {e}", err=True)
         raise click.Abort()
 
 

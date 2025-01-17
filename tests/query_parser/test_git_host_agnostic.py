@@ -68,14 +68,13 @@ async def test_parse_query_without_host(
     expected_url: str,
 ) -> None:
     for url in urls:
-        result = await parse_query(url, max_file_size=50, from_web=True)
-        # Common assertions for all cases
-        assert result["user_name"] == expected_user
-        assert result["repo_name"] == expected_repo
-        assert result["url"] == expected_url
-        assert result["slug"] == f"{expected_user}-{expected_repo}"
-        assert result["id"] is not None
-        assert result["subpath"] == "/"
-        assert result["branch"] is None
-        assert result["commit"] is None
-        assert result["type"] is None
+        parsed_query = await parse_query(url, max_file_size=50, from_web=True)
+        assert parsed_query.user_name == expected_user
+        assert parsed_query.repo_name == expected_repo
+        assert parsed_query.url == expected_url
+        assert parsed_query.slug == f"{expected_user}-{expected_repo}"
+        assert parsed_query.id is not None
+        assert parsed_query.subpath == "/"
+        assert parsed_query.branch is None
+        assert parsed_query.commit is None
+        assert parsed_query.type is None

@@ -8,7 +8,7 @@ from starlette.templating import _TemplateResponse
 
 from config import EXAMPLE_REPOS, MAX_DISPLAY_SIZE
 from gitingest.query_ingestion import run_ingest_query
-from gitingest.query_parser import parse_query
+from gitingest.query_parser import ParsedQuery, parse_query
 from gitingest.repository_clone import CloneConfig, clone_repo
 from server_utils import Colors, log_slider_to_size
 
@@ -77,27 +77,30 @@ async def process_query(
     }
 
     try:
-        query = await parse_query(
+        parsed_query: ParsedQuery = await parse_query(
             source=input_text,
             max_file_size=max_file_size,
             from_web=True,
             include_patterns=include_patterns,
             ignore_patterns=exclude_patterns,
         )
+        if not parsed_query.url:
+            raise ValueError("The 'url' parameter is required.")
+
         clone_config = CloneConfig(
-            url=query["url"],
-            local_path=str(query["local_path"]),
-            commit=query.get("commit"),
-            branch=query.get("branch"),
+            url=parsed_query.url,
+            local_path=str(parsed_query.local_path),
+            commit=parsed_query.commit,
+            branch=parsed_query.branch,
         )
         await clone_repo(clone_config)
-        summary, tree, content = run_ingest_query(query)
+        summary, tree, content = run_ingest_query(parsed_query)
         with open(f"{clone_config.local_path}.txt", "w", encoding="utf-8") as f:
             f.write(tree + "\n" + content)
     except Exception as e:
         # hack to print error message when query is not defined
-        if "query" in locals() and query is not None and isinstance(query, dict):
-            _print_error(query["url"], e, max_file_size, pattern_type, pattern)
+        if "query" in locals() and parsed_query is not None and isinstance(parsed_query, dict):
+            _print_error(parsed_query["url"], e, max_file_size, pattern_type, pattern)
         else:
             print(f"{Colors.BROWN}WARN{Colors.END}: {Colors.RED}<-  {Colors.END}", end="")
             print(f"{Colors.RED}{e}{Colors.END}")
@@ -112,7 +115,7 @@ async def process_query(
         )
 
     _print_success(
-        url=query["url"],
+        url=parsed_query.url,
         max_file_size=max_file_size,
         pattern_type=pattern_type,
         pattern=pattern,
@@ -125,7 +128,7 @@ async def process_query(
             "summary": summary,
             "tree": tree,
             "content": content,
-            "ingest_id": query["id"],
+            "ingest_id": parsed_query.id,
         }
     )
 
