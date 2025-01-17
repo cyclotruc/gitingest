@@ -2,6 +2,8 @@
 
 # pylint: disable=no-value-for-parameter
 
+import asyncio
+
 import click
 
 from config import MAX_FILE_SIZE
@@ -9,12 +11,42 @@ from gitingest.repository_ingest import ingest
 
 
 @click.command()
-@click.argument("source", type=str, required=True)
+@click.argument("source", type=str, default=".")
 @click.option("--output", "-o", default=None, help="Output file path (default: <repo_name>.txt in current directory)")
 @click.option("--max-size", "-s", default=MAX_FILE_SIZE, help="Maximum file size to process in bytes")
 @click.option("--exclude-pattern", "-e", multiple=True, help="Patterns to exclude")
 @click.option("--include-pattern", "-i", multiple=True, help="Patterns to include")
-async def main(
+def main(
+    source: str,
+    output: str | None,
+    max_size: int,
+    exclude_pattern: tuple[str, ...],
+    include_pattern: tuple[str, ...],
+):
+    """
+    Main entry point for the CLI. This function is called when the CLI is run as a script.
+
+    It calls the async main function to run the command.
+
+    Parameters
+    ----------
+    source : str
+        The source directory or repository to analyze.
+    output : str | None
+        The path where the output file will be written. If not specified, the output will be written
+        to a file named `<repo_name>.txt` in the current directory.
+    max_size : int
+        The maximum file size to process, in bytes. Files larger than this size will be ignored.
+    exclude_pattern : tuple[str, ...]
+        A tuple of patterns to exclude during the analysis. Files matching these patterns will be ignored.
+    include_pattern : tuple[str, ...]
+        A tuple of patterns to include during the analysis. Only files matching these patterns will be processed.
+    """
+    # Main entry point for the CLI. This function is called when the CLI is run as a script.
+    asyncio.run(_async_main(source, output, max_size, exclude_pattern, include_pattern))
+
+
+async def _async_main(
     source: str,
     output: str | None,
     max_size: int,
@@ -24,9 +56,8 @@ async def main(
     """
     Analyze a directory or repository and create a text dump of its contents.
 
-    This command analyzes the contents of a specified source directory or repository,
-    applies custom include and exclude patterns, and generates a text summary of the analysis
-    which is then written to an output file.
+    This command analyzes the contents of a specified source directory or repository, applies custom include and
+    exclude patterns, and generates a text summary of the analysis which is then written to an output file.
 
     Parameters
     ----------

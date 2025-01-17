@@ -175,7 +175,7 @@ else:
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
 
 # Set up template rendering
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory="src/templates")
 
 
 @app.get("/health")
