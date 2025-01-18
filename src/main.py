@@ -156,7 +156,7 @@ async def rate_limit_exception_handler(request: Request, exc: Exception) -> Resp
 app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
 
 # Mount static files to serve CSS, JS, and other static assets
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory="src/static"), name="static")
 
 # Set up API analytics middleware if an API key is provided
 if app_analytics_key := os.getenv("API_ANALYTICS_KEY"):
