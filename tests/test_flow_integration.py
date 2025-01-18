@@ -11,7 +11,7 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-from main import app
+from src.main import app
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 TEMPLATE_DIR = BASE_DIR / "src" / "templates"
@@ -20,9 +20,16 @@ TEMPLATE_DIR = BASE_DIR / "src" / "templates"
 @pytest.fixture(scope="module")
 def test_client():
     """Create a test client fixture."""
-    with TestClient(app) as client:
-        client.headers.update({"Host": "localhost"})
-        yield client
+    with TestClient(app) as client_instance:
+        client_instance.headers.update({"Host": "localhost"})
+        yield client_instance
+
+
+@pytest.fixture(scope="module", autouse=True)
+def mock_static_files():
+    """Mock the static file mount to avoid directory errors."""
+    with patch("src.main.StaticFiles") as mock_static:
+        yield mock_static
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -50,8 +57,9 @@ def cleanup():
 
 
 @pytest.mark.asyncio
-async def test_remote_repository_analysis(test_client):  # pylint: disable=redefined-outer-name
+async def test_remote_repository_analysis(request):
     """Test the complete flow of analyzing a remote repository."""
+    client = request.getfixturevalue("test_client")
     form_data = {
         "input_text": "https://github.com/octocat/Hello-World",
         "max_file_size": "243",
@@ -59,14 +67,15 @@ async def test_remote_repository_analysis(test_client):  # pylint: disable=redef
         "pattern": "",
     }
 
-    response = test_client.post("/", data=form_data)
+    response = client.post("/", data=form_data)
     assert response.status_code == 200, f"Form submission failed: {response.text}"
     assert "Mocked Template Response" in response.text
 
 
 @pytest.mark.asyncio
-async def test_invalid_repository_url(test_client):  # pylint: disable=redefined-outer-name
+async def test_invalid_repository_url(request):
     """Test handling of an invalid repository URL."""
+    client = request.getfixturevalue("test_client")
     form_data = {
         "input_text": "https://github.com/nonexistent/repo",
         "max_file_size": "243",
@@ -74,14 +83,15 @@ async def test_invalid_repository_url(test_client):  # pylint: disable=redefined
         "pattern": "",
     }
 
-    response = test_client.post("/", data=form_data)
+    response = client.post("/", data=form_data)
     assert response.status_code == 200, f"Request failed: {response.text}"
     assert "Mocked Template Response" in response.text
 
 
 @pytest.mark.asyncio
-async def test_large_repository(test_client):  # pylint: disable=redefined-outer-name
+async def test_large_repository(request):
     """Simulate analysis of a large repository with nested folders."""
+    client = request.getfixturevalue("test_client")
     form_data = {
         "input_text": "https://github.com/large/repo-with-many-files",
         "max_file_size": "243",
@@ -89,14 +99,15 @@ async def test_large_repository(test_client):  # pylint: disable=redefined-outer
         "pattern": "",
     }
 
-    response = test_client.post("/", data=form_data)
+    response = client.post("/", data=form_data)
     assert response.status_code == 200, f"Request failed: {response.text}"
     assert "Mocked Template Response" in response.text
 
 
 @pytest.mark.asyncio
-async def test_concurrent_requests(test_client):  # pylint: disable=redefined-outer-name
+async def test_concurrent_requests(request):
     """Test handling of multiple concurrent requests."""
+    client = request.getfixturevalue("test_client")
 
     def make_request():
         form_data = {
@@ -105,7 +116,7 @@ async def test_concurrent_requests(test_client):  # pylint: disable=redefined-ou
             "pattern_type": "exclude",
             "pattern": "",
         }
-        response = test_client.post("/", data=form_data)
+        response = client.post("/", data=form_data)
         assert response.status_code == 200, f"Request failed: {response.text}"
         assert "Mocked Template Response" in response.text
 
@@ -116,8 +127,9 @@ async def test_concurrent_requests(test_client):  # pylint: disable=redefined-ou
 
 
 @pytest.mark.asyncio
-async def test_large_file_handling(test_client):  # pylint: disable=redefined-outer-name
+async def test_large_file_handling(request):
     """Test handling of repositories with large files."""
+    client = request.getfixturevalue("test_client")
     form_data = {
         "input_text": "https://github.com/octocat/Hello-World",
         "max_file_size": "1",
@@ -125,14 +137,15 @@ async def test_large_file_handling(test_client):  # pylint: disable=redefined-ou
         "pattern": "",
     }
 
-    response = test_client.post("/", data=form_data)
+    response = client.post("/", data=form_data)
     assert response.status_code == 200, f"Request failed: {response.text}"
     assert "Mocked Template Response" in response.text
 
 
 @pytest.mark.asyncio
-async def test_repository_with_patterns(test_client):  # pylint: disable=redefined-outer-name
+async def test_repository_with_patterns(request):
     """Test repository analysis with include/exclude patterns."""
+    client = request.getfixturevalue("test_client")
     form_data = {
         "input_text": "https://github.com/octocat/Hello-World",
         "max_file_size": "243",
@@ -140,6 +153,6 @@ async def test_repository_with_patterns(test_client):  # pylint: disable=redefin
         "pattern": "*.md",
     }
 
-    response = test_client.post("/", data=form_data)
+    response = client.post("/", data=form_data)
     assert response.status_code == 200, f"Request failed: {response.text}"
     assert "Mocked Template Response" in response.text

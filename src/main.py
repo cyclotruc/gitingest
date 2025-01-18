@@ -156,7 +156,12 @@ async def rate_limit_exception_handler(request: Request, exc: Exception) -> Resp
 app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
 
 # Mount static files to serve CSS, JS, and other static assets
-app.mount("/static", StaticFiles(directory="src/static"), name="static")
+# Mount static files dynamically
+static_dir = Path(__file__).parent / "static"
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+else:
+    print(f"Warning: Static directory '{static_dir}' does not exist. Skipping static file mount.")
 
 # Set up API analytics middleware if an API key is provided
 if app_analytics_key := os.getenv("API_ANALYTICS_KEY"):
@@ -175,7 +180,7 @@ else:
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
 
 # Set up template rendering
-templates = Jinja2Templates(directory="src/templates")
+templates = Jinja2Templates(directory="templates")
 
 
 @app.get("/health")
