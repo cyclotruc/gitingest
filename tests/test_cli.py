@@ -8,7 +8,7 @@ from config import MAX_FILE_SIZE, OUTPUT_FILE_PATH
 from gitingest.cli import main
 
 
-def test_gitingest_cli_with_default_options():
+def test_cli_with_default_options():
     runner = CliRunner()
     result = runner.invoke(main, ["../"])
     output_lines = result.output.strip().split("\n")
@@ -18,7 +18,7 @@ def test_gitingest_cli_with_default_options():
     os.remove(OUTPUT_FILE_PATH)
 
 
-def test_gitingest_cli_with_options():
+def test_cli_with_options():
     runner = CliRunner()
     result = runner.invoke(
         main,
