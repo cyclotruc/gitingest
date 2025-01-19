@@ -227,7 +227,7 @@ async def _configure_branch_and_subpath(remaining_parts: list[str], url: str) ->
         # Fetch the list of branches from the remote repository
         branches: list[str] = await fetch_remote_branch_list(url)
     except RuntimeError as e:
-        warnings.warn(f"Warning: Failed to fetch branch list: {e}")
+        warnings.warn(f"Warning: Failed to fetch branch list: {e}", RuntimeWarning)
         return remaining_parts.pop(0)
 
     branch = []

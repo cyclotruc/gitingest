@@ -2,14 +2,12 @@
 
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 
-from config import EXAMPLE_REPOS
+from config import EXAMPLE_REPOS, TEMPLATES
 from query_processor import process_query
 from server_utils import limiter
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -31,7 +29,7 @@ async def home(request: Request) -> HTMLResponse:
         An HTML response containing the rendered home page template, with example repositories
         and other default parameters such as file size.
     """
-    return templates.TemplateResponse(
+    return TEMPLATES.TemplateResponse(
         "index.jinja",
         {
             "request": request,

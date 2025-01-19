@@ -3,16 +3,13 @@
 from functools import partial
 
 from fastapi import Request
-from fastapi.templating import Jinja2Templates
 from starlette.templating import _TemplateResponse
 
-from config import EXAMPLE_REPOS, MAX_DISPLAY_SIZE
+from config import EXAMPLE_REPOS, MAX_DISPLAY_SIZE, TEMPLATES
 from gitingest.query_ingestion import run_ingest_query
 from gitingest.query_parser import ParsedQuery, parse_query
 from gitingest.repository_clone import CloneConfig, clone_repo
 from server_utils import Colors, log_slider_to_size
-
-templates = Jinja2Templates(directory="templates")
 
 
 async def process_query(
@@ -64,7 +61,7 @@ async def process_query(
         raise ValueError(f"Invalid pattern type: {pattern_type}")
 
     template = "index.jinja" if is_index else "git.jinja"
-    template_response = partial(templates.TemplateResponse, name=template)
+    template_response = partial(TEMPLATES.TemplateResponse, name=template)
     max_file_size = log_slider_to_size(slider_position)
 
     context = {
