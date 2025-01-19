@@ -18,8 +18,8 @@ from slowapi.errors import RateLimitExceeded
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from config import DELETE_REPO_AFTER, TMP_BASE_PATH
-from routers import download, dynamic, index
-from server_utils import limiter
+from server.routers import download, dynamic, index
+from server.server_utils import limiter
 
 # Load environment variables from .env file
 load_dotenv()
@@ -156,7 +156,7 @@ async def rate_limit_exception_handler(request: Request, exc: Exception) -> Resp
 app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
 
 # Mount static files to serve CSS, JS, and other static assets
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/server/static", StaticFiles(directory="server/static"), name="static")
 
 # Set up API analytics middleware if an API key is provided
 if app_analytics_key := os.getenv("API_ANALYTICS_KEY"):
@@ -175,7 +175,7 @@ else:
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
 
 # Set up template rendering
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory="server/templates")
 
 
 @app.get("/health")
@@ -235,7 +235,7 @@ async def robots() -> FileResponse:
     FileResponse
         The `robots.txt` file located in the static directory.
     """
-    return FileResponse("static/robots.txt")
+    return FileResponse("server/static/robots.txt")
 
 
 # Include routers for modular endpoints
