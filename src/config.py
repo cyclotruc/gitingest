@@ -21,4 +21,4 @@ EXAMPLE_REPOS: list[dict[str, str]] = [
     {"name": "ApiAnalytics", "url": "https://github.com/tom-draper/api-analytics"},
 ]
 
-TEMPLATES = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory="templates")

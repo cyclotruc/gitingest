@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from config import TEMPLATES
+from config import templates
 from routers import download, dynamic, index
 from server_utils import limiter
 from utils import lifespan, rate_limit_exception_handler
@@ -89,7 +89,7 @@ async def api_docs(request: Request) -> HTMLResponse:
     HTMLResponse
         A rendered HTML page displaying API documentation.
     """
-    return TEMPLATES.TemplateResponse("api.jinja", {"request": request})
+    return templates.TemplateResponse("api.jinja", {"request": request})
 
 
 @app.get("/robots.txt")

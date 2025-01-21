@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse
 
-from config import TEMPLATES
+from config import templates
 from query_processor import process_query
 from server_utils import limiter
 
@@ -31,7 +31,7 @@ async def catch_all(request: Request, full_path: str) -> HTMLResponse:
         An HTML response containing the rendered template, with the Git URL
         and other default parameters such as loading state and file size.
     """
-    return TEMPLATES.TemplateResponse(
+    return templates.TemplateResponse(
         "git.jinja",
         {
             "request": request,
