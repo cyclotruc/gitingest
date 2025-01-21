@@ -48,18 +48,18 @@ Thanks for your interest in contributing to Gitingest! 🚀 Gitingest aims to be
    pytest
    ```
 
-8. Run the app locally using Docker to test your changes (optional):
+8. Navigate to src folder
 
    1. Build the Docker image
 
         ``` bash
-        docker build -t gitingest .
+        cd src
         ```
 
-   2. Run the Docker container:
+   2. Run the local web server:
 
       ``` bash
-      docker run -d --name gitingest -p 8000:8000 gitingest
+      uvicorn server.main:app
       ```
 
    3. Open your browser and navigate to `http://localhost:8000` to see the app running.
