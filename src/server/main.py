@@ -156,7 +156,7 @@ async def rate_limit_exception_handler(request: Request, exc: Exception) -> Resp
 app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
 
 # Mount static files to serve CSS, JS, and other static assets
-app.mount("/server/static", StaticFiles(directory="server/static"), name="static")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Set up API analytics middleware if an API key is provided
 if app_analytics_key := os.getenv("API_ANALYTICS_KEY"):
@@ -235,7 +235,7 @@ async def robots() -> FileResponse:
     FileResponse
         The `robots.txt` file located in the static directory.
     """
-    return FileResponse("server/static/robots.txt")
+    return FileResponse("static/robots.txt")
 
 
 # Include routers for modular endpoints

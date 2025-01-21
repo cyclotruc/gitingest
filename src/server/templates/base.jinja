@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="icon" type="image/x-icon" href="/server/static/favicon.ico">
+        <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
         <!-- Search Engine Meta Tags -->
         <meta name="description"
               content="Replace 'hub' with 'ingest' in any GitHub URL for a prompt-friendly text.">
@@ -11,14 +11,14 @@
               content="Gitingest, AI tools, LLM integration, Ingest, Digest, Context, Prompt, Git workflow, codebase extraction, Git repository, Git automation, Summarize, prompt-friendly">
         <meta name="robots" content="index, follow">
         <!-- Favicons -->
-        <link rel="icon" type="image/svg+xml" href="/server/static/favicon.svg">
+        <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
         <link rel="icon"
               type="image/png"
               sizes="64x64"
-              href="/server/static/favicon-64.png">
+              href="/static/favicon-64.png">
         <link rel="apple-touch-icon"
               sizes="180x180"
-              href="/server/static/apple-touch-icon.png">
+              href="/static/apple-touch-icon.png">
         <!-- Web App Meta -->
         <meta name="apple-mobile-web-app-title" content="Gitingest">
         <meta name="application-name" content="Gitingest">
@@ -31,12 +31,12 @@
               content="Replace 'hub' with 'ingest' in any GitHub URL for a prompt-friendly text.">
         <meta property="og:type" content="website">
         <meta property="og:url" content="{{ request.url }}">
-        <meta property="og:image" content="/server/static/og-image.png">
+        <meta property="og:image" content="/static/og-image.png">
         <title>
             {% block title %}Gitingest{% endblock %}
         </title>
         <script src="https://cdn.tailwindcss.com"></script>
-        <script src="/server/static/js/utils.js"></script>
+        <script src="/static/js/utils.js"></script>
         {% block extra_head %}{% endblock %}
     </head>
     <body class="bg-[#FFFDF8] min-h-screen flex flex-col">
