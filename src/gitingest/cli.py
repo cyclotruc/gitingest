@@ -6,7 +6,7 @@ import asyncio
 
 import click
 
-from config import MAX_FILE_SIZE
+from gitingest.config import MAX_FILE_SIZE
 from gitingest.repository_ingest import ingest
 
 

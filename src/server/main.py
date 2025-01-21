@@ -17,8 +17,8 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from config import DELETE_REPO_AFTER, TMP_BASE_PATH
 from server.routers import download, dynamic, index
+from server.server_config import DELETE_REPO_AFTER, TMP_BASE_PATH
 from server.server_utils import limiter
 
 # Load environment variables from .env file
