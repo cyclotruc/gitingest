@@ -155,13 +155,11 @@ async def rate_limit_exception_handler(request: Request, exc: Exception) -> Resp
 # Register the custom exception handler for rate limits
 app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
 
-# Mount static files to serve CSS, JS, and other static assets
-# Mount static files dynamically
+
+# Mount static files dynamically to serve CSS, JS, and other static assets
 static_dir = Path(__file__).parent / "static"
-if static_dir.exists():
-    app.mount("/static", StaticFiles(directory=static_dir), name="static")
-else:
-    print(f"Warning: Static directory '{static_dir}' does not exist. Skipping static file mount.")
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
 
 # Set up API analytics middleware if an API key is provided
 if app_analytics_key := os.getenv("API_ANALYTICS_KEY"):
