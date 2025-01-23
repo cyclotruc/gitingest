@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+from fastapi.templating import Jinja2Templates
+
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 MAX_DIRECTORY_DEPTH = 20  # Maximum depth of directory traversal
 MAX_FILES = 10_000  # Maximum number of files to process
@@ -20,3 +22,5 @@ EXAMPLE_REPOS: list[dict[str, str]] = [
     {"name": "Tldraw", "url": "https://github.com/tldraw/tldraw"},
     {"name": "ApiAnalytics", "url": "https://github.com/tom-draper/api-analytics"},
 ]
+
+templates = Jinja2Templates(directory="templates")
