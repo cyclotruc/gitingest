@@ -1,6 +1,7 @@
 """ Main module for the FastAPI application. """
 
 import os
+from pathlib import Path
 
 from api_analytics.fastapi import Analytics
 from dotenv import load_dotenv
