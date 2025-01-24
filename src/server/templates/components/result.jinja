@@ -91,7 +91,7 @@
                         </div>
                         <div class="relative">
                             <div class="w-full h-full rounded bg-gray-900 translate-y-1 translate-x-1 absolute inset-0"></div>
-                            <div class="directory-structure w-full p-4 bg-[#fff4da] border-[3px] border-gray-900 rounded font-mono text-sm resize-y focus:outline-none relative z-10 h-[215px] overflow-scroll" readonly>
+                            <div class="directory-structure w-full p-4 bg-[#fff4da] border-[3px] border-gray-900 rounded font-mono text-sm resize-y focus:outline-none relative z-10 h-[215px] overflow-auto" readonly>
                                 {% for line in tree.splitlines()%}
                                     <div name="tree-line" class="cursor-pointer hover:line-through hover:text-gray-500" onclick="toggleFile(this)">{{ line }}</div>
                                 {% endfor %}
