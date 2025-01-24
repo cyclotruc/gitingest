@@ -2,14 +2,13 @@
 
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 
 from server.query_processor import process_query
-from server.server_config import EXAMPLE_REPOS
+from server.server_config import EXAMPLE_REPOS, templates
 from server.server_utils import limiter
 
 router = APIRouter()
-templates = Jinja2Templates(directory="server/templates")
+
 
 
 @router.get("/", response_class=HTMLResponse)

@@ -2,7 +2,6 @@
 
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 
 from server.query_processor import process_query
 from server.server_utils import limiter
