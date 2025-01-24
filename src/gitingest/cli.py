@@ -6,7 +6,7 @@ import asyncio
 
 import click
 
-from config import MAX_FILE_SIZE, OUTPUT_FILE_PATH
+from gitingest.config import MAX_FILE_SIZE, OUTPUT_FILE_PATH
 from gitingest.repository_ingest import ingest
 
 

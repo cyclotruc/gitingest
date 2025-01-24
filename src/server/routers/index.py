@@ -1,50 +1,47 @@
-""" This module defines the dynamic router for handling dynamic path requests. """
+""" This module defines the FastAPI router for the home page of the application. """
 
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse
 
-from config import templates
-from query_processor import process_query
-from server_utils import limiter
+from server.query_processor import process_query
+from server.server_config import EXAMPLE_REPOS, templates
+from server.server_utils import limiter
 
 router = APIRouter()
 
 
-@router.get("/{full_path:path}")
-async def catch_all(request: Request, full_path: str) -> HTMLResponse:
+@router.get("/", response_class=HTMLResponse)
+async def home(request: Request) -> HTMLResponse:
     """
-    Render a page with a Git URL based on the provided path.
+    Render the home page with example repositories and default parameters.
 
-    This endpoint catches all GET requests with a dynamic path, constructs a Git URL
-    using the `full_path` parameter, and renders the `git.jinja` template with that URL.
+    This endpoint serves the home page of the application, rendering the `index.jinja` template
+    and providing it with a list of example repositories and default file size values.
 
     Parameters
     ----------
     request : Request
         The incoming request object, which provides context for rendering the response.
-    full_path : str
-        The full path extracted from the URL, which is used to build the Git URL.
 
     Returns
     -------
     HTMLResponse
-        An HTML response containing the rendered template, with the Git URL
-        and other default parameters such as loading state and file size.
+        An HTML response containing the rendered home page template, with example repositories
+        and other default parameters such as file size.
     """
     return templates.TemplateResponse(
-        "git.jinja",
+        "index.jinja",
         {
             "request": request,
-            "repo_url": full_path,
-            "loading": True,
+            "examples": EXAMPLE_REPOS,
             "default_file_size": 243,
         },
     )
 
 
-@router.post("/{full_path:path}", response_class=HTMLResponse)
+@router.post("/", response_class=HTMLResponse)
 @limiter.limit("10/minute")
-async def process_catch_all(
+async def index_post(
     request: Request,
     input_text: str = Form(...),
     max_file_size: int = Form(...),
@@ -54,8 +51,9 @@ async def process_catch_all(
     """
     Process the form submission with user input for query parameters.
 
-    This endpoint handles POST requests, processes the input parameters (e.g., text, file size, pattern),
-    and calls the `process_query` function to handle the query logic, returning the result as an HTML response.
+    This endpoint handles POST requests from the home page form. It processes the user-submitted
+    input (e.g., text, file size, pattern type) and invokes the `process_query` function to handle
+    the query logic, returning the result as an HTML response.
 
     Parameters
     ----------
@@ -73,7 +71,7 @@ async def process_catch_all(
     Returns
     -------
     HTMLResponse
-        An HTML response generated after processing the form input and query logic,
+        An HTML response containing the results of processing the form input and query logic,
         which will be rendered and returned to the user.
     """
     return await process_query(
@@ -82,5 +80,5 @@ async def process_catch_all(
         max_file_size,
         pattern_type,
         pattern,
-        is_index=False,
+        is_index=True,
     )
