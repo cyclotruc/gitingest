@@ -5,7 +5,6 @@ from functools import partial
 from fastapi import Request
 from starlette.templating import _TemplateResponse
 
-
 from gitingest.query_ingestion import run_ingest_query
 from gitingest.query_parser import ParsedQuery, parse_query
 from gitingest.repository_clone import CloneConfig, clone_repo

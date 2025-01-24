@@ -10,7 +10,6 @@ from server.server_utils import limiter
 router = APIRouter()
 
 
-
 @router.get("/", response_class=HTMLResponse)
 async def home(request: Request) -> HTMLResponse:
     """

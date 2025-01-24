@@ -20,10 +20,6 @@ from server.server_config import DELETE_REPO_AFTER
 limiter = Limiter(key_func=get_remote_address)
 
 
-
-
-
-
 async def rate_limit_exception_handler(request: Request, exc: Exception) -> Response:
     """
     Custom exception handler for rate-limiting errors.
