@@ -16,12 +16,14 @@ from gitingest.repository_ingest import ingest
 @click.option("--max-size", "-s", default=MAX_FILE_SIZE, help="Maximum file size to process in bytes")
 @click.option("--exclude-pattern", "-e", multiple=True, help="Patterns to exclude")
 @click.option("--include-pattern", "-i", multiple=True, help="Patterns to include")
+@click.option("--branch", "-b", default=None, help="Branch to clone and ingest")
 def main(
     source: str,
     output: str | None,
     max_size: int,
     exclude_pattern: tuple[str, ...],
     include_pattern: tuple[str, ...],
+    branch: str | None,
 ):
     """
     Main entry point for the CLI. This function is called when the CLI is run as a script.
@@ -41,9 +43,11 @@ def main(
         A tuple of patterns to exclude during the analysis. Files matching these patterns will be ignored.
     include_pattern : tuple[str, ...]
         A tuple of patterns to include during the analysis. Only files matching these patterns will be processed.
+    branch : str | None
+        The branch to clone (optional).
     """
     # Main entry point for the CLI. This function is called when the CLI is run as a script.
-    asyncio.run(_async_main(source, output, max_size, exclude_pattern, include_pattern))
+    asyncio.run(_async_main(source, output, max_size, exclude_pattern, include_pattern, branch))
 
 
 async def _async_main(
@@ -52,6 +56,7 @@ async def _async_main(
     max_size: int,
     exclude_pattern: tuple[str, ...],
     include_pattern: tuple[str, ...],
+    branch: str | None,
 ) -> None:
     """
     Analyze a directory or repository and create a text dump of its contents.
@@ -72,6 +77,8 @@ async def _async_main(
         A tuple of patterns to exclude during the analysis. Files matching these patterns will be ignored.
     include_pattern : tuple[str, ...]
         A tuple of patterns to include during the analysis. Only files matching these patterns will be processed.
+    branch : str | None
+        The branch to clone (optional).
 
     Raises
     ------
@@ -85,7 +92,7 @@ async def _async_main(
 
         if not output:
             output = OUTPUT_FILE_PATH
-        summary, _, _ = await ingest(source, max_size, include_patterns, exclude_patterns, output=output)
+        summary, _, _ = await ingest(source, max_size, include_patterns, exclude_patterns, branch, output=output)
 
         click.echo(f"Analysis complete! Output written to: {output}")
         click.echo("\nSummary:")
