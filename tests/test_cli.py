@@ -4,8 +4,8 @@ import os
 
 from click.testing import CliRunner
 
-from config import MAX_FILE_SIZE, OUTPUT_FILE_PATH
 from gitingest.cli import main
+from gitingest.config import MAX_FILE_SIZE, OUTPUT_FILE_PATH
 
 
 def test_cli_with_default_options():

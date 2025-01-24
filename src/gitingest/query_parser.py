@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
-from config import MAX_FILE_SIZE, TMP_BASE_PATH
+from gitingest.config import MAX_FILE_SIZE, TMP_BASE_PATH
 from gitingest.exceptions import InvalidPatternError
 from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
 from gitingest.repository_clone import _check_repo_exists, fetch_remote_branch_list
@@ -163,7 +163,7 @@ async def _parse_repo_source(source: str) -> ParsedQuery:
 
     _id = str(uuid.uuid4())
     slug = f"{user_name}-{repo_name}"
-    local_path = Path(TMP_BASE_PATH) / _id / slug
+    local_path = TMP_BASE_PATH / _id / slug
     url = f"https://{host}/{user_name}/{repo_name}"
 
     parsed = ParsedQuery(

@@ -6,7 +6,7 @@ from typing import Any
 
 import tiktoken
 
-from config import MAX_DIRECTORY_DEPTH, MAX_FILES, MAX_TOTAL_SIZE_BYTES
+from gitingest.config import MAX_DIRECTORY_DEPTH, MAX_FILES, MAX_TOTAL_SIZE_BYTES
 from gitingest.exceptions import (
     AlreadyVisitedError,
     InvalidNotebookError,

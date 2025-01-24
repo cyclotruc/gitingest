@@ -4,7 +4,7 @@ import asyncio
 import inspect
 import shutil
 
-from config import TMP_BASE_PATH
+from gitingest.config import TMP_BASE_PATH
 from gitingest.query_ingestion import run_ingest_query
 from gitingest.query_parser import ParsedQuery, parse_query
 from gitingest.repository_clone import CloneConfig, clone_repo
