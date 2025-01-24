@@ -10,9 +10,8 @@ from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from gitingest.config import TMP_BASE_PATH
 from server.routers import download, dynamic, index
-from server.server_config import DELETE_REPO_AFTER, templates
+from server.server_config import templates
 from server.server_utils import lifespan, limiter, rate_limit_exception_handler
 
 # Load environment variables from .env file

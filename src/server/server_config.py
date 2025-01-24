@@ -1,7 +1,5 @@
 """ Configuration for the server. """
 
-from pathlib import Path
-
 from fastapi.templating import Jinja2Templates
 
 MAX_DISPLAY_SIZE: int = 300_000
