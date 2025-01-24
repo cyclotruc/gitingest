@@ -11,7 +11,7 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-from src.main import app
+from src.server.main import app
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 TEMPLATE_DIR = BASE_DIR / "src" / "templates"
@@ -28,7 +28,8 @@ def test_client():
 @pytest.fixture(scope="module", autouse=True)
 def mock_static_files():
     """Mock the static file mount to avoid directory errors."""
-    with patch("src.main.StaticFiles") as mock_static:
+    with patch("src.server.main.StaticFiles") as mock_static:
+        mock_static.return_value = None  # Mocks the StaticFiles response
         yield mock_static
 
 
