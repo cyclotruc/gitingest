@@ -4,7 +4,7 @@ import asyncio
 import inspect
 import shutil
 
-from config import TMP_BASE_PATH
+from gitingest.config import TMP_BASE_PATH
 from gitingest.query_ingestion import run_ingest_query
 from gitingest.query_parser import ParsedQuery, parse_query
 from gitingest.repository_clone import CloneConfig, clone_repo
@@ -15,6 +15,7 @@ async def ingest(
     max_file_size: int = 10 * 1024 * 1024,  # 10 MB
     include_patterns: set[str] | str | None = None,
     exclude_patterns: set[str] | str | None = None,
+    branch: str | None = None,
     output: str | None = None,
 ) -> tuple[str, str, str]:
     """
@@ -35,6 +36,8 @@ async def ingest(
         Pattern or set of patterns specifying which files to include. If `None`, all files are included.
     exclude_patterns : set[str] | str | None, optional
         Pattern or set of patterns specifying which files to exclude. If `None`, no files are excluded.
+    branch : str | None, optional
+        The branch to clone and ingest. If `None`, the default branch is used.
     output : str | None, optional
         File path where the summary and content should be written. If `None`, the results are not written to a file.
 
@@ -61,17 +64,23 @@ async def ingest(
         )
 
         if parsed_query.url:
+            selected_branch = branch if branch else parsed_query.branch  # prioritize branch argument
+            parsed_query.branch = selected_branch
+
             # Extract relevant fields for CloneConfig
             clone_config = CloneConfig(
                 url=parsed_query.url,
                 local_path=str(parsed_query.local_path),
                 commit=parsed_query.commit,
-                branch=parsed_query.branch,
+                branch=selected_branch,
             )
             clone_result = clone_repo(clone_config)
 
             if inspect.iscoroutine(clone_result):
-                asyncio.run(clone_result)
+                if asyncio.get_event_loop().is_running():
+                    await clone_result
+                else:
+                    asyncio.run(clone_result)
             else:
                 raise TypeError("clone_repo did not return a coroutine as expected.")
 

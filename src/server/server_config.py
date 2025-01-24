@@ -1,19 +1,10 @@
-""" Configuration file for the project. """
-
-from pathlib import Path
+""" Configuration for the server. """
 
 from fastapi.templating import Jinja2Templates
-
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
-MAX_DIRECTORY_DEPTH = 20  # Maximum depth of directory traversal
-MAX_FILES = 10_000  # Maximum number of files to process
-MAX_TOTAL_SIZE_BYTES = 500 * 1024 * 1024  # 500 MB
 
 MAX_DISPLAY_SIZE: int = 300_000
 DELETE_REPO_AFTER: int = 60 * 60  # In seconds
 
-OUTPUT_FILE_PATH = "digest.txt"
-TMP_BASE_PATH = Path("/tmp/gitingest")
 
 EXAMPLE_REPOS: list[dict[str, str]] = [
     {"name": "Gitingest", "url": "https://github.com/cyclotruc/gitingest"},
@@ -23,4 +14,4 @@ EXAMPLE_REPOS: list[dict[str, str]] = [
     {"name": "ApiAnalytics", "url": "https://github.com/tom-draper/api-analytics"},
 ]
 
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory="server/templates")
