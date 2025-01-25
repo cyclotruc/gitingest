@@ -18,6 +18,7 @@ from gitingest.repository_ingest import ingest
 @click.option("--exclude-pattern", "-e", multiple=True, help="Patterns to exclude (space-separated patterns allowed)")
 @click.option("--include-pattern", "-i", multiple=True, help="Patterns to include (space-separated patterns allowed)")
 @click.option("--ignore-file", default=".gitingestignore", help="Path to ignore file (default: .gitingestignore)")
+@click.option("--branch", "-b", default=None, help="Branch to clone and ingest")
 def main(
     source: str,
     output: str | None,
@@ -25,6 +26,7 @@ def main(
     exclude_pattern: tuple[str, ...],
     include_pattern: tuple[str, ...],
     ignore_file: str,
+    branch: str | None,
 ):
     """
     Main entry point for the CLI.
@@ -44,8 +46,10 @@ def main(
         A tuple of patterns to include during the analysis. Only files matching these patterns will be processed.
     ignore_file : str
         Path to the ignore file containing additional patterns to exclude.
+    branch : str | None
+        The branch to clone (optional).
     """
-    asyncio.run(async_main(source, output, max_size, exclude_pattern, include_pattern, ignore_file))
+    asyncio.run(async_main(source, output, max_size, exclude_pattern, include_pattern, ignore_file, branch))
 
 
 async def async_main(
@@ -55,6 +59,7 @@ async def async_main(
     exclude_pattern: tuple[str, ...],
     include_pattern: tuple[str, ...],
     ignore_file: str,
+    branch: str | None,
 ) -> None:
     """
     Analyze a directory or repository and create a text dump of its contents.
@@ -78,6 +83,8 @@ async def async_main(
         A tuple of patterns to include during the analysis. Only files matching these patterns will be processed.
     ignore_file : str
         Path to the ignore file containing additional patterns to exclude.
+    branch : str | None
+        The branch to clone (optional).
 
     Raises
     ------
@@ -101,8 +108,8 @@ async def async_main(
         ignore_patterns = parse_ignore_file(ignore_file_path)
         exclude_patterns.update(ignore_patterns)
 
-        # Perform the ingest operation
-        summary, *_ = await ingest(source, max_size, include_patterns, exclude_patterns, output=output)
+        # Perform the ingest operation with branch support
+        summary, *_ = await ingest(source, max_size, include_patterns, exclude_patterns, branch=branch, output=output)
 
         # Display results
         click.echo(f"Analysis complete! Output written to: {output}")
