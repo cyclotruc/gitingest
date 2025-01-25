@@ -153,4 +153,6 @@ DEFAULT_IGNORE_PATTERNS: set[str] = {
     "*.tfstate*",
     ## Dependencies in various languages
     "vendor/",
+    ## gitingestignore file
+    ".gitingestignore",
 }

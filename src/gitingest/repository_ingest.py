@@ -1,6 +1,7 @@
-""" Main entry point for ingesting a source and processing its contents. """
+"""
+Module for ingesting repositories in the gitingest package.
+"""
 
-import asyncio
 import inspect
 import shutil
 
@@ -71,7 +72,7 @@ async def ingest(
             clone_result = clone_repo(clone_config)
 
             if inspect.iscoroutine(clone_result):
-                asyncio.run(clone_result)
+                await clone_result
             else:
                 raise TypeError("clone_repo did not return a coroutine as expected.")
 
@@ -85,5 +86,4 @@ async def ingest(
     finally:
         # Clean up the temporary directory if it was created
         if parsed_query.url:
-            # Clean up the temporary directory
             shutil.rmtree(TMP_BASE_PATH, ignore_errors=True)

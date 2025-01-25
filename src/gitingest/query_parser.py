@@ -12,7 +12,7 @@ from urllib.parse import unquote, urlparse
 from gitingest.config import MAX_FILE_SIZE, TMP_BASE_PATH
 from gitingest.exceptions import InvalidPatternError
 from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
-from gitingest.repository_clone import _check_repo_exists, fetch_remote_branch_list
+from gitingest.repository_clone import CloneConfig, _check_repo_exists, clone_repo, fetch_remote_branch_list
 
 HEX_DIGITS: set[str] = set(string.hexdigits)
 
@@ -46,6 +46,30 @@ class ParsedQuery:  # pylint: disable=too-many-instance-attributes
     ignore_patterns: set[str] | None = None
     include_patterns: set[str] | None = None
     pattern_type: str | None = None
+
+
+def parse_ignore_file(ignore_file_path: Path) -> set[str]:
+    """
+    Parse the .gitingestignore file and return a set of patterns to ignore.
+
+    Parameters
+    ----------
+    ignore_file_path : Path
+        Path to the .gitingestignore file
+
+    Returns
+    -------
+    set[str]
+        Set of patterns to ignore
+    """
+    if not ignore_file_path.exists():
+        return set()
+
+    with open(ignore_file_path, encoding="utf-8") as f:
+        # Read lines, strip whitespace, and filter out empty lines and comments
+        patterns = {line.strip() for line in f if line.strip() and not line.startswith("#")}
+
+    return patterns
 
 
 async def parse_query(
@@ -88,6 +112,24 @@ async def parse_query(
     else:
         # Local path scenario
         parsed_query = _parse_path(source)
+
+    # Clone the repository if it's a URL
+    if parsed_query.url:
+        clone_config = CloneConfig(
+            url=parsed_query.url,
+            local_path=str(parsed_query.local_path),
+            commit=parsed_query.commit,
+            branch=parsed_query.branch,
+        )
+        await clone_repo(clone_config)
+
+        # Look for .gitingestignore file in the cloned repository
+        ignore_file_path = Path(parsed_query.local_path) / ".gitingestignore"
+        additional_ignore_patterns = parse_ignore_file(ignore_file_path)
+        if ignore_patterns:
+            ignore_patterns.update(additional_ignore_patterns)
+        else:
+            ignore_patterns = additional_ignore_patterns
 
     # Combine default ignore patterns + custom patterns
     ignore_patterns_set = DEFAULT_IGNORE_PATTERNS.copy()
@@ -283,17 +325,18 @@ def _normalize_pattern(pattern: str) -> str:
     return pattern
 
 
-def _parse_patterns(pattern: set[str] | str) -> set[str]:
+def _parse_patterns(patterns: tuple[str, ...] | set[str] | str) -> set[str]:
     """
     Parse and validate file/directory patterns for inclusion or exclusion.
 
-    Takes either a single pattern string or set of pattern strings and processes them into a normalized list.
-    Patterns are split on commas and spaces, validated for allowed characters, and normalized.
+    Takes either a single pattern string, a tuple of pattern strings, or a set of pattern strings
+    and processes them into a normalized list. Patterns are split on commas and spaces, validated
+    for allowed characters, and normalized.
 
     Parameters
     ----------
-    pattern : set[str] | str
-        Pattern(s) to parse - either a single string or set of strings
+    patterns : tuple[str, ...] | set[str] | str
+        Pattern(s) to parse - either a single string, a tuple of strings, or a set of strings
 
     Returns
     -------
@@ -307,7 +350,11 @@ def _parse_patterns(pattern: set[str] | str) -> set[str]:
         dash (-), underscore (_), dot (.), forward slash (/), plus (+), and
         asterisk (*) are allowed.
     """
-    patterns = pattern if isinstance(pattern, set) else {pattern}
+    # Convert patterns to a set if it's not already a set
+    if isinstance(patterns, tuple):
+        patterns = set(patterns)
+    elif isinstance(patterns, str):
+        patterns = {patterns}
 
     parsed_patterns: set[str] = set()
     for p in patterns:

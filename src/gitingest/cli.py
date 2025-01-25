@@ -6,55 +6,9 @@ from pathlib import Path
 
 import click
 
-from gitingest.config import MAX_FILE_SIZE, OUTPUT_FILE_PATH
+from gitingest.config import MAX_FILE_SIZE
+from gitingest.query_parser import _parse_patterns, parse_ignore_file
 from gitingest.repository_ingest import ingest
-
-
-def parse_ignore_file(ignore_file_path: Path) -> set[str]:
-    """
-    Parse the .gitingestignore file and return a set of patterns to ignore.
-
-    Parameters
-    ----------
-    ignore_file_path : Path
-        Path to the .gitingestignore file
-
-    Returns
-    -------
-    set[str]
-        Set of patterns to ignore
-    """
-    if not ignore_file_path.exists():
-        return set()
-
-    with open(ignore_file_path, encoding="utf-8") as f:
-        # Read lines, strip whitespace, and filter out empty lines and comments
-        patterns = {line.strip() for line in f if line.strip() and not line.startswith("#")}
-
-    return patterns
-
-
-def parse_patterns(patterns: tuple[str, ...]) -> set[str]:
-    """
-    Parse patterns from command line arguments.
-    Handles both space-separated patterns in a single string
-    and multiple -e/-i arguments.
-
-    Parameters
-    ----------
-    patterns : tuple[str, ...]
-        Tuple of patterns from command line
-
-    Returns
-    -------
-    set[str]
-        Set of parsed patterns
-    """
-    result = set()
-    for pattern_str in patterns:
-        # Split on spaces and add each pattern
-        result.update(p.strip() for p in pattern_str.split() if p.strip())
-    return result
 
 
 @click.command()
@@ -139,8 +93,8 @@ async def async_main(
             output = f"{repo_name}.txt"
 
         # Parse command line patterns
-        exclude_patterns = parse_patterns(exclude_pattern)
-        include_patterns = parse_patterns(include_pattern)
+        exclude_patterns = _parse_patterns(exclude_pattern)
+        include_patterns = _parse_patterns(include_pattern)
 
         # Read and add patterns from ignore file
         ignore_file_path = Path(source) / ignore_file

@@ -1,7 +1,11 @@
-""" This module contains functions for cloning a Git repository to a local path. """
+"""
+Module for cloning repositories in the gitingest package.
+"""
 
 import asyncio
+import shutil
 from dataclasses import dataclass
+from pathlib import Path
 
 from gitingest.utils import async_timeout
 
@@ -78,6 +82,11 @@ async def clone_repo(config: CloneConfig) -> tuple[bytes, bytes]:
     if not await _check_repo_exists(url):
         raise ValueError("Repository not found, make sure it is public")
 
+    # Remove the directory if it exists and is not empty
+    local_path_obj = Path(local_path)
+    if local_path_obj.exists() and any(local_path_obj.iterdir()):
+        shutil.rmtree(local_path_obj)
+
     if commit:
         # Scenario 1: Clone and checkout a specific commit
         # Clone the repository without depth to ensure full history for checkout
@@ -89,7 +98,6 @@ async def clone_repo(config: CloneConfig) -> tuple[bytes, bytes]:
         return await _run_git_command(*checkout_cmd)
 
     if branch and branch.lower() not in ("main", "master"):
-
         # Scenario 2: Clone a specific branch with shallow depth
         clone_cmd = ["git", "clone", "--depth=1", "--single-branch", "--branch", branch, url, local_path]
         return await _run_git_command(*clone_cmd)
