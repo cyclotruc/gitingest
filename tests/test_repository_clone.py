@@ -6,6 +6,7 @@ and handling edge cases such as nonexistent URLs, timeouts, redirects, and speci
 """
 
 import asyncio
+import os
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -306,3 +307,58 @@ async def test_clone_repo_with_timeout() -> None:
             mock_exec.side_effect = asyncio.TimeoutError
             with pytest.raises(AsyncTimeoutError, match="Operation timed out after"):
                 await clone_repo(clone_config)
+
+
+@pytest.mark.asyncio
+async def test_clone_specific_branch(tmp_path):
+    """
+    Test cloning a specific branch of a repository.
+
+    Given a valid repository URL and a branch name:
+    When `clone_repo` is called,
+    Then the repository should be cloned and checked out at that branch.
+    """
+    repo_url = "https://github.com/cyclotruc/gitingest.git"
+    branch_name = "main"
+    local_path = tmp_path / "gitingest"
+
+    config = CloneConfig(url=repo_url, local_path=str(local_path), branch=branch_name)
+    await clone_repo(config)
+
+    # Assertions
+    assert local_path.exists(), "The repository was not cloned successfully."
+    assert local_path.is_dir(), "The cloned repository path is not a directory."
+
+    # Check the current branch
+    current_branch = os.popen(f"git -C {local_path} branch --show-current").read().strip()
+    assert current_branch == branch_name, f"Expected branch '{branch_name}', got '{current_branch}'."
+
+
+@pytest.mark.asyncio
+async def test_clone_branch_with_slashes(tmp_path):
+    """
+    Test cloning a branch with slashes in the name.
+
+    Given a valid repository URL and a branch name with slashes:
+    When `clone_repo` is called,
+    Then the repository should be cloned and checked out at that branch.
+    """
+    repo_url = "https://github.com/user/repo"
+    branch_name = "fix/in-operator"
+    local_path = tmp_path / "gitingest"
+
+    clone_config = CloneConfig(url=repo_url, local_path=str(local_path), branch=branch_name)
+    with patch("gitingest.repository_clone._check_repo_exists", return_value=True):
+        with patch("gitingest.repository_clone._run_git_command", new_callable=AsyncMock) as mock_exec:
+            await clone_repo(clone_config)
+
+            mock_exec.assert_called_once_with(
+                "git",
+                "clone",
+                "--depth=1",
+                "--single-branch",
+                "--branch",
+                "fix/in-operator",
+                clone_config.url,
+                clone_config.local_path,
+            )

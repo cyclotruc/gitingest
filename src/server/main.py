@@ -1,6 +1,7 @@
 """ Main module for the FastAPI application. """
 
 import os
+from pathlib import Path
 
 from api_analytics.fastapi import Analytics
 from dotenv import load_dotenv
@@ -24,8 +25,11 @@ app.state.limiter = limiter
 # Register the custom exception handler for rate limits
 app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
 
-# Mount static files to serve CSS, JS, and other static assets
-app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Mount static files dynamically to serve CSS, JS, and other static assets
+static_dir = Path(__file__).parent.parent / "static"
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
 
 # Set up API analytics middleware if an API key is provided
 if app_analytics_key := os.getenv("API_ANALYTICS_KEY"):
