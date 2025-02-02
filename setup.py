@@ -1,4 +1,8 @@
 from setuptools import find_packages, setup
+from pathlib import Path
+
+this_directory = Path(__file__).parent
+long_description = (this_directory / "README.md").read_text(encoding="utf-8")
 
 setup(
     name="gitingest",
@@ -19,7 +23,7 @@ setup(
     author="Romain Courtois",
     author_email="romain@coderamp.io",
     description="CLI tool to analyze and create text dumps of codebases for LLMs",
-    long_description=open("README.md").read(),
+    long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/cyclotruc/gitingest",
     classifiers=[
