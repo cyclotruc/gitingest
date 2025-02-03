@@ -12,7 +12,7 @@ from urllib.parse import unquote, urlparse
 from gitingest.config import MAX_FILE_SIZE, TMP_BASE_PATH
 from gitingest.exceptions import InvalidPatternError
 from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
-from gitingest.repository_clone import CloneConfig, _check_repo_exists, clone_repo, fetch_remote_branch_list
+from gitingest.repository_clone import _check_repo_exists, fetch_remote_branch_list
 
 HEX_DIGITS: set[str] = set(string.hexdigits)
 
@@ -113,23 +113,13 @@ async def parse_query(
         # Local path scenario
         parsed_query = _parse_path(source)
 
-    # Clone the repository if it's a URL
-    if parsed_query.url:
-        clone_config = CloneConfig(
-            url=parsed_query.url,
-            local_path=str(parsed_query.local_path),
-            commit=parsed_query.commit,
-            branch=parsed_query.branch,
-        )
-        await clone_repo(clone_config)
-
-        # Look for .gitingestignore file in the cloned repository
-        ignore_file_path = Path(parsed_query.local_path) / ".gitingestignore"
-        additional_ignore_patterns = parse_ignore_file(ignore_file_path)
-        if ignore_patterns:
-            ignore_patterns.update(additional_ignore_patterns)
-        else:
-            ignore_patterns = additional_ignore_patterns
+    # Look for .gitingestignore file in the local path
+    ignore_file_path = Path(parsed_query.local_path) / ".gitingestignore"
+    additional_ignore_patterns = parse_ignore_file(ignore_file_path)
+    if ignore_patterns:
+        ignore_patterns.update(additional_ignore_patterns)
+    else:
+        ignore_patterns = additional_ignore_patterns
 
     # Combine default ignore patterns + custom patterns
     ignore_patterns_set = DEFAULT_IGNORE_PATTERNS.copy()
