@@ -1,5 +1,8 @@
 """ Functions to ingest and analyze a codebase directory or single file. """
 
+import locale
+import os
+import platform
 from fnmatch import fnmatch
 from pathlib import Path
 from typing import Any
@@ -15,6 +18,61 @@ from gitingest.exceptions import (
 )
 from gitingest.notebook_utils import process_notebook
 from gitingest.query_parser import ParsedQuery
+
+try:
+    locale.setlocale(locale.LC_ALL, "")
+except locale.Error:
+    locale.setlocale(locale.LC_ALL, "C")
+
+
+def _normalize_path(path: Path) -> Path:
+    """
+    Normalize path for cross-platform compatibility.
+
+    Parameters
+    ----------
+    path : Path
+        The Path object to normalize.
+
+    Returns
+    -------
+    Path
+        The normalized path with platform-specific separators and resolved components.
+    """
+    return Path(os.path.normpath(str(path)))
+
+
+def _normalize_path_str(path: str | Path) -> str:
+    """
+    Convert path to string with forward slashes for consistent output.
+
+    Parameters
+    ----------
+    path : str | Path
+        The path to convert, can be string or Path object.
+
+    Returns
+    -------
+    str
+        The normalized path string with forward slashes as separators.
+    """
+    return str(path).replace(os.sep, "/")
+
+
+def _get_encoding_list() -> list[str]:
+    """
+    Get list of encodings to try, prioritized for the current platform.
+
+    Returns
+    -------
+    list[str]
+        List of encoding names to try in priority order, starting with the
+        platform's default encoding followed by common fallback encodings.
+    """
+    encodings = ["utf-8", "utf-8-sig"]
+    if platform.system() == "Windows":
+        encodings.extend(["cp1252", "iso-8859-1"])
+    return encodings + [locale.getpreferredencoding()]
 
 
 def _should_include(path: Path, base_path: Path, include_patterns: set[str]) -> bool:
@@ -107,9 +165,13 @@ def _is_safe_symlink(symlink_path: Path, base_path: Path) -> bool:
         `True` if the symlink points within the base directory, `False` otherwise.
     """
     try:
-        target_path = symlink_path.resolve()
-        base_resolved = base_path.resolve()
-        # It's "safe" if target_path == base_resolved or is inside base_resolved
+        if platform.system() == "Windows":
+            if not os.path.islink(str(symlink_path)):
+                return False
+
+        target_path = _normalize_path(symlink_path.resolve())
+        base_resolved = _normalize_path(base_path.resolve())
+
         return base_resolved in target_path.parents or target_path == base_resolved
     except (OSError, ValueError):
         # If there's any error resolving the paths, consider it unsafe
@@ -162,10 +224,22 @@ def _read_file_content(file_path: Path) -> str:
     """
     try:
         if file_path.suffix == ".ipynb":
-            return process_notebook(file_path)
+            try:
+                return process_notebook(file_path)
+            except Exception as e:
+                return f"Error processing notebook: {e}"
 
-        with open(file_path, encoding="utf-8", errors="ignore") as f:
-            return f.read()
+        for encoding in _get_encoding_list():
+            try:
+                with open(file_path, encoding=encoding) as f:
+                    return f.read()
+            except UnicodeDecodeError:
+                continue
+            except OSError as e:
+                return f"Error reading file: {e}"
+
+        return "Error: Unable to decode file with available encodings"
+
     except (OSError, InvalidNotebookError) as e:
         return f"Error reading file: {e}"
 
@@ -531,10 +605,10 @@ def _extract_files_content(
             content = node["content"]
 
         relative_path = Path(node["path"]).relative_to(query.local_path)
-
+        # Store paths with forward slashes
         files.append(
             {
-                "path": str(relative_path),
+                "path": _normalize_path_str(relative_path),
                 "content": content,
                 "size": node["size"],
             },
@@ -572,7 +646,8 @@ def _create_file_content_string(files: list[dict[str, Any]]) -> str:
             continue
 
         output += separator
-        output += f"File: {file['path']}\n"
+        # Use forward slashes in output paths
+        output += f"File: {_normalize_path_str(file['path'])}\n"
         output += separator
         output += f"{file['content']}\n\n"
 
@@ -815,11 +890,13 @@ def run_ingest_query(query: ParsedQuery) -> tuple[str, str, str]:
     ValueError
         If the specified path cannot be found or if the file is not a text file.
     """
-    path = query.local_path / query.subpath.lstrip("/")
+    subpath = _normalize_path(Path(query.subpath.strip("/"))).as_posix()
+    path = _normalize_path(query.local_path / subpath)
+
     if not path.exists():
         raise ValueError(f"{query.slug} cannot be found")
 
     if query.type and query.type == "blob":
-        return _ingest_single_file(path, query)
+        return _ingest_single_file(_normalize_path(path.resolve()), query)
 
-    return _ingest_directory(path, query)
+    return _ingest_directory(_normalize_path(path.resolve()), query)

@@ -1,5 +1,6 @@
 """ Configuration file for the project. """
 
+import tempfile
 from pathlib import Path
 
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
@@ -8,4 +9,5 @@ MAX_FILES = 10_000  # Maximum number of files to process
 MAX_TOTAL_SIZE_BYTES = 500 * 1024 * 1024  # 500 MB
 
 OUTPUT_FILE_PATH = "digest.txt"
-TMP_BASE_PATH = Path("/tmp/gitingest")
+
+TMP_BASE_PATH = Path(tempfile.gettempdir()) / "gitingest"

@@ -1,11 +1,24 @@
 // Copy functionality
 function copyText(className) {
-    const textarea = document.querySelector('.' + className);
+    let textToCopy;
+
+    if (className === 'directory-structure') {
+        // For directory structure, get the hidden input value
+        const hiddenInput = document.getElementById('directory-structure-content');
+        if (!hiddenInput) return;
+        textToCopy = hiddenInput.value;
+    } else {
+        // For other elements, get the textarea value
+        const textarea = document.querySelector('.' + className);
+        if (!textarea) return;
+        textToCopy = textarea.value;
+    }
+
     const button = document.querySelector(`button[onclick="copyText('${className}')"]`);
-    if (!textarea || !button) return;
+    if (!button) return;
 
     // Copy text
-    navigator.clipboard.writeText(textarea.value)
+    navigator.clipboard.writeText(textToCopy)
         .then(() => {
             // Store original content
             const originalContent = button.innerHTML;
@@ -110,7 +123,7 @@ function handleSubmit(event, showLoading = false) {
 }
 
 function copyFullDigest() {
-    const directoryStructure = document.querySelector('.directory-structure').value;
+    const directoryStructure = document.getElementById('directory-structure-content').value;
     const filesContent = document.querySelector('.result-text').value;
     const fullDigest = `${directoryStructure}\n\nFiles Content:\n\n${filesContent}`;
     const button = document.querySelector('[onclick="copyFullDigest()"]');

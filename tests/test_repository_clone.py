@@ -7,6 +7,7 @@ and handling edge cases such as nonexistent URLs, timeouts, redirects, and speci
 
 import asyncio
 import os
+from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -361,4 +362,37 @@ async def test_clone_branch_with_slashes(tmp_path):
                 "fix/in-operator",
                 clone_config.url,
                 clone_config.local_path,
+            )
+
+
+@pytest.mark.asyncio
+async def test_clone_repo_creates_parent_directory(tmp_path: Path) -> None:
+    """
+    Test that clone_repo creates parent directories if they don't exist.
+
+    Given a local path with non-existent parent directories:
+    When `clone_repo` is called,
+    Then it should create the parent directories before attempting to clone.
+    """
+    nested_path = tmp_path / "deep" / "nested" / "path" / "repo"
+    clone_config = CloneConfig(
+        url="https://github.com/user/repo",
+        local_path=str(nested_path),
+    )
+
+    with patch("gitingest.repository_clone._check_repo_exists", return_value=True):
+        with patch("gitingest.repository_clone._run_git_command", new_callable=AsyncMock) as mock_exec:
+            await clone_repo(clone_config)
+
+            # Verify parent directory was created
+            assert nested_path.parent.exists()
+
+            # Verify git clone was called with correct parameters
+            mock_exec.assert_called_once_with(
+                "git",
+                "clone",
+                "--depth=1",
+                "--single-branch",
+                clone_config.url,
+                str(nested_path),
             )

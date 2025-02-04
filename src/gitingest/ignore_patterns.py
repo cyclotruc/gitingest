@@ -23,6 +23,8 @@ DEFAULT_IGNORE_PATTERNS: set[str] = {
     ".npm",
     ".yarn",
     ".pnpm-store",
+    "bun.lock",
+    "bun.lockb",
     # Java
     "*.class",
     "*.jar",
