@@ -13,7 +13,7 @@ from gitingest.repository_ingest import ingest
 
 @click.command()
 @click.argument("source", type=str, default=".")
-@click.option("--output", "-o", default=None, help="Output file path (default: <repo_name>.txt in current directory)")
+@click.option("--output", "-o", default=None, help="Output file path (default: digest.txt)")
 @click.option("--max-size", "-s", default=MAX_FILE_SIZE, help="Maximum file size to process in bytes")
 @click.option("--exclude-pattern", "-e", multiple=True, help="Patterns to exclude (space-separated patterns allowed)")
 @click.option("--include-pattern", "-i", multiple=True, help="Patterns to include (space-separated patterns allowed)")
@@ -37,7 +37,7 @@ def main(
         The source directory or repository to analyze.
     output : str | None
         The path where the output file will be written. If not specified, the output
-        will be written to a file named `<repo_name>.txt` in the current directory.
+        will be written to a file named `digest.txt` in the current directory.
     max_size : int
         The maximum file size to process, in bytes. Files larger than this size will be ignored.
     exclude_pattern : tuple[str, ...]
@@ -74,7 +74,7 @@ async def async_main(
         The source directory or repository to analyze.
     output : str | None
         The path where the output file will be written. If not specified, the output
-        will be written to a file named `<repo_name>.txt` in the current directory.
+        will be written to a file named `digest.txt` in the current directory.
     max_size : int
         The maximum file size to process, in bytes. Files larger than this size will be ignored.
     exclude_pattern : tuple[str, ...]
@@ -92,12 +92,9 @@ async def async_main(
         If there is an error during the execution of the command, this exception is raised to abort the process.
     """
     try:
-        # Get repository name from source path
-        repo_name = Path(source).name or "repository"
-
         # Set default output filename if not provided
         if not output:
-            output = f"{repo_name}.txt"
+            output = "digest.txt"
 
         # Parse command line patterns
         exclude_patterns = _parse_patterns(exclude_pattern)

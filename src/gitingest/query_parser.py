@@ -105,6 +105,12 @@ async def parse_query(
         A dataclass object containing the parsed details of the repository or file path.
     """
 
+    # Convert string patterns to set if necessary
+    if isinstance(ignore_patterns, str):
+        ignore_patterns = {ignore_patterns} if ignore_patterns else None
+    if isinstance(include_patterns, str):
+        include_patterns = {include_patterns} if include_patterns else None
+
     # Determine the parsing method based on the source type
     if from_web or urlparse(source).scheme in ("https", "http") or any(h in source for h in KNOWN_GIT_HOSTS):
         # We either have a full URL or a domain-less slug
