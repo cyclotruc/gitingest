@@ -1,3 +1,23 @@
+<script>
+    function changePattern(element) {
+        console.log("Pattern changed", element.value);
+        let patternType = element.value;
+        const files = document.getElementsByName("tree-line");
+
+        Array.from(files).forEach((element) => {
+            if (element.textContent.includes("Directory structure:")) {
+                return;
+            }
+
+            element.classList.toggle('line-through');
+            element.classList.toggle('text-gray-500');
+            element.classList.toggle('hover:text-inherit');
+            element.classList.toggle('hover:no-underline');
+            element.classList.toggle('hover:line-through');
+            element.classList.toggle('hover:text-gray-500');
+        });
+    }
+</script>
 <div class="relative">
     <div class="w-full h-full absolute inset-0 bg-gray-900 rounded-xl translate-y-2 translate-x-2"></div>
     <div class="rounded-xl relative z-20 pl-8 sm:pl-10 pr-8 sm:pr-16 py-8 border-[3px] border-gray-900 bg-[#fff4da]">
@@ -34,6 +54,7 @@
                     <div class="flex relative z-20 border-[3px] border-gray-900 rounded bg-white">
                         <div class="relative flex items-center">
                             <select id="pattern_type"
+                                    onchange="changePattern(this)"
                                     name="pattern_type"
                                     class="w-21 py-2 pl-2 pr-6 appearance-none bg-[#e6e8eb] focus:outline-none border-r-[3px] border-gray-900">
                                 <option value="exclude"

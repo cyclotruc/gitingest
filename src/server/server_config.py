@@ -10,7 +10,7 @@ EXAMPLE_REPOS: list[dict[str, str]] = [
     {"name": "Gitingest", "url": "https://github.com/cyclotruc/gitingest"},
     {"name": "FastAPI", "url": "https://github.com/tiangolo/fastapi"},
     {"name": "Flask", "url": "https://github.com/pallets/flask"},
-    {"name": "Tldraw", "url": "https://github.com/tldraw/tldraw"},
+    {"name": "Excalidraw", "url": "https://github.com/excalidraw/excalidraw"},
     {"name": "ApiAnalytics", "url": "https://github.com/tom-draper/api-analytics"},
 ]
 
