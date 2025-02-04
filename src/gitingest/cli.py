@@ -109,14 +109,7 @@ async def async_main(
         exclude_patterns.update(ignore_patterns)
 
         # Perform the ingest operation with branch support
-        summary, *_ = await ingest(
-            source,
-            max_size,
-            include_patterns,
-            exclude_patterns,
-            branch=branch,
-            output=output
-        )
+        summary, *_ = await ingest(source, max_size, include_patterns, exclude_patterns, branch=branch, output=output)
 
         # Display results
         click.echo(f"Analysis complete! Output written to: {output}")
