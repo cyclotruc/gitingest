@@ -1,7 +1,9 @@
 """ This module contains functions for cloning a Git repository to a local path. """
 
 import asyncio
+import os
 from dataclasses import dataclass
+from pathlib import Path
 
 from gitingest.utils import async_timeout
 
@@ -61,6 +63,8 @@ async def clone_repo(config: CloneConfig) -> tuple[bytes, bytes]:
     ------
     ValueError
         If the 'url' or 'local_path' parameters are missing, or if the repository is not found.
+    OSError
+        If there is an error creating the parent directory structure.
     """
     # Extract and validate query parameters
     url: str = config.url
@@ -73,6 +77,13 @@ async def clone_repo(config: CloneConfig) -> tuple[bytes, bytes]:
 
     if not local_path:
         raise ValueError("The 'local_path' parameter is required.")
+
+    # Create parent directory if it doesn't exist
+    parent_dir = Path(local_path).parent
+    try:
+        os.makedirs(parent_dir, exist_ok=True)
+    except OSError as e:
+        raise OSError(f"Failed to create parent directory {parent_dir}: {e}") from e
 
     # Check if the repository exists
     if not await _check_repo_exists(url):
