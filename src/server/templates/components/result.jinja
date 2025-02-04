@@ -1,7 +1,7 @@
 <script>
     function getFileName(line) {
         // Skips "|", "└", "├" found in file tree
-        const index = line.search(/[a-zA-Z0-9]/); 
+        const index = line.search(/[a-zA-Z0-9]/);
         return line.substring(index).trim();
     }
 
@@ -15,7 +15,7 @@
 
         element.classList.toggle('line-through');
         element.classList.toggle('text-gray-500');
-        
+
         const fileName = getFileName(element.textContent);
         const fileIndex = patternFiles.indexOf(fileName);
 
@@ -91,9 +91,12 @@
                         </div>
                         <div class="relative">
                             <div class="w-full h-full rounded bg-gray-900 translate-y-1 translate-x-1 absolute inset-0"></div>
-                            <div class="directory-structure w-full p-4 bg-[#fff4da] border-[3px] border-gray-900 rounded font-mono text-sm resize-y focus:outline-none relative z-10 h-[215px] overflow-auto" readonly>
-                                {% for line in tree.splitlines()%}
-                                    <div name="tree-line" class="cursor-pointer hover:line-through hover:text-gray-500" onclick="toggleFile(this)">{{ line }}</div>
+                            <div class="directory-structure w-full p-4 bg-[#fff4da] border-[3px] border-gray-900 rounded font-mono text-sm resize-y focus:outline-none relative z-10 h-[215px] overflow-auto"
+                                 readonly>
+                                {% for line in tree.splitlines() %}
+                                    <div name="tree-line"
+                                         class="cursor-pointer hover:line-through hover:text-gray-500"
+                                         onclick="toggleFile(this)">{{ line }}</div>
                                 {% endfor %}
                             </div>
                         </div>
