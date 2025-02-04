@@ -3,9 +3,8 @@ Module for cloning repositories in the gitingest package.
 """
 
 import asyncio
-import shutil
 import os
-
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
