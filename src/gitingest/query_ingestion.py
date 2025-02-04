@@ -1,11 +1,11 @@
 """ Functions to ingest and analyze a codebase directory or single file. """
 
-from fnmatch import fnmatch
-from pathlib import Path
-from typing import Any
 import locale
 import os
 import platform
+from fnmatch import fnmatch
+from pathlib import Path
+from typing import Any
 
 import tiktoken
 
@@ -20,24 +20,60 @@ from gitingest.notebook_utils import process_notebook
 from gitingest.query_parser import ParsedQuery
 
 try:
-    locale.setlocale(locale.LC_ALL, '')
+    locale.setlocale(locale.LC_ALL, "")
 except locale.Error:
-    locale.setlocale(locale.LC_ALL, 'C')
+    locale.setlocale(locale.LC_ALL, "C")
+
 
 def _normalize_path(path: Path) -> Path:
-    """Normalize path for cross-platform compatibility."""
+    """
+    Normalize path for cross-platform compatibility.
+
+    Parameters
+    ----------
+    path : Path
+        The Path object to normalize.
+
+    Returns
+    -------
+    Path
+        The normalized path with platform-specific separators and resolved components.
+    """
     return Path(os.path.normpath(str(path)))
 
+
 def _normalize_path_str(path: str | Path) -> str:
-    """Convert path to string with forward slashes for consistent output."""
-    return str(path).replace(os.sep, '/')
+    """
+    Convert path to string with forward slashes for consistent output.
+
+    Parameters
+    ----------
+    path : str | Path
+        The path to convert, can be string or Path object.
+
+    Returns
+    -------
+    str
+        The normalized path string with forward slashes as separators.
+    """
+    return str(path).replace(os.sep, "/")
+
 
 def _get_encoding_list() -> list[str]:
-    """Get list of encodings to try, prioritized for the current platform."""
-    encodings = ['utf-8', 'utf-8-sig']
-    if platform.system() == 'Windows':
-        encodings.extend(['cp1252', 'iso-8859-1'])
+    """
+    Get list of encodings to try, prioritized for the current platform.
+
+    Returns
+    -------
+    list[str]
+        List of encoding names to try in priority order, starting with the
+        platform's default encoding followed by common fallback encodings.
+    """
+    encodings = ["utf-8", "utf-8-sig"]
+    if platform.system() == "Windows":
+        encodings.extend(["cp1252", "iso-8859-1"])
     return encodings + [locale.getpreferredencoding()]
+
 
 def _should_include(path: Path, base_path: Path, include_patterns: set[str]) -> bool:
     """
@@ -129,13 +165,13 @@ def _is_safe_symlink(symlink_path: Path, base_path: Path) -> bool:
         `True` if the symlink points within the base directory, `False` otherwise.
     """
     try:
-        if platform.system() == 'Windows':
+        if platform.system() == "Windows":
             if not os.path.islink(str(symlink_path)):
                 return False
-        
+
         target_path = _normalize_path(symlink_path.resolve())
         base_resolved = _normalize_path(base_path.resolve())
-        
+
         return base_resolved in target_path.parents or target_path == base_resolved
     except (OSError, ValueError):
         # If there's any error resolving the paths, consider it unsafe
@@ -201,7 +237,7 @@ def _read_file_content(file_path: Path) -> str:
                 continue
             except OSError as e:
                 return f"Error reading file: {e}"
-        
+
         return "Error: Unable to decode file with available encodings"
 
     except (OSError, InvalidNotebookError) as e:
