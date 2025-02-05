@@ -181,17 +181,15 @@ async def _parse_repo_source(source: str) -> ParsedQuery:
     if not remaining_parts:
         return parsed
 
-    possible_type = remaining_parts.pop(0)  # e.g. 'issues', 'pull', 'tree', 'blob'
+    parsed.type = remaining_parts.pop(0)  # e.g. 'issues', 'pull', 'tree', 'blob'
 
     # If no extra path parts, just return
     if not remaining_parts:
         return parsed
 
     # If this is an issues page or pull requests, return early without processing subpath
-    if remaining_parts and possible_type in ("issues", "pull"):
+    if parsed.type in ("issues", "pull"):
         return parsed
-
-    parsed.type = possible_type
 
     # Commit or branch
     commit_or_branch = remaining_parts[0]
