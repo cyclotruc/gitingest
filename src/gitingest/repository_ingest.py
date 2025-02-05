@@ -63,7 +63,7 @@ async def ingest(
             ignore_patterns=exclude_patterns,
         )
 
-        if parsed_query.url:
+        if parsed_query.url and parsed_query.type != "pull":
             selected_branch = branch if branch else parsed_query.branch  # prioritize branch argument
             parsed_query.branch = selected_branch
 
@@ -84,7 +84,7 @@ async def ingest(
             else:
                 raise TypeError("clone_repo did not return a coroutine as expected.")
 
-        summary, tree, content = run_ingest_query(parsed_query)
+        summary, tree, content = await run_ingest_query(parsed_query)
 
         if output is not None:
             with open(output, "w", encoding="utf-8") as f:
@@ -92,7 +92,5 @@ async def ingest(
 
         return summary, tree, content
     finally:
-        # Clean up the temporary directory if it was created
-        if parsed_query.url:
-            # Clean up the temporary directory
-            shutil.rmtree(TMP_BASE_PATH, ignore_errors=True)
+        # Clean up the temporary directory
+        shutil.rmtree(TMP_BASE_PATH, ignore_errors=True)

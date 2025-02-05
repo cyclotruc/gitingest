@@ -1,4 +1,4 @@
-""" This module contains functions to parse and validate input sources and patterns. """
+"""This module contains functions to parse and validate input sources and patterns."""
 
 import os
 import re
@@ -37,6 +37,7 @@ class ParsedQuery:  # pylint: disable=too-many-instance-attributes
     subpath: str
     local_path: Path
     url: str | None
+    host: str | None
     slug: str
     id: str
     type: str | None = None
@@ -46,6 +47,7 @@ class ParsedQuery:  # pylint: disable=too-many-instance-attributes
     ignore_patterns: set[str] | None = None
     include_patterns: set[str] | None = None
     pattern_type: str | None = None
+    pull_or_issue_number: int | None = None
 
 
 async def parse_query(
@@ -82,7 +84,11 @@ async def parse_query(
     """
 
     # Determine the parsing method based on the source type
-    if from_web or urlparse(source).scheme in ("https", "http") or any(h in source for h in KNOWN_GIT_HOSTS):
+    if (
+        from_web
+        or urlparse(source).scheme in ("https", "http")
+        or any(h in source for h in KNOWN_GIT_HOSTS)
+    ):
         # We either have a full URL or a domain-less slug
         parsed_query = await _parse_repo_source(source)
     else:
@@ -97,7 +103,9 @@ async def parse_query(
     # Process include patterns and override ignore patterns accordingly
     if include_patterns:
         parsed_include = _parse_patterns(include_patterns)
-        ignore_patterns_set = _override_ignore_patterns(ignore_patterns_set, include_patterns=parsed_include)
+        ignore_patterns_set = _override_ignore_patterns(
+            ignore_patterns_set, include_patterns=parsed_include
+        )
     else:
         parsed_include = None
 
@@ -105,6 +113,7 @@ async def parse_query(
         user_name=parsed_query.user_name,
         repo_name=parsed_query.repo_name,
         url=parsed_query.url,
+        host=parsed_query.host,
         subpath=parsed_query.subpath,
         local_path=parsed_query.local_path,
         slug=parsed_query.slug,
@@ -152,7 +161,9 @@ async def _parse_repo_source(source: str) -> ParsedQuery:
             _validate_host(tmp_host)
         else:
             # No scheme, no domain => user typed "user/repo", so we'll guess the domain.
-            host = await try_domains_for_user_and_repo(*_get_user_and_repo_from_path(source))
+            host = await try_domains_for_user_and_repo(
+                *_get_user_and_repo_from_path(source)
+            )
             source = f"{host}/{source}"
 
         source = "https://" + source
@@ -170,6 +181,7 @@ async def _parse_repo_source(source: str) -> ParsedQuery:
         user_name=user_name,
         repo_name=repo_name,
         url=url,
+        host=host,
         subpath="/",
         local_path=local_path,
         slug=slug,
@@ -181,14 +193,21 @@ async def _parse_repo_source(source: str) -> ParsedQuery:
     if not remaining_parts:
         return parsed
 
-    parsed.type = remaining_parts.pop(0)  # e.g. 'issues', 'pull', 'tree', 'blob'
+    possible_type = remaining_parts.pop(0)  # e.g. 'issues', 'pull', 'tree', 'blob' or '-' (on GitLab)
+
+    if possible_type == "-" and remaining_parts:
+        possible_type = remaining_parts.pop(0)
+
+    parsed.type = _possible_type_to_parsed_query_type(possible_type)
 
     # If no extra path parts, just return
     if not remaining_parts:
         return parsed
 
     # If this is an issues page or pull requests, return early without processing subpath
-    if parsed.type in ("issues", "pull"):
+    if parsed.type in ("issue", "pull"):
+        parsed.pull_or_issue_number = int(remaining_parts.pop(0))
+        parsed.url = f"{url}/{parsed.type}/{parsed.pull_or_issue_number}"
         return parsed
 
     # Commit or branch
@@ -206,7 +225,21 @@ async def _parse_repo_source(source: str) -> ParsedQuery:
     return parsed
 
 
-async def _configure_branch_and_subpath(remaining_parts: list[str], url: str) -> str | None:
+def _possible_type_to_parsed_query_type(possible_type: str) -> str:
+    """
+    Convert a possible type to a parsed query type.
+    """
+    if possible_type in ("issues", "issue"):
+        return "issue"
+    elif possible_type in ("pulls", "pull", "merge_requests", "pullrequest"):
+        return "pull"
+    else:
+        return possible_type
+
+
+async def _configure_branch_and_subpath(
+    remaining_parts: list[str], url: str
+) -> str | None:
     """
     Configure the branch and subpath based on the remaining parts of the URL.
     Parameters
@@ -322,7 +355,9 @@ def _parse_patterns(pattern: set[str] | str) -> set[str]:
     return {_normalize_pattern(p) for p in parsed_patterns}
 
 
-def _override_ignore_patterns(ignore_patterns: set[str], include_patterns: set[str]) -> set[str]:
+def _override_ignore_patterns(
+    ignore_patterns: set[str], include_patterns: set[str]
+) -> set[str]:
     """
     Remove patterns from ignore_patterns that are present in include_patterns using set difference.
 
@@ -359,6 +394,7 @@ def _parse_path(path_str: str) -> ParsedQuery:
     return ParsedQuery(
         user_name=None,
         repo_name=None,
+        host=None,
         url=None,
         subpath="/",
         local_path=path_obj,
@@ -413,7 +449,9 @@ async def try_domains_for_user_and_repo(user_name: str, repo_name: str) -> str:
         candidate = f"https://{domain}/{user_name}/{repo_name}"
         if await _check_repo_exists(candidate):
             return domain
-    raise ValueError(f"Could not find a valid repository host for '{user_name}/{repo_name}'.")
+    raise ValueError(
+        f"Could not find a valid repository host for '{user_name}/{repo_name}'."
+    )
 
 
 def _get_user_and_repo_from_path(path: str) -> tuple[str, str]:

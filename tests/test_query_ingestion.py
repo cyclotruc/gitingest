@@ -176,7 +176,7 @@ def test_include_src_patterns(temp_directory: Path, sample_query: ParsedQuery, i
     assert file_paths == expected_paths, "Missing or unexpected files in result"
 
 
-def test_run_ingest_query(temp_directory: Path, sample_query: ParsedQuery) -> None:
+async def test_run_ingest_query(temp_directory: Path, sample_query: ParsedQuery) -> None:
     """
     Test `run_ingest_query` to ensure it processes the directory and returns expected results.
 
@@ -188,7 +188,7 @@ def test_run_ingest_query(temp_directory: Path, sample_query: ParsedQuery) -> No
     sample_query.subpath = "/"
     sample_query.type = None
 
-    summary, _, content = run_ingest_query(sample_query)
+    summary, _, content = await run_ingest_query(sample_query)
 
     assert "Repository: test_user/test_repo" in summary
     assert "Files analyzed: 8" in summary

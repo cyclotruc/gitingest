@@ -90,8 +90,9 @@ async def process_query(
             commit=parsed_query.commit,
             branch=parsed_query.branch,
         )
-        await clone_repo(clone_config)
-        summary, tree, content = run_ingest_query(parsed_query)
+        if parsed_query.type != "pull":
+            await clone_repo(clone_config)
+        summary, tree, content = await run_ingest_query(parsed_query)
         with open(f"{clone_config.local_path}.txt", "w", encoding="utf-8") as f:
             f.write(tree + "\n" + content)
     except Exception as e:

@@ -33,6 +33,7 @@ def sample_query() -> ParsedQuery:
         user_name="test_user",
         repo_name="test_repo",
         url=None,
+        host="github.com",
         subpath="/",
         local_path=Path("/tmp/test_repo").resolve(),
         slug="test_user/test_repo",

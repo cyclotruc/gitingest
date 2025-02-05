@@ -14,6 +14,7 @@ from gitingest.exceptions import (
     MaxFilesReachedError,
 )
 from gitingest.notebook_utils import process_notebook
+from gitingest.pull_request_ingest import ingest_pull_request as _ingest_pull_request
 from gitingest.query_parser import ParsedQuery
 
 
@@ -792,7 +793,7 @@ def _ingest_directory(path: Path, query: ParsedQuery) -> tuple[str, str, str]:
     return summary, tree, files_content
 
 
-def run_ingest_query(query: ParsedQuery) -> tuple[str, str, str]:
+async def run_ingest_query(query: ParsedQuery) -> tuple[str, str, str]:
     """
     Run the ingestion process for a parsed query.
 
@@ -815,6 +816,9 @@ def run_ingest_query(query: ParsedQuery) -> tuple[str, str, str]:
     ValueError
         If the specified path cannot be found or if the file is not a text file.
     """
+    if query.type == "pull":
+        return await _ingest_pull_request(query)
+
     path = query.local_path / query.subpath.lstrip("/")
     if not path.exists():
         raise ValueError(f"{query.slug} cannot be found")
