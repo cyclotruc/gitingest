@@ -69,7 +69,7 @@ def _get_encoding_list() -> list[str]:
         List of encoding names to try in priority order, starting with the
         platform's default encoding followed by common fallback encodings.
     """
-    encodings = ["utf-8", "utf-8-sig"]
+    encodings = ["utf-8", "utf-8-sig", "latin"]
     if platform.system() == "Windows":
         encodings.extend(["cp1252", "iso-8859-1"])
     return encodings + [locale.getpreferredencoding()]
