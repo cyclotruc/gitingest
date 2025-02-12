@@ -1,5 +1,4 @@
 click>=8.0.0
-fastapi-analytics
 fastapi[standard]
 python-dotenv
 slowapi

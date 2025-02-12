@@ -3,7 +3,6 @@
 import os
 from pathlib import Path
 
-from api_analytics.fastapi import Analytics
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, HTMLResponse
@@ -30,10 +29,6 @@ app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
 static_dir = Path(__file__).parent.parent / "static"
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
-
-# Set up API analytics middleware if an API key is provided
-if app_analytics_key := os.getenv("API_ANALYTICS_KEY"):
-    app.add_middleware(Analytics, api_key=app_analytics_key)
 
 # Fetch allowed hosts from the environment or use the default values
 allowed_hosts = os.getenv("ALLOWED_HOSTS")

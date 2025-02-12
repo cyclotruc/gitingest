@@ -375,7 +375,7 @@ def _is_valid_pattern(pattern: str) -> bool:
 
     This function checks if the pattern contains only alphanumeric characters or one
     of the following allowed characters: dash (`-`), underscore (`_`), dot (`.`),
-    forward slash (`/`), plus (`+`), or asterisk (`*`).
+    forward slash (`/`), plus (`+`), asterisk (`*`), or the at sign (`@`).
 
     Parameters
     ----------
@@ -387,7 +387,7 @@ def _is_valid_pattern(pattern: str) -> bool:
     bool
         True if the pattern is valid, otherwise False.
     """
-    return all(c.isalnum() or c in "-_./+*" for c in pattern)
+    return all(c.isalnum() or c in "-_./+*@" for c in pattern)
 
 
 async def try_domains_for_user_and_repo(user_name: str, repo_name: str) -> str:
