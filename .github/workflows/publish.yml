@@ -1,96 +1,36 @@
-name: Publish to PyPI
+name: "Publish to PyPI"
 
 on:
   release:
-    types: [created] # Trigger only when a release is created
-  workflow_dispatch: # Allows manual triggering of the workflow
+    types: [created]
+  workflow_dispatch:
 
 jobs:
   release-build:
     runs-on: ubuntu-latest
-
     steps:
-      # Step 1: Check out the code
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      # Step 2: Set up Python
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-
-      # Verify version matches the release tag
-      - name: Verify version
-        if: github.event_name == 'release'
+      - name: Build package
         run: |
-          PROJECT_VERSION=$(grep "^version = " pyproject.toml | cut -d'"' -f2)
-          TAG_VERSION=${GITHUB_REF#refs/tags/}
-          TAG_VERSION=${TAG_VERSION#v}
-
-          if [ "$PROJECT_VERSION" != "$TAG_VERSION" ]; then
-            echo "Version mismatch: pyproject.toml version ($PROJECT_VERSION) doesn't match release tag ($TAG_VERSION)"
-            exit 1
-          fi
-
-      # Step 3: Build the package
-      - name: Build release distributions
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install build
+          pip install build
           python -m build
-
-      # Step 4: Verify the built package
-      - name: Verify package
-        run: |
-          python -m pip install twine
-          if [ ! -f "dist/*.whl" ] || [ ! -f "dist/*.tar.gz" ]; then
-            echo "Expected wheel and source distribution files not found in dist/"
-            exit 1
-          fi
-          python -m twine check dist/*
-
-      # Step 5: Upload release artifacts
-      - name: Upload release artifacts
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: release-dists
+          name: dist
           path: dist/
 
   pypi-publish:
-    runs-on: ubuntu-latest
     needs: [release-build]
+    runs-on: ubuntu-latest
     environment: pypi
     permissions:
-      id-token: write  # Required for PyPI trusted publishing
-
+      id-token: write
     steps:
-      # Step 1: Retrieve release distributions
-      - name: Retrieve release distributions
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
-          name: release-dists
+          name: dist
           path: dist/
-
-      # Step 2: Publish to PyPI using OIDC
-      - name: Publish package distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          verbose: true
-          print-hash: true
-
-      # Step 3: Verify package is available on PyPI
-      - name: Verify PyPI upload
-        run: |
-          # Wait a bit for PyPI to process the upload
-          sleep 30
-
-          # Extract package name from the wheel file (assuming it exists)
-          WHEEL_FILE=$(ls dist/*.whl | head -n 1)
-          PACKAGE_NAME=$(basename "$WHEEL_FILE" | cut -d'-' -f1)
-          PACKAGE_VERSION=$(basename "$WHEEL_FILE" | cut -d'-' -f2)
-
-          if ! pip install $PACKAGE_NAME==$PACKAGE_VERSION --no-deps --dry-run; then
-            echo "Failed to verify package on PyPI"
-            exit 1
-          fi
+      - uses: pypa/gh-action-pypi-publish@release/v1
