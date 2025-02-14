@@ -98,9 +98,6 @@ async def _remove_old_repositories():
             current_time = time.time()
 
             for folder in TMP_BASE_PATH.iterdir():
-                if folder.is_dir():
-                    continue
-
                 # Skip if folder is not old enough
                 if current_time - folder.stat().st_ctime <= DELETE_REPO_AFTER:
                     continue
