@@ -103,6 +103,10 @@ async def process_query(
             print(f"{Colors.RED}{e}{Colors.END}")
 
         context["error_message"] = f"Error: {e}"
+        if "405" in str(e):
+            context["error_message"] = (
+                "Repository not found. Please make sure it is public (private repositories will be supported soon)"
+            )
         return template_response(context=context)
 
     if len(content) > MAX_DISPLAY_SIZE:
