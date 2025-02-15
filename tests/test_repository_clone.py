@@ -176,6 +176,7 @@ async def test_clone_repo_with_custom_branch() -> None:
             mock_exec.assert_called_once_with(
                 "git",
                 "clone",
+                "--recurse-submodules",
                 "--depth=1",
                 "--single-branch",
                 "--branch",
@@ -223,7 +224,13 @@ async def test_clone_repo_default_shallow_clone() -> None:
             await clone_repo(clone_config)
 
             mock_exec.assert_called_once_with(
-                "git", "clone", "--depth=1", "--single-branch", clone_config.url, clone_config.local_path
+                "git",
+                "clone",
+                "--recurse-submodules",
+                "--depth=1",
+                "--single-branch",
+                clone_config.url,
+                clone_config.local_path,
             )
 
 
@@ -246,7 +253,9 @@ async def test_clone_repo_commit_without_branch() -> None:
             await clone_repo(clone_config)
 
             assert mock_exec.call_count == 2  # Clone and checkout calls
-            mock_exec.assert_any_call("git", "clone", "--single-branch", clone_config.url, clone_config.local_path)
+            mock_exec.assert_any_call(
+                "git", "clone", "--recurse-submodules", "--single-branch", clone_config.url, clone_config.local_path
+            )
             mock_exec.assert_any_call("git", "-C", clone_config.local_path, "checkout", clone_config.commit)
 
 
@@ -356,6 +365,7 @@ async def test_clone_branch_with_slashes(tmp_path):
             mock_exec.assert_called_once_with(
                 "git",
                 "clone",
+                "--recurse-submodules",
                 "--depth=1",
                 "--single-branch",
                 "--branch",
@@ -391,6 +401,7 @@ async def test_clone_repo_creates_parent_directory(tmp_path: Path) -> None:
             mock_exec.assert_called_once_with(
                 "git",
                 "clone",
+                "--recurse-submodules",
                 "--depth=1",
                 "--single-branch",
                 clone_config.url,
