@@ -92,7 +92,7 @@ async def clone_repo(config: CloneConfig) -> tuple[bytes, bytes]:
     if commit:
         # Scenario 1: Clone and checkout a specific commit
         # Clone the repository without depth to ensure full history for checkout
-        clone_cmd = ["git", "clone", "--single-branch", url, local_path]
+        clone_cmd = ["git", "clone", "--recurse-submodules", "--single-branch", url, local_path]
         await _run_git_command(*clone_cmd)
 
         # Checkout the specific commit
@@ -100,13 +100,22 @@ async def clone_repo(config: CloneConfig) -> tuple[bytes, bytes]:
         return await _run_git_command(*checkout_cmd)
 
     if branch and branch.lower() not in ("main", "master"):
-
         # Scenario 2: Clone a specific branch with shallow depth
-        clone_cmd = ["git", "clone", "--depth=1", "--single-branch", "--branch", branch, url, local_path]
+        clone_cmd = [
+            "git",
+            "clone",
+            "--recurse-submodules",
+            "--depth=1",
+            "--single-branch",
+            "--branch",
+            branch,
+            url,
+            local_path,
+        ]
         return await _run_git_command(*clone_cmd)
 
     # Scenario 3: Clone the default branch with shallow depth
-    clone_cmd = ["git", "clone", "--depth=1", "--single-branch", url, local_path]
+    clone_cmd = ["git", "clone", "--recurse-submodules", "--depth=1", "--single-branch", url, local_path]
     return await _run_git_command(*clone_cmd)
 
 
