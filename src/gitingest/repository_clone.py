@@ -4,6 +4,7 @@ import asyncio
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
 from gitingest.utils import async_timeout
 
@@ -24,16 +25,16 @@ class CloneConfig:
         The URL of the Git repository to clone.
     local_path : str
         The local directory where the repository will be cloned.
-    commit : str | None, optional
+    commit : str, optional
         The specific commit hash to check out after cloning (default is None).
-    branch : str | None, optional
+    branch : str, optional
         The branch to clone (default is None).
     """
 
     url: str
     local_path: str
-    commit: str | None = None
-    branch: str | None = None
+    commit: Optional[str] = None
+    branch: Optional[str] = None
 
 
 @async_timeout(TIMEOUT)
@@ -69,8 +70,8 @@ async def clone_repo(config: CloneConfig) -> tuple[bytes, bytes]:
     # Extract and validate query parameters
     url: str = config.url
     local_path: str = config.local_path
-    commit: str | None = config.commit
-    branch: str | None = config.branch
+    commit: Optional[str] = config.commit
+    branch: Optional[str] = config.branch
 
     if not url:
         raise ValueError("The 'url' parameter is required.")

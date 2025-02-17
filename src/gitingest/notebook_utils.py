@@ -4,7 +4,7 @@ import json
 import warnings
 from itertools import chain
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from gitingest.exceptions import InvalidNotebookError
 
@@ -63,7 +63,7 @@ def process_notebook(file: Path, include_output: bool = True) -> str:
     return "\n\n".join(result) + "\n"
 
 
-def _process_cell(cell: dict[str, Any], include_output: bool) -> str | None:
+def _process_cell(cell: dict[str, Any], include_output: bool) -> Optional[str]:
     """
     Process a Jupyter notebook cell and return the cell content as a string.
 
@@ -76,7 +76,7 @@ def _process_cell(cell: dict[str, Any], include_output: bool) -> str | None:
 
     Returns
     -------
-    str | None
+    Optional[str]
         The cell content as a string, or None if the cell is empty.
 
     Raises
@@ -139,15 +139,13 @@ def _extract_output(output: dict[str, Any]) -> list[str]:
     """
     output_type = output["output_type"]
 
-    match output_type:
-        case "stream":
-            return output["text"]
+    if output_type == "stream":
+        return output["text"]
 
-        case "execute_result" | "display_data":
-            return output["data"]["text/plain"]
+    if output_type in ("execute_result", "display_data"):
+        return output["data"]["text/plain"]
 
-        case "error":
-            return [f"Error: {output['ename']}: {output['evalue']}"]
+    if output_type == "error":
+        return [f"Error: {output['ename']}: {output['evalue']}"]
 
-        case _:
-            raise ValueError(f"Unknown output type: {output_type}")
+    raise ValueError(f"Unknown output type: {output_type}")

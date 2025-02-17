@@ -5,7 +5,7 @@ import os
 import platform
 from fnmatch import fnmatch
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional, Union
 
 import tiktoken
 
@@ -42,7 +42,7 @@ def _normalize_path(path: Path) -> Path:
     return Path(os.path.normpath(str(path)))
 
 
-def _normalize_path_str(path: str | Path) -> str:
+def _normalize_path_str(path: Union[Path, str]) -> str:
     """
     Convert path to string with forward slashes for consistent output.
 
@@ -293,10 +293,10 @@ def _sort_children(children: list[dict[str, Any]]) -> list[dict[str, Any]]:
 def _scan_directory(
     path: Path,
     query: ParsedQuery,
-    seen_paths: set[Path] | None = None,
+    seen_paths: Optional[set[Path]] = None,
     depth: int = 0,
-    stats: dict[str, int] | None = None,
-) -> dict[str, Any] | None:
+    stats: Optional[dict[str, int]] = None,
+) -> Optional[dict[str, Any]]:
     """
     Recursively analyze a directory and its contents with safety limits.
 
@@ -573,7 +573,7 @@ def _process_item(
 def _extract_files_content(
     query: ParsedQuery,
     node: dict[str, Any],
-    files: list[dict[str, Any]] | None = None,
+    files: Optional[list[dict[str, Any]]] = None,
 ) -> list[dict[str, Any]]:
     """
     Recursively collect all text files with their contents.
@@ -733,7 +733,7 @@ def _create_tree_structure(query: ParsedQuery, node: dict[str, Any], prefix: str
     return tree
 
 
-def _generate_token_string(context_string: str) -> str | None:
+def _generate_token_string(context_string: str) -> Optional[str]:
     """
     Return the number of tokens in a text string.
 
@@ -747,7 +747,7 @@ def _generate_token_string(context_string: str) -> str | None:
 
     Returns
     -------
-    str | None
+    Optional[str]
         The formatted number of tokens as a string (e.g., '1.2k', '1.2M'), or `None` if an error occurs.
     """
     try:

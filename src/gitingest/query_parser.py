@@ -7,6 +7,7 @@ import uuid
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional, Union
 from urllib.parse import unquote, urlparse
 
 from gitingest.config import MAX_FILE_SIZE, TMP_BASE_PATH
@@ -32,28 +33,28 @@ class ParsedQuery:  # pylint: disable=too-many-instance-attributes
     Dataclass to store the parsed details of the repository or file path.
     """
 
-    user_name: str | None
-    repo_name: str | None
+    user_name: Optional[str]
+    repo_name: Optional[str]
     subpath: str
     local_path: Path
-    url: str | None
+    url: Optional[str]
     slug: str
     id: str
-    type: str | None = None
-    branch: str | None = None
-    commit: str | None = None
+    type: Optional[str] = None
+    branch: Optional[str] = None
+    commit: Optional[str] = None
     max_file_size: int = MAX_FILE_SIZE
-    ignore_patterns: set[str] | None = None
-    include_patterns: set[str] | None = None
-    pattern_type: str | None = None
+    ignore_patterns: Optional[set[str]] = None
+    include_patterns: Optional[set[str]] = None
+    pattern_type: Optional[str] = None
 
 
 async def parse_query(
     source: str,
     max_file_size: int,
     from_web: bool,
-    include_patterns: set[str] | str | None = None,
-    ignore_patterns: set[str] | str | None = None,
+    include_patterns: Optional[Union[str, set[str]]] = None,
+    ignore_patterns: Optional[Union[str, set[str]]] = None,
 ) -> ParsedQuery:
     """
     Parse the input source (URL or path) to extract relevant details for the query.
@@ -70,9 +71,9 @@ async def parse_query(
         The maximum file size in bytes to include.
     from_web : bool
         Flag indicating whether the source is a web URL.
-    include_patterns : set[str] | str | None, optional
+    include_patterns : Union[str, set[str]], optional
         Patterns to include, by default None. Can be a set of strings or a single string.
-    ignore_patterns : set[str] | str | None, optional
+    ignore_patterns : Union[str, set[str]], optional
         Patterns to ignore, by default None. Can be a set of strings or a single string.
 
     Returns
@@ -208,7 +209,7 @@ async def _parse_repo_source(source: str) -> ParsedQuery:
     return parsed
 
 
-async def _configure_branch_and_subpath(remaining_parts: list[str], url: str) -> str | None:
+async def _configure_branch_and_subpath(remaining_parts: list[str], url: str) -> Optional[str]:
     """
     Configure the branch and subpath based on the remaining parts of the URL.
     Parameters
@@ -219,7 +220,7 @@ async def _configure_branch_and_subpath(remaining_parts: list[str], url: str) ->
         The URL of the repository.
     Returns
     -------
-    str | None
+    str, optional
         The branch name if found, otherwise None.
 
     """
@@ -283,7 +284,7 @@ def _normalize_pattern(pattern: str) -> str:
     return pattern
 
 
-def _parse_patterns(pattern: set[str] | str) -> set[str]:
+def _parse_patterns(pattern: Union[str, set[str]]) -> set[str]:
     """
     Parse and validate file/directory patterns for inclusion or exclusion.
 

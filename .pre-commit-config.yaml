@@ -48,7 +48,7 @@ repos:
     hooks:
       - id: pyupgrade
         description: "Automatically upgrade syntax for newer versions."
-        args: [--py3-plus, --py36-plus, --py38-plus, --py39-plus, --py310-plus]
+        args: [--py3-plus, --py36-plus]
 
   - repo: https://github.com/pre-commit/pygrep-hooks
     rev: v1.10.0

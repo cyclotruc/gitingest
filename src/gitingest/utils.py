@@ -2,10 +2,17 @@
 
 import asyncio
 import functools
+import sys
 from collections.abc import Awaitable, Callable
-from typing import ParamSpec, TypeVar
+from typing import TypeVar
 
 from gitingest.exceptions import AsyncTimeoutError
+
+# Fallback import for ParamSpec if Python < 3.10
+if sys.version_info < (3, 10):
+    from typing_extensions import ParamSpec
+else:
+    from typing import ParamSpec
 
 T = TypeVar("T")
 P = ParamSpec("P")
