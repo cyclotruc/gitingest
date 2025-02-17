@@ -2,6 +2,7 @@
 
 import os
 from pathlib import Path
+from typing import Dict
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
@@ -44,13 +45,13 @@ app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
 
 
 @app.get("/health")
-async def health_check() -> dict[str, str]:
+async def health_check() -> Dict[str, str]:
     """
     Health check endpoint to verify that the server is running.
 
     Returns
     -------
-    dict[str, str]
+    Dict[str, str]
         A JSON object with a "status" key indicating the server's health status.
     """
     return {"status": "healthy"}

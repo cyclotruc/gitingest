@@ -26,6 +26,10 @@ You can also replace `hub` with `ingest` in any GitHub URL to access the corespo
 - **CLI tool**: Run it as a shell command
 - **Python package**: Import it in your code
 
+## 📚 Requirements
+
+- Python 3.7+
+
 ## 📦 Installation
 
 ``` bash
@@ -61,7 +65,7 @@ gitingest --help
 
 This will write the digest in a text file (default `digest.txt`) in your current working directory.
 
-## 🐛 Python package usage
+## 🐍 Python package usage
 
 ```python
 # Synchronous usage
@@ -81,7 +85,7 @@ result = asyncio.run(ingest_async("path/to/directory"))
 
 By default, this won't write a file but can be enabled with the `output` argument.
 
-## 🌐 Self-host
+## 🐳 Self-host
 
 1. Build the image:
 
@@ -104,7 +108,7 @@ If you are hosting it on a domain, you can specify the allowed hostnames via env
    ALLOWED_HOSTS="example.com, localhost, 127.0.0.1"
    ```
 
-## ✔️ Contributing to Gitingest
+## 🤝 Contributing
 
 ### Non-technical ways to contribute
 
@@ -128,6 +132,6 @@ Gitingest aims to be friendly for first time contributors, with a simple python 
 
 Check out the NPM alternative 📦 Repomix: <https://github.com/yamadashy/repomix>
 
-## Project Growth
+## 🚀 Project Growth
 
 [![Star History Chart](https://api.star-history.com/svg?repos=cyclotruc/gitingest&type=Date)](https://star-history.com/#cyclotruc/gitingest&Date)

@@ -3,6 +3,7 @@
 # pylint: disable=no-value-for-parameter
 
 import asyncio
+from typing import Optional, Tuple
 
 import click
 
@@ -19,14 +20,14 @@ from gitingest.repository_ingest import ingest_async
 @click.option("--branch", "-b", default=None, help="Branch to clone and ingest")
 def main(
     source: str,
-    output: str | None,
+    output: Optional[str],
     max_size: int,
-    exclude_pattern: tuple[str, ...],
-    include_pattern: tuple[str, ...],
-    branch: str | None,
+    exclude_pattern: Tuple[str, ...],
+    include_pattern: Tuple[str, ...],
+    branch: Optional[str],
 ):
     """
-    Main entry point for the CLI. This function is called when the CLI is run as a script.
+     Main entry point for the CLI. This function is called when the CLI is run as a script.
 
     It calls the async main function to run the command.
 
@@ -34,16 +35,16 @@ def main(
     ----------
     source : str
         The source directory or repository to analyze.
-    output : str | None
+    output : str, optional
         The path where the output file will be written. If not specified, the output will be written
         to a file named `<repo_name>.txt` in the current directory.
     max_size : int
         The maximum file size to process, in bytes. Files larger than this size will be ignored.
-    exclude_pattern : tuple[str, ...]
+    exclude_pattern : Tuple[str, ...]
         A tuple of patterns to exclude during the analysis. Files matching these patterns will be ignored.
-    include_pattern : tuple[str, ...]
+    include_pattern : Tuple[str, ...]
         A tuple of patterns to include during the analysis. Only files matching these patterns will be processed.
-    branch : str | None
+    branch : str, optional
         The branch to clone (optional).
     """
     # Main entry point for the CLI. This function is called when the CLI is run as a script.
@@ -52,11 +53,11 @@ def main(
 
 async def _async_main(
     source: str,
-    output: str | None,
+    output: Optional[str],
     max_size: int,
-    exclude_pattern: tuple[str, ...],
-    include_pattern: tuple[str, ...],
-    branch: str | None,
+    exclude_pattern: Tuple[str, ...],
+    include_pattern: Tuple[str, ...],
+    branch: Optional[str],
 ) -> None:
     """
     Analyze a directory or repository and create a text dump of its contents.
@@ -68,16 +69,16 @@ async def _async_main(
     ----------
     source : str
         The source directory or repository to analyze.
-    output : str | None
+    output : str, optional
         The path where the output file will be written. If not specified, the output will be written
         to a file named `<repo_name>.txt` in the current directory.
     max_size : int
         The maximum file size to process, in bytes. Files larger than this size will be ignored.
-    exclude_pattern : tuple[str, ...]
+    exclude_pattern : Tuple[str, ...]
         A tuple of patterns to exclude during the analysis. Files matching these patterns will be ignored.
-    include_pattern : tuple[str, ...]
+    include_pattern : Tuple[str, ...]
         A tuple of patterns to include during the analysis. Only files matching these patterns will be processed.
-    branch : str | None
+    branch : str, optional
         The branch to clone (optional).
 
     Raises

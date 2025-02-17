@@ -124,7 +124,8 @@ async def _process_folder(folder: Path) -> None:
         txt_files = [f for f in folder.iterdir() if f.suffix == ".txt"]
 
         # Extract owner and repository name from the filename
-        if txt_files and "-" in (filename := txt_files[0].stem):
+        filename = txt_files[0].stem
+        if txt_files and "-" in filename:
             owner, repo = filename.split("-", 1)
             repo_url = f"{owner}/{repo}"
 

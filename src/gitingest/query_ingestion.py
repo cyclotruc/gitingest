@@ -5,7 +5,7 @@ import os
 import platform
 from fnmatch import fnmatch
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import tiktoken
 
@@ -42,7 +42,7 @@ def _normalize_path(path: Path) -> Path:
     return Path(os.path.normpath(str(path)))
 
 
-def _normalize_path_str(path: str | Path) -> str:
+def _normalize_path_str(path: Union[Path, str]) -> str:
     """
     Convert path to string with forward slashes for consistent output.
 
@@ -59,13 +59,13 @@ def _normalize_path_str(path: str | Path) -> str:
     return str(path).replace(os.sep, "/")
 
 
-def _get_encoding_list() -> list[str]:
+def _get_encoding_list() -> List[str]:
     """
     Get list of encodings to try, prioritized for the current platform.
 
     Returns
     -------
-    list[str]
+    List[str]
         List of encoding names to try in priority order, starting with the
         platform's default encoding followed by common fallback encodings.
     """
@@ -75,7 +75,7 @@ def _get_encoding_list() -> list[str]:
     return encodings + [locale.getpreferredencoding()]
 
 
-def _should_include(path: Path, base_path: Path, include_patterns: set[str]) -> bool:
+def _should_include(path: Path, base_path: Path, include_patterns: Set[str]) -> bool:
     """
     Determine if the given file or directory path matches any of the include patterns.
 
@@ -88,7 +88,7 @@ def _should_include(path: Path, base_path: Path, include_patterns: set[str]) -> 
         The absolute path of the file or directory to check.
     base_path : Path
         The base directory from which the relative path is calculated.
-    include_patterns : set[str]
+    include_patterns : Set[str]
         A set of patterns to check against the relative path.
 
     Returns
@@ -109,7 +109,7 @@ def _should_include(path: Path, base_path: Path, include_patterns: set[str]) -> 
     return False
 
 
-def _should_exclude(path: Path, base_path: Path, ignore_patterns: set[str]) -> bool:
+def _should_exclude(path: Path, base_path: Path, ignore_patterns: Set[str]) -> bool:
     """
     Determine if the given file or directory path matches any of the ignore patterns.
 
@@ -123,7 +123,7 @@ def _should_exclude(path: Path, base_path: Path, ignore_patterns: set[str]) -> b
         The absolute path of the file or directory to check.
     base_path : Path
         The base directory from which the relative path is calculated.
-    ignore_patterns : set[str]
+    ignore_patterns : Set[str]
         A set of patterns to check against the relative path.
 
     Returns
@@ -244,7 +244,7 @@ def _read_file_content(file_path: Path) -> str:
         return f"Error reading file: {e}"
 
 
-def _sort_children(children: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _sort_children(children: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
     Sort the children nodes of a directory according to a specific order.
 
@@ -258,12 +258,12 @@ def _sort_children(children: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
     Parameters
     ----------
-    children : list[dict[str, Any]]
+    children : List[Dict[str, Any]]
         List of file and directory nodes to sort.
 
     Returns
     -------
-    list[dict[str, Any]]
+    List[Dict[str, Any]]
         Sorted list according to the specified order.
     """
     # Separate files and directories
@@ -293,10 +293,10 @@ def _sort_children(children: list[dict[str, Any]]) -> list[dict[str, Any]]:
 def _scan_directory(
     path: Path,
     query: ParsedQuery,
-    seen_paths: set[Path] | None = None,
+    seen_paths: Optional[Set[Path]] = None,
     depth: int = 0,
-    stats: dict[str, int] | None = None,
-) -> dict[str, Any] | None:
+    stats: Optional[Dict[str, int]] = None,
+) -> Optional[Dict[str, Any]]:
     """
     Recursively analyze a directory and its contents with safety limits.
 
@@ -310,16 +310,16 @@ def _scan_directory(
         The path of the directory to scan.
     query : ParsedQuery
         The parsed query object containing information about the repository and query parameters.
-    seen_paths : set[Path] | None, optional
+    seen_paths : Set[Path] | None, optional
         A set to track already visited paths, by default None.
     depth : int
         The current depth of directory traversal, by default 0.
-    stats : dict[str, int] | None, optional
+    stats : Dict[str, int] | None, optional
         A dictionary to track statistics such as total file count and size, by default None.
 
     Returns
     -------
-    dict[str, Any] | None
+    Dict[str, Any] | None
         A dictionary representing the directory structure and contents, or `None` if limits are reached.
     """
     if seen_paths is None:
@@ -373,9 +373,9 @@ def _scan_directory(
 def _process_symlink(
     item: Path,
     query: ParsedQuery,
-    result: dict[str, Any],
-    seen_paths: set[Path],
-    stats: dict[str, int],
+    result: Dict[str, Any],
+    seen_paths: Set[Path],
+    stats: Dict[str, int],
     depth: int,
 ) -> None:
     """
@@ -390,11 +390,11 @@ def _process_symlink(
         The full path of the symlink.
     query : ParsedQuery
         The parsed query object containing information about the repository and query parameters.
-    result : dict[str, Any]
+    result : Dict[str, Any]
         The dictionary to accumulate the results.
-    seen_paths : set[str]
+    seen_paths : Set[str]
         A set of already visited paths.
-    stats : dict[str, int]
+    stats : Dict[str, int]
         The dictionary to track statistics such as file count and size.
     depth : int
         The current depth in the directory traversal.
@@ -460,7 +460,7 @@ def _process_symlink(
             result["dir_count"] += 1 + subdir["dir_count"]
 
 
-def _process_file(item: Path, result: dict[str, Any], stats: dict[str, int]) -> None:
+def _process_file(item: Path, result: Dict[str, Any], stats: Dict[str, int]) -> None:
     """
     Process a file in the file system.
 
@@ -471,9 +471,9 @@ def _process_file(item: Path, result: dict[str, Any], stats: dict[str, int]) -> 
     ----------
     item : Path
         The full path of the file.
-    result : dict[str, Any]
+    result : Dict[str, Any]
         The dictionary to accumulate the results.
-    stats : dict[str, int]
+    stats : Dict[str, int]
         The dictionary to track statistics such as file count and size.
 
     Raises
@@ -513,9 +513,9 @@ def _process_file(item: Path, result: dict[str, Any], stats: dict[str, int]) -> 
 def _process_item(
     item: Path,
     query: ParsedQuery,
-    result: dict[str, Any],
-    seen_paths: set[Path],
-    stats: dict[str, int],
+    result: Dict[str, Any],
+    seen_paths: Set[Path],
+    stats: Dict[str, int],
     depth: int,
 ) -> None:
     """
@@ -530,11 +530,11 @@ def _process_item(
         The full path of the file or directory to process.
     query : ParsedQuery
         The parsed query object containing information about the repository and query parameters.
-    result : dict[str, Any]
+    result : Dict[str, Any]
         The result dictionary to accumulate processed file/directory data.
-    seen_paths : set[Path]
+    seen_paths : Set[Path]
         A set of paths that have already been visited.
-    stats : dict[str, int]
+    stats : Dict[str, int]
         A dictionary of statistics like the total file count and size.
     depth : int
         The current depth of directory traversal.
@@ -572,9 +572,9 @@ def _process_item(
 
 def _extract_files_content(
     query: ParsedQuery,
-    node: dict[str, Any],
-    files: list[dict[str, Any]] | None = None,
-) -> list[dict[str, Any]]:
+    node: Dict[str, Any],
+    files: Optional[List[Dict[str, Any]]] = None,
+) -> List[Dict[str, Any]]:
     """
     Recursively collect all text files with their contents.
 
@@ -585,14 +585,14 @@ def _extract_files_content(
     ----------
     query : ParsedQuery
         The parsed query object containing information about the repository and query parameters.
-    node : dict[str, Any]
+    node : Dict[str, Any]
         The current directory or file node being processed.
-    files : list[dict[str, Any]] | None, optional
+    files : List[Dict[str, Any]] | None, optional
         A list to collect the extracted files' information, by default None.
 
     Returns
     -------
-    list[dict[str, Any]]
+    List[Dict[str, Any]]
         A list of dictionaries, each containing the path, content (or `None` if too large), and size of each file.
     """
     if files is None:
@@ -620,7 +620,7 @@ def _extract_files_content(
     return files
 
 
-def _create_file_content_string(files: list[dict[str, Any]]) -> str:
+def _create_file_content_string(files: List[Dict[str, Any]]) -> str:
     """
     Create a formatted string of file contents with separators.
 
@@ -629,7 +629,7 @@ def _create_file_content_string(files: list[dict[str, Any]]) -> str:
 
     Parameters
     ----------
-    files : list[dict[str, Any]]
+    files : List[Dict[str, Any]]
         A list of dictionaries containing file information, including the path and content.
 
     Returns
@@ -654,7 +654,7 @@ def _create_file_content_string(files: list[dict[str, Any]]) -> str:
     return output
 
 
-def _create_summary_string(query: ParsedQuery, nodes: dict[str, Any]) -> str:
+def _create_summary_string(query: ParsedQuery, nodes: Dict[str, Any]) -> str:
     """
     Create a summary string with file counts and content size.
 
@@ -665,7 +665,7 @@ def _create_summary_string(query: ParsedQuery, nodes: dict[str, Any]) -> str:
     ----------
     query : ParsedQuery
         The parsed query object containing information about the repository and query parameters.
-    nodes : dict[str, Any]
+    nodes : Dict[str, Any]
         Dictionary representing the directory structure, including file and directory counts.
 
     Returns
@@ -690,7 +690,7 @@ def _create_summary_string(query: ParsedQuery, nodes: dict[str, Any]) -> str:
     return summary
 
 
-def _create_tree_structure(query: ParsedQuery, node: dict[str, Any], prefix: str = "", is_last: bool = True) -> str:
+def _create_tree_structure(query: ParsedQuery, node: Dict[str, Any], prefix: str = "", is_last: bool = True) -> str:
     """
     Create a tree-like string representation of the file structure.
 
@@ -701,7 +701,7 @@ def _create_tree_structure(query: ParsedQuery, node: dict[str, Any], prefix: str
     ----------
     query : ParsedQuery
         The parsed query object containing information about the repository and query parameters.
-    node : dict[str, Any]
+    node : Dict[str, Any]
         The current directory or file node being processed.
     prefix : str
         A string used for indentation and formatting of the tree structure, by default "".
@@ -733,7 +733,7 @@ def _create_tree_structure(query: ParsedQuery, node: dict[str, Any], prefix: str
     return tree
 
 
-def _generate_token_string(context_string: str) -> str | None:
+def _generate_token_string(context_string: str) -> Optional[str]:
     """
     Return the number of tokens in a text string.
 
@@ -747,7 +747,7 @@ def _generate_token_string(context_string: str) -> str | None:
 
     Returns
     -------
-    str | None
+    str, optional
         The formatted number of tokens as a string (e.g., '1.2k', '1.2M'), or `None` if an error occurs.
     """
     try:
@@ -766,7 +766,7 @@ def _generate_token_string(context_string: str) -> str | None:
     return str(total_tokens)
 
 
-def _ingest_single_file(path: Path, query: ParsedQuery) -> tuple[str, str, str]:
+def _ingest_single_file(path: Path, query: ParsedQuery) -> Tuple[str, str, str]:
     """
     Ingest a single file and return its summary, directory structure, and content.
 
@@ -782,7 +782,7 @@ def _ingest_single_file(path: Path, query: ParsedQuery) -> tuple[str, str, str]:
 
     Returns
     -------
-    tuple[str, str, str]
+    Tuple[str, str, str]
         A tuple containing the summary, directory structure, and file content.
 
     Raises
@@ -827,7 +827,7 @@ def _ingest_single_file(path: Path, query: ParsedQuery) -> tuple[str, str, str]:
     return summary, tree, files_content
 
 
-def _ingest_directory(path: Path, query: ParsedQuery) -> tuple[str, str, str]:
+def _ingest_directory(path: Path, query: ParsedQuery) -> Tuple[str, str, str]:
     """
     Ingest an entire directory and return its summary, directory structure, and file contents.
 
@@ -843,7 +843,7 @@ def _ingest_directory(path: Path, query: ParsedQuery) -> tuple[str, str, str]:
 
     Returns
     -------
-    tuple[str, str, str]
+    Tuple[str, str, str]
         A tuple containing the summary, directory structure, and file contents.
 
     Raises
@@ -867,7 +867,7 @@ def _ingest_directory(path: Path, query: ParsedQuery) -> tuple[str, str, str]:
     return summary, tree, files_content
 
 
-def run_ingest_query(query: ParsedQuery) -> tuple[str, str, str]:
+def run_ingest_query(query: ParsedQuery) -> Tuple[str, str, str]:
     """
     Run the ingestion process for a parsed query.
 
@@ -882,7 +882,7 @@ def run_ingest_query(query: ParsedQuery) -> tuple[str, str, str]:
 
     Returns
     -------
-    tuple[str, str, str]
+    Tuple[str, str, str]
         A tuple containing the summary, directory structure, and file contents.
 
     Raises

@@ -7,6 +7,7 @@ import uuid
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
+from typing import List, Optional, Set, Tuple, Union
 from urllib.parse import unquote, urlparse
 
 from gitingest.config import MAX_FILE_SIZE, TMP_BASE_PATH
@@ -14,9 +15,9 @@ from gitingest.exceptions import InvalidPatternError
 from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
 from gitingest.repository_clone import _check_repo_exists, fetch_remote_branch_list
 
-HEX_DIGITS: set[str] = set(string.hexdigits)
+HEX_DIGITS: Set[str] = set(string.hexdigits)
 
-KNOWN_GIT_HOSTS: list[str] = [
+KNOWN_GIT_HOSTS: List[str] = [
     "github.com",
     "gitlab.com",
     "bitbucket.org",
@@ -32,28 +33,28 @@ class ParsedQuery:  # pylint: disable=too-many-instance-attributes
     Dataclass to store the parsed details of the repository or file path.
     """
 
-    user_name: str | None
-    repo_name: str | None
+    user_name: Optional[str]
+    repo_name: Optional[str]
     subpath: str
     local_path: Path
-    url: str | None
+    url: Optional[str]
     slug: str
     id: str
-    type: str | None = None
-    branch: str | None = None
-    commit: str | None = None
+    type: Optional[str] = None
+    branch: Optional[str] = None
+    commit: Optional[str] = None
     max_file_size: int = MAX_FILE_SIZE
-    ignore_patterns: set[str] | None = None
-    include_patterns: set[str] | None = None
-    pattern_type: str | None = None
+    ignore_patterns: Optional[Set[str]] = None
+    include_patterns: Optional[Set[str]] = None
+    pattern_type: Optional[str] = None
 
 
 async def parse_query(
     source: str,
     max_file_size: int,
     from_web: bool,
-    include_patterns: set[str] | str | None = None,
-    ignore_patterns: set[str] | str | None = None,
+    include_patterns: Optional[Union[str, Set[str]]] = None,
+    ignore_patterns: Optional[Union[str, Set[str]]] = None,
 ) -> ParsedQuery:
     """
     Parse the input source (URL or path) to extract relevant details for the query.
@@ -70,9 +71,9 @@ async def parse_query(
         The maximum file size in bytes to include.
     from_web : bool
         Flag indicating whether the source is a web URL.
-    include_patterns : set[str] | str | None, optional
+    include_patterns : Union[str, Set[str]], optional
         Patterns to include, by default None. Can be a set of strings or a single string.
-    ignore_patterns : set[str] | str | None, optional
+    ignore_patterns : Union[str, Set[str]], optional
         Patterns to ignore, by default None. Can be a set of strings or a single string.
 
     Returns
@@ -208,24 +209,24 @@ async def _parse_repo_source(source: str) -> ParsedQuery:
     return parsed
 
 
-async def _configure_branch_and_subpath(remaining_parts: list[str], url: str) -> str | None:
+async def _configure_branch_and_subpath(remaining_parts: List[str], url: str) -> Optional[str]:
     """
     Configure the branch and subpath based on the remaining parts of the URL.
     Parameters
     ----------
-    remaining_parts : list[str]
+    remaining_parts : List[str]
         The remaining parts of the URL path.
     url : str
         The URL of the repository.
     Returns
     -------
-    str | None
+    str, optional
         The branch name if found, otherwise None.
 
     """
     try:
         # Fetch the list of branches from the remote repository
-        branches: list[str] = await fetch_remote_branch_list(url)
+        branches: List[str] = await fetch_remote_branch_list(url)
     except RuntimeError as e:
         warnings.warn(f"Warning: Failed to fetch branch list: {e}", RuntimeWarning)
         return remaining_parts.pop(0)
@@ -283,7 +284,7 @@ def _normalize_pattern(pattern: str) -> str:
     return pattern
 
 
-def _parse_patterns(pattern: set[str] | str) -> set[str]:
+def _parse_patterns(pattern: Union[str, Set[str]]) -> Set[str]:
     """
     Parse and validate file/directory patterns for inclusion or exclusion.
 
@@ -292,12 +293,12 @@ def _parse_patterns(pattern: set[str] | str) -> set[str]:
 
     Parameters
     ----------
-    pattern : set[str] | str
+    pattern : Set[str] | str
         Pattern(s) to parse - either a single string or set of strings
 
     Returns
     -------
-    set[str]
+    Set[str]
         A set of normalized patterns.
 
     Raises
@@ -309,7 +310,7 @@ def _parse_patterns(pattern: set[str] | str) -> set[str]:
     """
     patterns = pattern if isinstance(pattern, set) else {pattern}
 
-    parsed_patterns: set[str] = set()
+    parsed_patterns: Set[str] = set()
     for p in patterns:
         parsed_patterns = parsed_patterns.union(set(re.split(",| ", p)))
 
@@ -324,20 +325,20 @@ def _parse_patterns(pattern: set[str] | str) -> set[str]:
     return {_normalize_pattern(p) for p in parsed_patterns}
 
 
-def _override_ignore_patterns(ignore_patterns: set[str], include_patterns: set[str]) -> set[str]:
+def _override_ignore_patterns(ignore_patterns: Set[str], include_patterns: Set[str]) -> Set[str]:
     """
     Remove patterns from ignore_patterns that are present in include_patterns using set difference.
 
     Parameters
     ----------
-    ignore_patterns : set[str]
+    ignore_patterns : Set[str]
         The set of ignore patterns to filter.
-    include_patterns : set[str]
+    include_patterns : Set[str]
         The set of include patterns to remove from ignore_patterns.
 
     Returns
     -------
-    set[str]
+    Set[str]
         The filtered set of ignore patterns.
     """
     return set(ignore_patterns) - set(include_patterns)
@@ -418,7 +419,7 @@ async def try_domains_for_user_and_repo(user_name: str, repo_name: str) -> str:
     raise ValueError(f"Could not find a valid repository host for '{user_name}/{repo_name}'.")
 
 
-def _get_user_and_repo_from_path(path: str) -> tuple[str, str]:
+def _get_user_and_repo_from_path(path: str) -> Tuple[str, str]:
     """
     Extract the user and repository names from a given path.
 
@@ -429,7 +430,7 @@ def _get_user_and_repo_from_path(path: str) -> tuple[str, str]:
 
     Returns
     -------
-    tuple[str, str]
+    Tuple[str, str]
         A tuple containing the user and repository names.
 
     Raises

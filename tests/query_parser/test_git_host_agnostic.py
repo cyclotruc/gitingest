@@ -5,6 +5,8 @@ These tests confirm that `parse_query` correctly identifies user/repo pairs and 
 Bitbucket, Gitea, and Codeberg, even if the host is omitted.
 """
 
+from typing import List
+
 import pytest
 
 from gitingest.query_parser import parse_query
@@ -67,7 +69,7 @@ from gitingest.query_parser import parse_query
 )
 @pytest.mark.asyncio
 async def test_parse_query_without_host(
-    urls: list[str],
+    urls: List[str],
     expected_user: str,
     expected_repo: str,
     expected_url: str,
