@@ -897,6 +897,6 @@ def run_ingest_query(query: ParsedQuery) -> Tuple[str, str, str]:
         raise ValueError(f"{query.slug} cannot be found")
 
     if query.type and query.type == "blob":
-        return _ingest_single_file(_normalize_path(path.resolve()), query)
+        return _ingest_single_file(path, query)
 
-    return _ingest_directory(_normalize_path(path.resolve()), query)
+    return _ingest_directory(path, query)

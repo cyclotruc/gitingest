@@ -96,7 +96,7 @@ async def ingest_async(
         # Clean up the temporary directory if it was created
         if parsed_query.url:
             # Clean up the temporary directory
-            shutil.rmtree(TMP_BASE_PATH, ignore_errors=True)
+            shutil.rmtree(TMP_BASE_PATH)
 
 
 def ingest(
