@@ -6,15 +6,14 @@ to write `.ipynb` notebooks for testing notebook utilities.
 """
 
 import json
-from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, Dict
 
 import pytest
 
 from gitingest.query_parser import ParsedQuery
 
-WriteNotebookFunc = Callable[[str, dict[str, Any]], Path]
+WriteNotebookFunc = Callable[[str, Dict[str, Any]], Path]
 
 
 @pytest.fixture
@@ -124,7 +123,7 @@ def write_notebook(tmp_path: Path) -> WriteNotebookFunc:
         file, and returns the path to the file.
     """
 
-    def _write_notebook(name: str, content: dict[str, Any]) -> Path:
+    def _write_notebook(name: str, content: Dict[str, Any]) -> Path:
         notebook_path = tmp_path / name
         with notebook_path.open(mode="w", encoding="utf-8") as f:
             json.dump(content, f)

@@ -4,7 +4,7 @@ import asyncio
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional, Tuple
 
 from gitingest.utils import async_timeout
 
@@ -38,7 +38,7 @@ class CloneConfig:
 
 
 @async_timeout(TIMEOUT)
-async def clone_repo(config: CloneConfig) -> tuple[bytes, bytes]:
+async def clone_repo(config: CloneConfig) -> Tuple[bytes, bytes]:
     """
     Clone a repository to a local path based on the provided configuration.
 
@@ -52,12 +52,12 @@ async def clone_repo(config: CloneConfig) -> tuple[bytes, bytes]:
         A dictionary containing the following keys:
             - url (str): The URL of the repository.
             - local_path (str): The local path to clone the repository to.
-            - commit (Optional[str]): The specific commit hash to checkout.
-            - branch (Optional[str]): The branch to clone. Defaults to 'main' or 'master' if not provided.
+            - commit (str, optional): The specific commit hash to checkout.
+            - branch (str, optional): The branch to clone. Defaults to 'main' or 'master' if not provided.
 
     Returns
     -------
-    tuple[bytes, bytes]
+    Tuple[bytes, bytes]
         A tuple containing the stdout and stderr of the Git commands executed.
 
     Raises
@@ -163,7 +163,7 @@ async def _check_repo_exists(url: str) -> bool:
 
 
 @async_timeout(TIMEOUT)
-async def fetch_remote_branch_list(url: str) -> list[str]:
+async def fetch_remote_branch_list(url: str) -> List[str]:
     """
     Fetch the list of branches from a remote Git repository.
     Parameters
@@ -172,7 +172,7 @@ async def fetch_remote_branch_list(url: str) -> list[str]:
         The URL of the Git repository to fetch branches from.
     Returns
     -------
-    list[str]
+    List[str]
         A list of branch names available in the remote repository.
     """
     fetch_branches_command = ["git", "ls-remote", "--heads", url]
@@ -186,7 +186,7 @@ async def fetch_remote_branch_list(url: str) -> list[str]:
     ]
 
 
-async def _run_git_command(*args: str) -> tuple[bytes, bytes]:
+async def _run_git_command(*args: str) -> Tuple[bytes, bytes]:
     """
     Execute a Git command asynchronously and captures its output.
 
@@ -197,7 +197,7 @@ async def _run_git_command(*args: str) -> tuple[bytes, bytes]:
 
     Returns
     -------
-    tuple[bytes, bytes]
+    Tuple[bytes, bytes]
         A tuple containing the stdout and stderr of the Git command.
 
     Raises

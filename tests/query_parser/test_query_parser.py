@@ -469,18 +469,17 @@ async def test_parse_repo_source_with_various_url_patterns(url, expected_branch,
     When `_parse_repo_source` is called with remote branch fetching,
     Then the correct branch/subpath should be set or None if unmatched.
     """
-    with (
-        patch("gitingest.repository_clone._run_git_command", new_callable=AsyncMock) as mock_run_git_command,
-        patch("gitingest.repository_clone.fetch_remote_branch_list", new_callable=AsyncMock) as mock_fetch_branches,
-    ):
+    with patch("gitingest.repository_clone._run_git_command", new_callable=AsyncMock) as mock_run_git_command:
+        with patch(
+            "gitingest.repository_clone.fetch_remote_branch_list", new_callable=AsyncMock
+        ) as mock_fetch_branches:
+            mock_run_git_command.return_value = (
+                b"refs/heads/feature/fix1\nrefs/heads/main\nrefs/heads/feature-branch\nrefs/heads/fix\n",
+                b"",
+            )
+            mock_fetch_branches.return_value = ["feature/fix1", "main", "feature-branch"]
 
-        mock_run_git_command.return_value = (
-            b"refs/heads/feature/fix1\nrefs/heads/main\nrefs/heads/feature-branch\nrefs/heads/fix\n",
-            b"",
-        )
-        mock_fetch_branches.return_value = ["feature/fix1", "main", "feature-branch"]
+            parsed_query = await _parse_repo_source(url)
 
-        parsed_query = await _parse_repo_source(url)
-
-        assert parsed_query.branch == expected_branch
-        assert parsed_query.subpath == expected_subpath
+            assert parsed_query.branch == expected_branch
+            assert parsed_query.subpath == expected_subpath

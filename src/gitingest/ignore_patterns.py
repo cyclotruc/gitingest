@@ -1,6 +1,8 @@
 """ Default ignore patterns for Gitingest. """
 
-DEFAULT_IGNORE_PATTERNS: set[str] = {
+from typing import Set
+
+DEFAULT_IGNORE_PATTERNS: Set[str] = {
     # Python
     "*.pyc",
     "*.pyo",

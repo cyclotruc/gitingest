@@ -21,7 +21,7 @@ setup(
             "gitingest=gitingest.cli:main",
         ],
     },
-    python_requires=">=3.9",
+    python_requires=">=3.7",
     author="Romain Courtois",
     author_email="romain@coderamp.io",
     description="CLI tool to analyze and create text dumps of codebases for LLMs",

@@ -28,7 +28,7 @@ You can also replace `hub` with `ingest` in any GitHub URL to access the corespo
 
 ## 📚 Requirements
 
-- Python 3.9+
+- Python 3.7+
 
 ## 📦 Installation
 
