@@ -55,6 +55,8 @@ async def ingest_async(
     TypeError
         If `clone_repo` does not return a coroutine, or if the `source` is of an unsupported type.
     """
+    repo_cloned = False
+
     try:
         parsed_query: ParsedQuery = await parse_query(
             source=source,
@@ -75,15 +77,17 @@ async def ingest_async(
                 commit=parsed_query.commit,
                 branch=selected_branch,
             )
-            clone_result = clone_repo(clone_config)
+            clone_coroutine = clone_repo(clone_config)
 
-            if inspect.iscoroutine(clone_result):
+            if inspect.iscoroutine(clone_coroutine):
                 if asyncio.get_event_loop().is_running():
-                    await clone_result
+                    await clone_coroutine
                 else:
-                    asyncio.run(clone_result)
+                    asyncio.run(clone_coroutine)
             else:
                 raise TypeError("clone_repo did not return a coroutine as expected.")
+
+            repo_cloned = True
 
         summary, tree, content = run_ingest_query(parsed_query)
 
@@ -94,8 +98,7 @@ async def ingest_async(
         return summary, tree, content
     finally:
         # Clean up the temporary directory if it was created
-        if parsed_query.url:
-            # Clean up the temporary directory
+        if repo_cloned:
             shutil.rmtree(TMP_BASE_PATH)
 
 
