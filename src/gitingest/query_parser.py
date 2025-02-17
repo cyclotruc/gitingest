@@ -24,6 +24,7 @@ KNOWN_GIT_HOSTS: List[str] = [
     "gitea.com",
     "codeberg.org",
     "gitingest.com",
+    "gist.github.com",
 ]
 
 
