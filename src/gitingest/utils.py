@@ -9,7 +9,7 @@ from gitingest.exceptions import AsyncTimeoutError
 T = TypeVar("T")
 
 
-def async_timeout(seconds: int = 60) -> Callable[..., Callable[..., Awaitable[T]]]:
+def async_timeout(seconds) -> Callable[[Callable[..., Awaitable[T]]], Callable[..., Awaitable[T]]]:
     """
     Async Timeout decorator.
 
@@ -21,11 +21,10 @@ def async_timeout(seconds: int = 60) -> Callable[..., Callable[..., Awaitable[T]
     ----------
     seconds : int
         The maximum allowed time (in seconds) for the asynchronous function to complete.
-        The default is 10 seconds.
 
     Returns
     -------
-    Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]]
+    Callable[[Callable[..., Awaitable[T]]], Callable[..., Awaitable[T]]]
         A decorator that, when applied to an async function, ensures the function
         completes within the specified time limit. If the function takes too long,
         an `AsyncTimeoutError` is raised.
