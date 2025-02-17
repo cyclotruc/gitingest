@@ -8,7 +8,7 @@ from typing import List, Optional, Tuple
 
 from gitingest.utils import async_timeout
 
-TIMEOUT: int = 20
+TIMEOUT: int = 60
 
 
 @dataclass

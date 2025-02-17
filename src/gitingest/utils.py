@@ -9,7 +9,7 @@ from gitingest.exceptions import AsyncTimeoutError
 T = TypeVar("T")
 
 
-def async_timeout(seconds: int = 10) -> Callable[..., Callable[..., Awaitable[T]]]:
+def async_timeout(seconds: int = 60) -> Callable[..., Callable[..., Awaitable[T]]]:
     """
     Async Timeout decorator.
 
