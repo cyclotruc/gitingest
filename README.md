@@ -75,7 +75,11 @@ summary, tree, content = ingest("path/to/directory")
 
 # or from URL
 summary, tree, content = ingest("https://github.com/cyclotruc/gitingest")
+```
 
+By default, this won't write a file but can be enabled with the `output` argument.
+
+```python
 # Asynchronous usage
 from gitingest import ingest_async
 import asyncio
@@ -83,7 +87,17 @@ import asyncio
 result = asyncio.run(ingest_async("path/to/directory"))
 ```
 
-By default, this won't write a file but can be enabled with the `output` argument.
+### Jupyter notebook usage
+
+```python
+from gitingest import ingest_async
+
+# Use await directly in Jupyter
+summary, tree, content = await ingest_async("path/to/directory")
+
+```
+
+This is because Jupyter notebooks are asynchronous by default.
 
 ## 🐳 Self-host
 
