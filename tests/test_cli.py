@@ -25,9 +25,9 @@ def test_cli_with_options():
         [
             "./",
             "--output",
-            OUTPUT_FILE_PATH,
+            str(OUTPUT_FILE_PATH),
             "--max-size",
-            MAX_FILE_SIZE,
+            str(MAX_FILE_SIZE),
             "--exclude-pattern",
             "tests/",
             "--include-pattern",

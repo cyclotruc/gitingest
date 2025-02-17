@@ -2,16 +2,14 @@
 
 import asyncio
 import functools
-from collections.abc import Awaitable, Callable
-from typing import ParamSpec, TypeVar
+from typing import Any, Awaitable, Callable, TypeVar
 
 from gitingest.exceptions import AsyncTimeoutError
 
 T = TypeVar("T")
-P = ParamSpec("P")
 
 
-def async_timeout(seconds: int = 10) -> Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]]:
+def async_timeout(seconds: int = 10) -> Callable[..., Callable[..., Awaitable[T]]]:
     """
     Async Timeout decorator.
 
@@ -33,9 +31,9 @@ def async_timeout(seconds: int = 10) -> Callable[[Callable[P, Awaitable[T]]], Ca
         an `AsyncTimeoutError` is raised.
     """
 
-    def decorator(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
+    def decorator(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]:
         @functools.wraps(func)
-        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+        async def wrapper(*args: Any, **kwargs: Any) -> T:
             try:
                 return await asyncio.wait_for(func(*args, **kwargs), timeout=seconds)
             except asyncio.TimeoutError as exc:

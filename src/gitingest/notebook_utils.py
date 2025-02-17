@@ -4,7 +4,7 @@ import json
 import warnings
 from itertools import chain
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List, Optional
 
 from gitingest.exceptions import InvalidNotebookError
 
@@ -32,12 +32,13 @@ def process_notebook(file: Path, include_output: bool = True) -> str:
     """
     try:
         with file.open(encoding="utf-8") as f:
-            notebook: dict[str, Any] = json.load(f)
+            notebook: Dict[str, Any] = json.load(f)
     except json.JSONDecodeError as e:
         raise InvalidNotebookError(f"Invalid JSON in notebook: {file}") from e
 
     # Check if the notebook contains worksheets
-    if worksheets := notebook.get("worksheets"):
+    worksheets = notebook.get("worksheets")
+    if worksheets:
         warnings.warn(
             "Worksheets are deprecated as of IPEP-17. Consider updating the notebook. "
             "(See: https://github.com/jupyter/nbformat and "
@@ -57,26 +58,27 @@ def process_notebook(file: Path, include_output: bool = True) -> str:
     result = ["# Jupyter notebook converted to Python script."]
 
     for cell in cells:
-        if cell_str := _process_cell(cell, include_output=include_output):
+        cell_str = _process_cell(cell, include_output=include_output)
+        if cell_str:
             result.append(cell_str)
 
     return "\n\n".join(result) + "\n"
 
 
-def _process_cell(cell: dict[str, Any], include_output: bool) -> str | None:
+def _process_cell(cell: Dict[str, Any], include_output: bool) -> Optional[str]:
     """
     Process a Jupyter notebook cell and return the cell content as a string.
 
     Parameters
     ----------
-    cell : dict[str, Any]
+    cell : Dict[str, Any]
         The cell dictionary from a Jupyter notebook.
     include_output : bool
         Whether to include cell outputs in the generated script
 
     Returns
     -------
-    str | None
+    str, optional
         The cell content as a string, or None if the cell is empty.
 
     Raises
@@ -101,7 +103,8 @@ def _process_cell(cell: dict[str, Any], include_output: bool) -> str | None:
         return f'"""\n{cell_str}\n"""'
 
     # Add cell output as comments
-    if include_output and (outputs := cell.get("outputs")):
+    outputs = cell.get("outputs")
+    if include_output and outputs:
 
         # Include cell outputs as comments
         output_lines = []
@@ -118,18 +121,18 @@ def _process_cell(cell: dict[str, Any], include_output: bool) -> str | None:
     return cell_str
 
 
-def _extract_output(output: dict[str, Any]) -> list[str]:
+def _extract_output(output: Dict[str, Any]) -> List[str]:
     """
     Extract the output from a Jupyter notebook cell.
 
     Parameters
     ----------
-    output : dict[str, Any]
+    output : Dict[str, Any]
         The output dictionary from a Jupyter notebook cell.
 
     Returns
     -------
-    list[str]
+    List[str]
         The output as a list of strings.
 
     Raises
@@ -139,15 +142,13 @@ def _extract_output(output: dict[str, Any]) -> list[str]:
     """
     output_type = output["output_type"]
 
-    match output_type:
-        case "stream":
-            return output["text"]
+    if output_type == "stream":
+        return output["text"]
 
-        case "execute_result" | "display_data":
-            return output["data"]["text/plain"]
+    if output_type in ("execute_result", "display_data"):
+        return output["data"]["text/plain"]
 
-        case "error":
-            return [f"Error: {output['ename']}: {output['evalue']}"]
+    if output_type == "error":
+        return [f"Error: {output['ename']}: {output['evalue']}"]
 
-        case _:
-            raise ValueError(f"Unknown output type: {output_type}")
+    raise ValueError(f"Unknown output type: {output_type}")

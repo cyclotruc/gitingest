@@ -3,6 +3,7 @@
 import asyncio
 import inspect
 import shutil
+from typing import Optional, Set, Tuple, Union
 
 from gitingest.config import TMP_BASE_PATH
 from gitingest.query_ingestion import run_ingest_query
@@ -13,11 +14,11 @@ from gitingest.repository_clone import CloneConfig, clone_repo
 async def ingest_async(
     source: str,
     max_file_size: int = 10 * 1024 * 1024,  # 10 MB
-    include_patterns: set[str] | str | None = None,
-    exclude_patterns: set[str] | str | None = None,
-    branch: str | None = None,
-    output: str | None = None,
-) -> tuple[str, str, str]:
+    include_patterns: Optional[Union[str, Set[str]]] = None,
+    exclude_patterns: Optional[Union[str, Set[str]]] = None,
+    branch: Optional[str] = None,
+    output: Optional[str] = None,
+) -> Tuple[str, str, str]:
     """
     Main entry point for ingesting a source and processing its contents.
 
@@ -32,18 +33,18 @@ async def ingest_async(
     max_file_size : int
         Maximum allowed file size for file ingestion. Files larger than this size are ignored, by default
         10*1024*1024 (10 MB).
-    include_patterns : set[str] | str | None, optional
+    include_patterns : Union[str, Set[str]], optional
         Pattern or set of patterns specifying which files to include. If `None`, all files are included.
-    exclude_patterns : set[str] | str | None, optional
+    exclude_patterns : Union[str, Set[str]], optional
         Pattern or set of patterns specifying which files to exclude. If `None`, no files are excluded.
-    branch : str | None, optional
+    branch : str, optional
         The branch to clone and ingest. If `None`, the default branch is used.
-    output : str | None, optional
+    output : str, optional
         File path where the summary and content should be written. If `None`, the results are not written to a file.
 
     Returns
     -------
-    tuple[str, str, str]
+    Tuple[str, str, str]
         A tuple containing:
         - A summary string of the analyzed repository or directory.
         - A tree-like string representation of the file structure.
@@ -54,6 +55,8 @@ async def ingest_async(
     TypeError
         If `clone_repo` does not return a coroutine, or if the `source` is of an unsupported type.
     """
+    repo_cloned = False
+
     try:
         parsed_query: ParsedQuery = await parse_query(
             source=source,
@@ -74,15 +77,17 @@ async def ingest_async(
                 commit=parsed_query.commit,
                 branch=selected_branch,
             )
-            clone_result = clone_repo(clone_config)
+            clone_coroutine = clone_repo(clone_config)
 
-            if inspect.iscoroutine(clone_result):
+            if inspect.iscoroutine(clone_coroutine):
                 if asyncio.get_event_loop().is_running():
-                    await clone_result
+                    await clone_coroutine
                 else:
-                    asyncio.run(clone_result)
+                    asyncio.run(clone_coroutine)
             else:
                 raise TypeError("clone_repo did not return a coroutine as expected.")
+
+            repo_cloned = True
 
         summary, tree, content = run_ingest_query(parsed_query)
 
@@ -93,19 +98,18 @@ async def ingest_async(
         return summary, tree, content
     finally:
         # Clean up the temporary directory if it was created
-        if parsed_query.url:
-            # Clean up the temporary directory
-            shutil.rmtree(TMP_BASE_PATH, ignore_errors=True)
+        if repo_cloned:
+            shutil.rmtree(TMP_BASE_PATH)
 
 
 def ingest(
     source: str,
     max_file_size: int = 10 * 1024 * 1024,  # 10 MB
-    include_patterns: set[str] | str | None = None,
-    exclude_patterns: set[str] | str | None = None,
-    branch: str | None = None,
-    output: str | None = None,
-) -> tuple[str, str, str]:
+    include_patterns: Optional[Union[str, Set[str]]] = None,
+    exclude_patterns: Optional[Union[str, Set[str]]] = None,
+    branch: Optional[str] = None,
+    output: Optional[str] = None,
+) -> Tuple[str, str, str]:
     """
     Synchronous version of ingest_async.
 
@@ -120,18 +124,18 @@ def ingest(
     max_file_size : int
         Maximum allowed file size for file ingestion. Files larger than this size are ignored, by default
         10*1024*1024 (10 MB).
-    include_patterns : set[str] | str | None, optional
+    include_patterns : Union[str, Set[str]], optional
         Pattern or set of patterns specifying which files to include. If `None`, all files are included.
-    exclude_patterns : set[str] | str | None, optional
+    exclude_patterns : Union[str, Set[str]], optional
         Pattern or set of patterns specifying which files to exclude. If `None`, no files are excluded.
-    branch : str | None, optional
+    branch : str, optional
         The branch to clone and ingest. If `None`, the default branch is used.
-    output : str | None, optional
+    output : str, optional
         File path where the summary and content should be written. If `None`, the results are not written to a file.
 
     Returns
     -------
-    tuple[str, str, str]
+    Tuple[str, str, str]
         A tuple containing:
         - A summary string of the analyzed repository or directory.
         - A tree-like string representation of the file structure.
