@@ -11,7 +11,7 @@
 
 Turn any Git repository into a prompt-friendly text ingest for LLMs.
 
-You can also replace `hub` with `ingest` in any GitHub URL to access the coresponding digest.
+You can also replace `hub` with `ingest` in any GitHub URL to access the corresponding digest.
 
 [gitingest.com](https://gitingest.com) · [Chrome Extension](https://chromewebstore.google.com/detail/adfjahbijlkjfoicpjkhjicpjpjfaood) · [Firefox Add-on](https://addons.mozilla.org/firefox/addon/gitingest)
 
