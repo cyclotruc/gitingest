@@ -935,5 +935,3 @@ def apply_gitingest_file(path: Path, query: ParsedQuery) -> None:
             print("No additional include patterns found in .gitingest file")
     else:
         print("No config found in .gitingest file")
-
-    return
