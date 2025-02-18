@@ -373,3 +373,37 @@ async def test_clone_repo_creates_parent_directory(tmp_path: Path) -> None:
                 clone_config.url,
                 str(nested_path),
             )
+
+
+@pytest.mark.asyncio
+async def test_clone_with_specific_subpath() -> None:
+    """
+    Test cloning a repository with a specific subpath.
+
+    Given a valid repository URL and a specific subpath:
+    When `clone_repo` is called,
+    Then the repository should be cloned with sparse checkout enabled and the specified subpath.
+    """
+    clone_config = CloneConfig(url="https://github.com/user/repo", local_path="/tmp/repo", subpath="src/docs")
+
+    with patch("gitingest.repository_clone._check_repo_exists", return_value=True):
+        with patch("gitingest.repository_clone._run_command", new_callable=AsyncMock) as mock_exec:
+            await clone_repo(clone_config)
+
+            # Verify the clone command includes sparse checkout flags
+            mock_exec.assert_any_call(
+                "git",
+                "clone",
+                "--recurse-submodules",
+                "--single-branch",
+                "--filter=blob:none",
+                "--sparse",
+                "--depth=1",
+                clone_config.url,
+                clone_config.local_path,
+            )
+
+            # Verify the sparse-checkout command sets the correct path
+            mock_exec.assert_any_call("git", "-C", clone_config.local_path, "sparse-checkout", "set", "src/docs")
+
+            assert mock_exec.call_count == 2
