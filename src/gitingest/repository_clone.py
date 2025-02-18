@@ -29,8 +29,6 @@ class CloneConfig:
         The specific commit hash to check out after cloning (default is None).
     branch : str, optional
         The branch to clone (default is None).
-    repo_name : str, optional
-        The name of the repository (default is None).
     subpath : str
         The subpath to clone from the repository (default is "/").
     """
@@ -39,12 +37,11 @@ class CloneConfig:
     local_path: str
     commit: Optional[str] = None
     branch: Optional[str] = None
-    repo_name: Optional[str] = None
     subpath: str = "/"
 
 
 @async_timeout(TIMEOUT)
-async def clone_repo(config: CloneConfig) -> Tuple[bytes, bytes]:
+async def clone_repo(config: CloneConfig) -> None:
     """
     Clone a repository to a local path based on the provided configuration.
 
@@ -56,54 +53,20 @@ async def clone_repo(config: CloneConfig) -> Tuple[bytes, bytes]:
     ----------
     config : CloneConfig
         The configuration for cloning the repository.
-
-    Returns
-    -------
-    Tuple[bytes, bytes]
-        A tuple containing the stdout and stderr of the Git commands executed.
-    """
-    if config.subpath != "/":
-        return await partial_clone_repo(config)
-
-    return await full_clone_repo(config)
-
-
-async def full_clone_repo(config: CloneConfig) -> Tuple[bytes, bytes]:
-    """
-    Clone a repository to a local path based on the provided configuration.
-
-    This function handles the process of cloning a Git repository to the local file system.
-    It can clone a specific branch or commit if provided, and it raises exceptions if
-    any errors occur during the cloning process.
-
-    Parameters
-    ----------
-    config : CloneConfig
-        The configuration for cloning the repository.
-
-    Returns
-    -------
-    Tuple[bytes, bytes]
-        A tuple containing the stdout and stderr of the Git commands executed.
 
     Raises
     ------
     ValueError
-        If the 'url' or 'local_path' parameters are missing, or if the repository is not found.
+        If the repository is not found or if the provided URL is invalid.
     OSError
-        If there is an error creating the parent directory structure.
+        If an error occurs while creating the parent directory for the repository.
     """
     # Extract and validate query parameters
     url: str = config.url
     local_path: str = config.local_path
     commit: Optional[str] = config.commit
     branch: Optional[str] = config.branch
-
-    if not url:
-        raise ValueError("The 'url' parameter is required.")
-
-    if not local_path:
-        raise ValueError("The 'local_path' parameter is required.")
+    partial_clone: bool = config.subpath != "/"
 
     # Create parent directory if it doesn't exist
     parent_dir = Path(local_path).parent
@@ -116,67 +79,32 @@ async def full_clone_repo(config: CloneConfig) -> Tuple[bytes, bytes]:
     if not await _check_repo_exists(url):
         raise ValueError("Repository not found, make sure it is public")
 
-    clone_cmd = ["git", "clone", "--recurse-submodules"]
+    clone_cmd = ["git", "clone", "--recurse-submodules", "--single-branch"]
 
-    if commit:
-        # Scenario 1: Clone and checkout a specific commit
-        # Clone the repository without depth to ensure full history for checkout
-        clone_commit_cmd = clone_cmd + ["--single-branch", url, local_path]
-        await _run_git_command(*clone_commit_cmd)
+    if partial_clone:
+        clone_cmd += ["--filter=blob:none", "--sparse"]
 
-        # Checkout the specific commit
-        checkout_cmd = ["git", "-C", local_path, "checkout", commit]
-        return await _run_git_command(*checkout_cmd)
+    if not commit:
+        clone_cmd += ["--depth=1"]
+        if branch and branch.lower() not in ("main", "master"):
+            clone_cmd += ["--branch", branch]
 
-    if branch and branch.lower() not in ("main", "master"):
-        # Scenario 2: Clone a specific branch with shallow depth
-        branch_cmd = clone_cmd + ["--depth=1", "--single-branch", "--branch", branch, url, local_path]
-        return await _run_git_command(*branch_cmd)
+    clone_cmd += [url, local_path]
 
-    # Scenario 3: Clone the default branch with shallow depth
-    clone_cmd += ["--depth=1", "--single-branch", url, local_path]
-    return await _run_git_command(*clone_cmd)
+    # Clone the repository
+    await _run_git_command(*clone_cmd)
 
+    if commit or partial_clone:
+        checkout_cmd = ["git", "-C", local_path]
 
-async def partial_clone_repo(config: CloneConfig) -> Tuple[bytes, bytes]:
-    """
-    Perform a partial clone of a Git repository based on the provided configuration.
+        if partial_clone:
+            checkout_cmd += ["sparse-checkout", "set", config.subpath.lstrip("/")]
 
-    Parameters
-    ----------
-    config : CloneConfig
-        The configuration for cloning the repository.
+        if commit:
+            checkout_cmd += ["checkout", commit]
 
-    Returns
-    -------
-    Tuple[bytes, bytes]
-        A tuple containing the stdout and stderr of the Git commands executed.
-
-    Raises
-    ------
-    ValueError
-        If the 'repo_name' parameter is missing.
-    """
-    partial_clone_cmd = [
-        "git",
-        "clone",
-        "--filter=blob:none",
-        "--sparse",
-        config.url,
-        config.local_path,
-    ]
-    await _run_git_command(*partial_clone_cmd)
-
-    if not config.repo_name:
-        raise ValueError("The 'repo_name' parameter is required.")
-
-    sparse_checkout_cmd = [
-        "git",
-        "sparse-checkout",
-        "set",
-        config.subpath.lstrip("/"),
-    ]
-    return await _run_git_command(*sparse_checkout_cmd, cwd=config.local_path)
+        # Check out the specific commit and/or subpath
+        await _run_git_command(*checkout_cmd)
 
 
 async def _check_repo_exists(url: str) -> bool:
@@ -245,7 +173,7 @@ async def fetch_remote_branch_list(url: str) -> List[str]:
     ]
 
 
-async def _run_git_command(*args: str, cwd: Optional[str] = None) -> Tuple[bytes, bytes]:
+async def _run_git_command(*args: str) -> Tuple[bytes, bytes]:
     """
     Execute a Git command asynchronously and captures its output.
 
@@ -253,8 +181,6 @@ async def _run_git_command(*args: str, cwd: Optional[str] = None) -> Tuple[bytes
     ----------
     *args : str
         The Git command and its arguments to execute.
-    cwd : str, optional
-        The current working directory where the Git command should be executed.
 
     Returns
     -------
@@ -286,7 +212,6 @@ async def _run_git_command(*args: str, cwd: Optional[str] = None) -> Tuple[bytes
         *args,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
-        cwd=cwd,
     )
     stdout, stderr = await proc.communicate()
     if proc.returncode != 0:

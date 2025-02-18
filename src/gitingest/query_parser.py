@@ -70,7 +70,6 @@ class ParsedQuery:  # pylint: disable=too-many-instance-attributes
             local_path=str(self.local_path),
             commit=self.commit,
             branch=self.branch,
-            repo_name=self.repo_name,
             subpath=self.subpath,
         )
 
