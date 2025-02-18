@@ -927,5 +927,13 @@ def apply_gitingest_file(path: Path, query: ParsedQuery) -> None:
         return
     with open(path_gitingest, "rb") as f:
         data = tomllib.load(f)
-    query.ignore_patterns.update(data["config"]["ignore_patterns"])
+    if "config" in data:
+        if "ignore_patterns" in data["config"]:
+            query.ignore_patterns.update(data["config"]["ignore_patterns"])
+            print(f"{data["config"]['ignore_patterns']} added to ignore patterns")
+        else:
+            print("No additional include patterns found in .gitingest file")
+    else:
+        print("No config found in .gitingest file")
+
     return
