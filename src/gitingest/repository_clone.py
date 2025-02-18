@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-from gitingest.query_parser import ParsedQuery
 from gitingest.utils import async_timeout
 
 TIMEOUT: int = 60
@@ -30,12 +29,18 @@ class CloneConfig:
         The specific commit hash to check out after cloning (default is None).
     branch : str, optional
         The branch to clone (default is None).
+    repo_name : str, optional
+        The name of the repository (default is None).
+    subpath : str
+        The subpath to clone from the repository (default is "/").
     """
 
     url: str
     local_path: str
     commit: Optional[str] = None
     branch: Optional[str] = None
+    repo_name: Optional[str] = None
+    subpath: str = "/"
 
 
 @async_timeout(TIMEOUT)
@@ -50,11 +55,31 @@ async def clone_repo(config: CloneConfig) -> Tuple[bytes, bytes]:
     Parameters
     ----------
     config : CloneConfig
-        A dictionary containing the following keys:
-            - url (str): The URL of the repository.
-            - local_path (str): The local path to clone the repository to.
-            - commit (str, optional): The specific commit hash to checkout.
-            - branch (str, optional): The branch to clone. Defaults to 'main' or 'master' if not provided.
+        The configuration for cloning the repository.
+
+    Returns
+    -------
+    Tuple[bytes, bytes]
+        A tuple containing the stdout and stderr of the Git commands executed.
+    """
+    if config.subpath != "/":
+        return await partial_clone_repo(config)
+
+    return await full_clone_repo(config)
+
+
+async def full_clone_repo(config: CloneConfig) -> Tuple[bytes, bytes]:
+    """
+    Clone a repository to a local path based on the provided configuration.
+
+    This function handles the process of cloning a Git repository to the local file system.
+    It can clone a specific branch or commit if provided, and it raises exceptions if
+    any errors occur during the cloning process.
+
+    Parameters
+    ----------
+    config : CloneConfig
+        The configuration for cloning the repository.
 
     Returns
     -------
@@ -113,14 +138,19 @@ async def clone_repo(config: CloneConfig) -> Tuple[bytes, bytes]:
     return await _run_git_command(*clone_cmd)
 
 
-async def partial_clone_repo(parsed_query: ParsedQuery) -> None:
+async def partial_clone_repo(config: CloneConfig) -> Tuple[bytes, bytes]:
     """
-    Perform a partial clone of a Git repository based on the provided query parameters.
+    Perform a partial clone of a Git repository based on the provided configuration.
 
     Parameters
     ----------
-    parsed_query : ParsedQuery
-        A ParsedQuery object containing the URL, local path, and optional subpath and repo_name.
+    config : CloneConfig
+        The configuration for cloning the repository.
+
+    Returns
+    -------
+    Tuple[bytes, bytes]
+        A tuple containing the stdout and stderr of the Git commands executed.
 
     Raises
     ------
@@ -132,21 +162,21 @@ async def partial_clone_repo(parsed_query: ParsedQuery) -> None:
         "clone",
         "--filter=blob:none",
         "--sparse",
-        parsed_query.url,
-        parsed_query.local_path,
+        config.url,
+        config.local_path,
     ]
     await _run_git_command(*partial_clone_cmd)
 
-    if not parsed_query.repo_name:
+    if not config.repo_name:
         raise ValueError("The 'repo_name' parameter is required.")
 
     sparse_checkout_cmd = [
         "git",
         "sparse-checkout",
         "set",
-        parsed_query.subpath.lstrip("/"),
+        config.subpath.lstrip("/"),
     ]
-    await _run_git_command(*sparse_checkout_cmd, cwd=str(parsed_query.local_path))
+    return await _run_git_command(*sparse_checkout_cmd, cwd=config.local_path)
 
 
 async def _check_repo_exists(url: str) -> bool:
