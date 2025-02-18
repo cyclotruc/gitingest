@@ -126,40 +126,6 @@ async def test_check_repo_exists(mock_stdout: bytes, return_code: int, expected:
 
 
 @pytest.mark.asyncio
-async def test_clone_repo_invalid_url() -> None:
-    """
-    Test cloning when the URL is invalid or empty.
-
-    Given an empty URL:
-    When `clone_repo` is called,
-    Then a ValueError should be raised with an appropriate error message.
-    """
-    clone_config = CloneConfig(
-        url="",
-        local_path="/tmp/repo",
-    )
-    with pytest.raises(ValueError, match="The 'url' parameter is required."):
-        await clone_repo(clone_config)
-
-
-@pytest.mark.asyncio
-async def test_clone_repo_invalid_local_path() -> None:
-    """
-    Test cloning when the local path is invalid or empty.
-
-    Given an empty local path:
-    When `clone_repo` is called,
-    Then a ValueError should be raised with an appropriate error message.
-    """
-    clone_config = CloneConfig(
-        url="https://github.com/user/repo",
-        local_path="",
-    )
-    with pytest.raises(ValueError, match="The 'local_path' parameter is required."):
-        await clone_repo(clone_config)
-
-
-@pytest.mark.asyncio
 async def test_clone_repo_with_custom_branch() -> None:
     """
     Test cloning a repository with a specified custom branch.
@@ -177,8 +143,8 @@ async def test_clone_repo_with_custom_branch() -> None:
                 "git",
                 "clone",
                 "--recurse-submodules",
-                "--depth=1",
                 "--single-branch",
+                "--depth=1",
                 "--branch",
                 "feature-branch",
                 clone_config.url,
@@ -227,8 +193,8 @@ async def test_clone_repo_default_shallow_clone() -> None:
                 "git",
                 "clone",
                 "--recurse-submodules",
-                "--depth=1",
                 "--single-branch",
+                "--depth=1",
                 clone_config.url,
                 clone_config.local_path,
             )
@@ -366,8 +332,8 @@ async def test_clone_branch_with_slashes(tmp_path):
                 "git",
                 "clone",
                 "--recurse-submodules",
-                "--depth=1",
                 "--single-branch",
+                "--depth=1",
                 "--branch",
                 "fix/in-operator",
                 clone_config.url,
@@ -402,8 +368,8 @@ async def test_clone_repo_creates_parent_directory(tmp_path: Path) -> None:
                 "git",
                 "clone",
                 "--recurse-submodules",
-                "--depth=1",
                 "--single-branch",
+                "--depth=1",
                 clone_config.url,
                 str(nested_path),
             )

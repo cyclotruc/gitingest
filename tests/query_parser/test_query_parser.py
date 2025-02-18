@@ -439,7 +439,7 @@ async def test_parse_repo_source_with_failed_git_command(url, expected_branch, e
 
         with pytest.warns(
             RuntimeWarning,
-            match="Warning: Failed to fetch branch list: Git command failed: "
+            match="Warning: Failed to fetch branch list: Command failed: "
             "git ls-remote --heads https://github.com/user/repo",
         ):
 
