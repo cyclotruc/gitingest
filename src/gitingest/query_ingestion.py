@@ -3,6 +3,7 @@
 import locale
 import os
 import platform
+import tomllib
 from fnmatch import fnmatch
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
@@ -898,5 +899,33 @@ def run_ingest_query(query: ParsedQuery) -> Tuple[str, str, str]:
 
     if query.type and query.type == "blob":
         return _ingest_single_file(path, query)
-
+    apply_gitingest_file(path, query)
     return _ingest_directory(path, query)
+
+
+def apply_gitingest_file(path: Path, query: ParsedQuery) -> None:
+    """
+    Apply the .gitingest file to the query object.
+
+    This function reads the .gitingest file in the specified path and updates the query object
+    with the ignore patterns found in the file.
+
+    Parameters
+    ----------
+    path : Path
+        The path of the directory to ingest.
+    query : ParsedQuery
+        The parsed query object containing information about the repository and query parameters.
+
+    Returns
+    -------
+    None
+
+    """
+    path_gitingest = path / ".gitingest"
+    if not path_gitingest.exists():
+        return
+    with open(path_gitingest, "rb") as f:
+        data = tomllib.load(f)
+    query.ignore_patterns.update(data["config"]["ignore_patterns"])
+    return
