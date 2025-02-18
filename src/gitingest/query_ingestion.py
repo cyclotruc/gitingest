@@ -3,12 +3,13 @@
 import locale
 import os
 import platform
-import tomllib
+import warnings
 from fnmatch import fnmatch
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import tiktoken
+import tomli
 
 from gitingest.config import MAX_DIRECTORY_DEPTH, MAX_FILES, MAX_TOTAL_SIZE_BYTES
 from gitingest.exceptions import (
@@ -899,6 +900,7 @@ def run_ingest_query(query: ParsedQuery) -> Tuple[str, str, str]:
 
     if query.type and query.type == "blob":
         return _ingest_single_file(path, query)
+
     apply_gitingest_file(path, query)
     return _ingest_directory(path, query)
 
@@ -907,8 +909,8 @@ def apply_gitingest_file(path: Path, query: ParsedQuery) -> None:
     """
     Apply the .gitingest file to the query object.
 
-    This function reads the .gitingest file in the specified path and updates the query object
-    with the ignore patterns found in the file.
+    This function reads the .gitingest file in the specified path and updates the query object with the ignore
+    patterns found in the file.
 
     Parameters
     ----------
@@ -916,22 +918,28 @@ def apply_gitingest_file(path: Path, query: ParsedQuery) -> None:
         The path of the directory to ingest.
     query : ParsedQuery
         The parsed query object containing information about the repository and query parameters.
-
-    Returns
-    -------
-    None
-
     """
     path_gitingest = path / ".gitingest"
-    if not path_gitingest.exists():
+
+    if not path_gitingest.is_file():
+        # .gitingest doesn't exist or is not a regular file; nothing to do
         return
-    with open(path_gitingest, "rb") as f:
-        data = tomllib.load(f)
-    if "config" in data:
-        if "ignore_patterns" in data["config"]:
-            query.ignore_patterns.update(data["config"]["ignore_patterns"])
-            print(f"{data["config"]['ignore_patterns']} added to ignore patterns")
+
+    try:
+        with path_gitingest.open("rb") as f:
+            data = tomli.load(f)
+    except tomli.TOMLDecodeError as exc:
+        warnings.warn(f"Invalid TOML in {path_gitingest}: {exc}")
+        return
+
+    # Safely grab the "config" section if present
+    config_section = data.get("config", {})
+    ignore_patterns = config_section.get("ignore_patterns")
+
+    if ignore_patterns:
+        if query.ignore_patterns is None:
+            query.ignore_patterns = set(ignore_patterns)
         else:
-            print("No additional include patterns found in .gitingest file")
-    else:
-        print("No config found in .gitingest file")
+            query.ignore_patterns.update(ignore_patterns)
+
+    return
