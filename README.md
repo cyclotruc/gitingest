@@ -119,7 +119,7 @@ If you are hosting it on a domain, you can specify the allowed hostnames via env
 
    ```bash
    # Default: "gitingest.com, *.gitingest.com, localhost, 127.0.0.1".
-   ALLOWED_HOSTS="example.com, localhost, 127.0.0.1"
+   ALLOWED_HOSTS=example.com, localhost, 127.0.0.1
    ```
 
 ## 🤝 Contributing
