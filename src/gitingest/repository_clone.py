@@ -92,7 +92,7 @@ async def clone_repo(config: CloneConfig) -> None:
     clone_cmd += [url, local_path]
 
     # Clone the repository
-    await _run_git_command(*clone_cmd)
+    await _run_command(*clone_cmd)
 
     if commit or partial_clone:
         checkout_cmd = ["git", "-C", local_path]
@@ -104,7 +104,7 @@ async def clone_repo(config: CloneConfig) -> None:
             checkout_cmd += ["checkout", commit]
 
         # Check out the specific commit and/or subpath
-        await _run_git_command(*checkout_cmd)
+        await _run_command(*checkout_cmd)
 
 
 async def _check_repo_exists(url: str) -> bool:
@@ -163,7 +163,7 @@ async def fetch_remote_branch_list(url: str) -> List[str]:
         A list of branch names available in the remote repository.
     """
     fetch_branches_command = ["git", "ls-remote", "--heads", url]
-    stdout, _ = await _run_git_command(*fetch_branches_command)
+    stdout, _ = await _run_command(*fetch_branches_command)
     stdout_decoded = stdout.decode()
 
     return [
@@ -173,7 +173,7 @@ async def fetch_remote_branch_list(url: str) -> List[str]:
     ]
 
 
-async def _run_git_command(*args: str) -> Tuple[bytes, bytes]:
+async def _run_command(*args: str) -> Tuple[bytes, bytes]:
     """
     Execute a Git command asynchronously and captures its output.
 
