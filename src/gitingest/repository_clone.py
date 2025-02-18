@@ -175,39 +175,26 @@ async def fetch_remote_branch_list(url: str) -> List[str]:
 
 async def _run_command(*args: str) -> Tuple[bytes, bytes]:
     """
-    Execute a Git command asynchronously and captures its output.
+    Execute a command asynchronously and captures its output.
 
     Parameters
     ----------
     *args : str
-        The Git command and its arguments to execute.
+        The command and its arguments to execute.
 
     Returns
     -------
     Tuple[bytes, bytes]
-        A tuple containing the stdout and stderr of the Git command.
+        A tuple containing the stdout and stderr of the command.
 
     Raises
     ------
     RuntimeError
-        If Git is not installed or if the Git command exits with a non-zero status.
+        If command exits with a non-zero status.
     """
-    # Check if Git is installed
-    try:
-        version_proc = await asyncio.create_subprocess_exec(
-            "git",
-            "--version",
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        _, stderr = await version_proc.communicate()
-        if version_proc.returncode != 0:
-            error_message = stderr.decode().strip() if stderr else "Git command not found"
-            raise RuntimeError(f"Git is not installed or not accessible: {error_message}")
-    except FileNotFoundError as exc:
-        raise RuntimeError("Git is not installed. Please install Git before proceeding.") from exc
+    await check_git_installed()
 
-    # Execute the requested Git command
+    # Execute the requested command
     proc = await asyncio.create_subprocess_exec(
         *args,
         stdout=asyncio.subprocess.PIPE,
@@ -216,9 +203,34 @@ async def _run_command(*args: str) -> Tuple[bytes, bytes]:
     stdout, stderr = await proc.communicate()
     if proc.returncode != 0:
         error_message = stderr.decode().strip()
-        raise RuntimeError(f"Git command failed: {' '.join(args)}\nError: {error_message}")
+        raise RuntimeError(f"Command failed: {' '.join(args)}\nError: {error_message}")
 
     return stdout, stderr
+
+
+async def check_git_installed() -> None:
+    """
+    Check if Git is installed and accessible on the system.
+
+    Raises
+    ------
+    RuntimeError
+        If Git is not installed or if the Git command exits with a non-zero status.
+    """
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "git",
+            "--version",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        _, stderr = await proc.communicate()
+        if proc.returncode != 0:
+            error_message = stderr.decode().strip() if stderr else "Git command not found"
+            raise RuntimeError(f"Git is not installed or not accessible: {error_message}")
+
+    except FileNotFoundError as exc:
+        raise RuntimeError("Git is not installed. Please install Git before proceeding.") from exc
 
 
 def _get_status_code(response: str) -> int:
