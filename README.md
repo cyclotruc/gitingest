@@ -25,6 +25,9 @@ You can also replace `hub` with `ingest` in any GitHub URL to access the corresp
   - Token count
 - **CLI tool**: Run it as a shell command
 - **Python package**: Import it in your code
+- **Private Repository**: Support via GitHub OAuth:
+  - Login with GitHub: Private repositories can now be ingested when you log in using GitHub.
+  - Once logged in, Gitingest uses your GitHub token (stored securely in your session) to clone and process your private repository.
 
 ## 📚 Requirements
 
@@ -32,16 +35,18 @@ You can also replace `hub` with `ingest` in any GitHub URL to access the corresp
 
 ## 📦 Installation
 
-``` bash
+```bash
 pip install gitingest
 ```
 
 ## 🧩 Browser Extension Usage
 
 <!-- markdownlint-disable MD033 -->
+
 <a href="https://chromewebstore.google.com/detail/adfjahbijlkjfoicpjkhjicpjpjfaood" target="_blank" title="Get Gitingest Extension from Chrome Web Store"><img height="48" src="https://github.com/user-attachments/assets/20a6e44b-fd46-4e6c-8ea6-aad436035753" alt="Available in the Chrome Web Store" /></a>
 <a href="https://addons.mozilla.org/firefox/addon/gitingest" target="_blank" title="Get Gitingest Extension from Firefox Add-ons"><img height="48" src="https://github.com/user-attachments/assets/c0e99e6b-97cf-4af2-9737-099db7d3538b" alt="Get The Add-on for Firefox" /></a>
 <a href="https://microsoftedge.microsoft.com/addons/detail/nfobhllgcekbmpifkjlopfdfdmljmipf" target="_blank" title="Get Gitingest Extension from Firefox Add-ons"><img height="48" src="https://github.com/user-attachments/assets/204157eb-4cae-4c0e-b2cb-db514419fd9e" alt="Get from the Edge Add-ons" /></a>
+
 <!-- markdownlint-enable MD033 -->
 
 The extension is open source at [lcandy2/gitingest-extension](https://github.com/lcandy2/gitingest-extension).
@@ -103,13 +108,13 @@ This is because Jupyter notebooks are asynchronous by default.
 
 1. Build the image:
 
-   ``` bash
+   ```bash
    docker build -t gitingest .
    ```
 
 2. Run the container:
 
-   ``` bash
+   ```bash
    docker run -d --name gitingest -p 8000:8000 gitingest
    ```
 
@@ -117,10 +122,21 @@ The application will be available at `http://localhost:8000`.
 
 If you are hosting it on a domain, you can specify the allowed hostnames via env variable `ALLOWED_HOSTS`.
 
-   ```bash
-   # Default: "gitingest.com, *.gitingest.com, localhost, 127.0.0.1".
-   ALLOWED_HOSTS="example.com, localhost, 127.0.0.1"
-   ```
+```bash
+# Default: "gitingest.com, *.gitingest.com, localhost, 127.0.0.1".
+ALLOWED_HOSTS="example.com, localhost, 127.0.0.1"
+```
+
+## 🔐 Important for Private Repos
+
+In **production**, the OAuth credentials (`GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`) are **configured securely on the server**, allowing end users to simply click **"Login with GitHub"** to access their private repositories.
+
+When **running locally** (for testing), you must provide these credentials via environment variables:
+
+```bash
+export GITHUB_CLIENT_ID=your_client_id
+export GITHUB_CLIENT_SECRET=your_client_secret
+```
 
 ## 🤝 Contributing
 
