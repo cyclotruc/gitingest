@@ -53,6 +53,8 @@
                         Extension
                     </div>
                 </a>
+
+                <!-- GitHub Link + Star Badge -->
                 <div class="flex items-center gap-2">
                     <a href="https://github.com/cyclotruc/gitingest"
                        target="_blank"
@@ -76,6 +78,21 @@
                         <span id="github-stars">0</span>
                     </div>
                 </div>
+
+                <!-- Check if user is logged in (session token) and show login or logout -->
+                {% if not request.session.get('github_token') %}
+                <!-- If user is not authenticated, show "Login with GitHub" -->
+                <a href="/oauth/login"
+                   class="text-gray-900 hover:underline">
+                    Login with GitHub
+                </a>
+                {% else %}
+                <!-- If user is authenticated, show "Logout" link or user info -->
+                <a href="/oauth/logout"
+                   class="text-gray-900 hover:underline">
+                    Logout
+                </a>
+                {% endif %}
             </nav>
         </div>
     </div>

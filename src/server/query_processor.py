@@ -90,10 +90,16 @@ async def process_query(
             commit=parsed_query.commit,
             branch=parsed_query.branch,
         )
-        await clone_repo(clone_config)
+        # Retrieve the user's GitHub token from the session (set via OAuth)
+        token = request.session.get("github_token")
+
+        # Pass the token to clone_repo so private repos can be cloned on the user's behalf
+        await clone_repo(clone_config, token=token)
         summary, tree, content = run_ingest_query(parsed_query)
+
         with open(f"{clone_config.local_path}.txt", "w", encoding="utf-8") as f:
             f.write(tree + "\n" + content)
+
     except Exception as e:
         # hack to print error message when query is not defined
         if "query" in locals() and parsed_query is not None and isinstance(parsed_query, dict):

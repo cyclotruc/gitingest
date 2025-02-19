@@ -10,10 +10,12 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.trustedhost import TrustedHostMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 
 from server.routers import download, dynamic, index
 from server.server_config import templates
 from server.server_utils import lifespan, limiter, rate_limit_exception_handler
+from server.oauth import router as oauth_router
 
 # Load environment variables from .env file
 load_dotenv()
@@ -22,9 +24,14 @@ load_dotenv()
 app = FastAPI(lifespan=lifespan)
 app.state.limiter = limiter
 
+# Add session middleware for cookie-based sessions with a secret key
+app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET_KEY", "your-default-secret"))
+
 # Register the custom exception handler for rate limits
 app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
 
+# Include the OAuth route
+app.include_router(oauth_router, prefix="/oauth")
 
 # Mount static files dynamically to serve CSS, JS, and other static assets
 static_dir = Path(__file__).parent.parent / "static"

@@ -37,8 +37,7 @@ class CloneConfig:
     branch: Optional[str] = None
 
 
-@async_timeout(TIMEOUT)
-async def clone_repo(config: CloneConfig) -> Tuple[bytes, bytes]:
+async def clone_repo(config: CloneConfig, token: dict = None) -> Tuple[bytes, bytes]:
     url: str = config.url
     local_path: str = config.local_path
     commit: Optional[str] = config.commit
@@ -49,29 +48,45 @@ async def clone_repo(config: CloneConfig) -> Tuple[bytes, bytes]:
     if not local_path:
         raise ValueError("The 'local_path' parameter is required.")
 
-    # Use os from the module-level import
-    auth_token = os.getenv("GIT_AUTH_TOKEN", "")
-
-    if auth_token:
-        if not await _check_repo_exists(url):
-            raise ValueError("Repository not found or invalid token provided.")
+    # 1) Extract user’s GitHub OAuth token if present
+    if token:
+        # The OAuth token from your session
+        auth_token = token.get("access_token", "")
     else:
-        if not await _check_repo_exists(url):
-            raise ValueError("Repository not found, make sure it is public or that you provided a valid token.")
+        # fallback: environment variable for local testing
+        auth_token = os.getenv("GIT_AUTH_TOKEN", "")
 
+    # 2) Check if user is trying to ingest a private repo but has no token
+    if ("github.com" in url.lower()) and not auth_token:
+        raise ValueError(
+            "This repository appears to be private on GitHub, but you're not logged in. "
+            "Please log in with GitHub to access private repos."
+        )
+
+    # 3) Check repo existence using the correct token
+    if not await _check_repo_exists(url, token=auth_token):
+        raise ValueError(
+            "We could not find or access this repository. "
+            "Either it doesn't exist, or you don't have permission, or your token is invalid."
+        )
+
+    # 4) Construct token-embedded URL if it's GitHub
     if auth_token and "github.com" in url.lower() and url.startswith("https://"):
         remainder = url[len("https://"):]
         token_url = f"https://x-access-token:{auth_token}@{remainder}"
     else:
         token_url = url
 
-    # Create parent directory if it doesn't exist
+    # Make sure parent directories exist
     parent_dir = Path(local_path).parent
+
     try:
         os.makedirs(parent_dir, exist_ok=True)
+
     except OSError as e:
         raise OSError(f"Failed to create parent directory {parent_dir}: {e}") from e
 
+    # 5) Actually clone + checkout
     if commit:
         clone_cmd = ["git", "clone", "--recurse-submodules", "--single-branch", token_url, local_path]
         await _run_git_command(*clone_cmd)
@@ -96,30 +111,38 @@ async def clone_repo(config: CloneConfig) -> Tuple[bytes, bytes]:
     return await _run_git_command(*clone_cmd)
 
 
-
-
-async def _check_repo_exists(url: str) -> bool:
+async def _check_repo_exists(url: str, token: str = None) -> bool:
     """
     Check if a Git repository exists at the provided URL.
-    For GitHub, we use the GitHub API which properly supports authentication for private repos.
+    Uses the GitHub API for github.com URLs, or tries HEAD for others.
     """
     import os
 
     headers = ["-H", "User-Agent: Gitingest"]
-    auth_token = os.getenv("GIT_AUTH_TOKEN", "")
-    if auth_token:
-        headers += ["-H", f"Authorization: token {auth_token}"]
 
-    # If the URL is from GitHub, build the API URL.
+    # If we got a token from the user's session, use it
+    if token:
+        headers += ["-H", f"Authorization: token {token}"]
+
+    else:
+        # fallback to environment variable
+        env_token = os.getenv("GIT_AUTH_TOKEN", "")
+
+        if env_token:
+            headers += ["-H", f"Authorization: token {env_token}"]
+
+    # If it's a GitHub URL, transform it to the GitHub API URL:
     if "github.com" in url:
-        # Remove protocol and possible .git suffix.
         parts = url.split("/")
+
         if len(parts) >= 5:
             owner = parts[3]
             repo = parts[4].replace(".git", "")
             url_to_check = f"https://api.github.com/repos/{owner}/{repo}"
+
         else:
             url_to_check = url
+
     else:
         url_to_check = url
 
@@ -147,6 +170,7 @@ async def _check_repo_exists(url: str) -> bool:
         return False
 
     raise RuntimeError(f"Unexpected status code: {status_code}")
+
 
 
 

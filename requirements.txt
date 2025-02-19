@@ -5,3 +5,5 @@ slowapi
 starlette
 tiktoken
 uvicorn
+Authlib
+itsdangerous
