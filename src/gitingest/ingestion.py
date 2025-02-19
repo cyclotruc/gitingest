@@ -9,7 +9,7 @@ from gitingest.filesystem_schema import FileSystemNode, FileSystemNodeType
 from gitingest.output_formatters import format_directory, format_single_file
 from gitingest.query_parsing import ParsedQuery
 from gitingest.utils.ingestion_utils import _should_exclude, _should_include
-from gitingest.utils.path_utils import _is_safe_symlink, _normalize_path
+from gitingest.utils.path_utils import _is_safe_symlink
 
 
 def ingest_query(query: ParsedQuery) -> Tuple[str, str, str]:
@@ -35,8 +35,8 @@ def ingest_query(query: ParsedQuery) -> Tuple[str, str, str]:
     ValueError
         If the specified path cannot be found or if the file is not a text file.
     """
-    subpath = _normalize_path(Path(query.subpath.strip("/"))).as_posix()
-    path = _normalize_path(query.local_path / subpath)
+    subpath = Path(query.subpath.strip("/")).as_posix()
+    path = query.local_path / subpath
 
     if not path.exists():
         raise ValueError(f"{query.slug} cannot be found")
@@ -63,9 +63,9 @@ def ingest_query(query: ParsedQuery) -> Tuple[str, str, str]:
     if not root_node:
         raise ValueError(f"No files found in {path}")
 
-    file_nodes = _extract_files_content(query=query, node=root_node, file_nodes=[])
+    print(root_node)
 
-    return format_directory(root_node, file_nodes, query)
+    return format_directory(root_node, query)
 
 
 def scan_directory(
@@ -229,53 +229,6 @@ def _process_node(
 
     except (MaxFileSizeReachedError, AlreadyVisitedError) as exc:
         print(exc)
-
-
-def _extract_files_content(
-    query: ParsedQuery, node: FileSystemNode, file_nodes: List[FileSystemNode]
-) -> List[FileSystemNode]:
-    """
-    Recursively collect all text files with their contents.
-
-    This function traverses the directory tree and extracts the contents of all text files
-    into a list, ignoring non-text files or files that exceed the specified size limit.
-
-    Parameters
-    ----------
-    query : ParsedQuery
-        The parsed query object containing information about the repository and query parameters.
-    node : FileSystemNode
-        The current directory or file node being processed.
-    fifile_nodesles : List[FileSystemNode
-        A list to collect the extracted files' information, by default None.
-
-    Returns
-    -------
-    List[FileSystemNode]
-        A list of dictionaries, each containing the path, content (or `None` if too large), and size of each file.
-    """
-
-    if node.type == FileSystemNodeType.DIRECTORY:
-        for child in node.children:
-            _extract_files_content(query=query, node=child, file_nodes=file_nodes)
-
-    else:
-        relative_path = Path(node.path).relative_to(query.local_path)
-
-        node = FileSystemNode(
-            name=node.name,
-            type=FileSystemNodeType.FILE,
-            size=node.size,
-            children=[],
-            file_count=1,
-            dir_count=0,
-            path=str(relative_path),
-            real_path=relative_path,
-        )
-
-        file_nodes.append(node)
-
-    return file_nodes
 
 
 def _process_file(path: Path, file_node: FileSystemNode, stats: Dict[str, int]) -> None:

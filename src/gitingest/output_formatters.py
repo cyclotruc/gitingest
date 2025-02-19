@@ -142,9 +142,16 @@ def format_single_file(file_node: FileSystemNode, query: ParsedQuery) -> Tuple[s
     return summary, tree, files_content
 
 
-def format_directory(
-    root_node: FileSystemNode, file_nodes: List[FileSystemNode], query: ParsedQuery
-) -> Tuple[str, str, str]:
+def _get_files_content(node: FileSystemNode) -> str:
+    if node.type == FileSystemNodeType.FILE:
+        return node.content_string
+    elif node.type == FileSystemNodeType.DIRECTORY:
+        return "\n".join(_get_files_content(child) for child in node.children)
+    else:
+        return ""
+
+
+def format_directory(root_node: FileSystemNode, query: ParsedQuery) -> Tuple[str, str, str]:
     """
     Ingest an entire directory and return its summary, directory structure, and file contents.
 
@@ -170,9 +177,7 @@ def format_directory(
     """
     summary = _create_summary_string(query, node=root_node)
     tree = "Directory structure:\n" + _create_tree_structure(query, root_node)
-    files_content = ""
-    for node in file_nodes:
-        files_content += node.content_string
+    files_content = _get_files_content(root_node)
 
     formatted_tokens = _generate_token_string(tree + files_content)
     if formatted_tokens:

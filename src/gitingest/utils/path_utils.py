@@ -3,24 +3,6 @@
 import os
 import platform
 from pathlib import Path
-from typing import Union
-
-
-def _normalize_path(path: Path) -> Path:
-    """
-    Normalize path for cross-platform compatibility.
-
-    Parameters
-    ----------
-    path : Path
-        The Path object to normalize.
-
-    Returns
-    -------
-    Path
-        The normalized path with platform-specific separators and resolved components.
-    """
-    return Path(os.path.normpath(str(path)))
 
 
 def _is_safe_symlink(symlink_path: Path, base_path: Path) -> bool:
@@ -48,8 +30,8 @@ def _is_safe_symlink(symlink_path: Path, base_path: Path) -> bool:
             if not os.path.islink(str(symlink_path)):
                 return False
 
-        target_path = _normalize_path(symlink_path.resolve())
-        base_resolved = _normalize_path(base_path.resolve())
+        target_path = symlink_path.resolve()
+        base_resolved = base_path.resolve()
 
         return base_resolved in target_path.parents or target_path == base_resolved
     except (OSError, ValueError):
