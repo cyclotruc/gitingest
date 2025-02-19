@@ -102,6 +102,7 @@ repos:
             slowapi,
             starlette,
             tiktoken,
+            tomli,
             uvicorn,
           ]
       - id: pylint
@@ -118,6 +119,7 @@ repos:
             python-dotenv,
             slowapi,
             starlette,
+            tomli,
             tiktoken,
             uvicorn,
           ]
