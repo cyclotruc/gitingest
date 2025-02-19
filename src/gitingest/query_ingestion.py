@@ -3,11 +3,13 @@
 import locale
 import os
 import platform
+import warnings
 from fnmatch import fnmatch
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import tiktoken
+import tomli
 
 from gitingest.config import MAX_DIRECTORY_DEPTH, MAX_FILES, MAX_TOTAL_SIZE_BYTES
 from gitingest.exceptions import (
@@ -899,4 +901,70 @@ def run_ingest_query(query: ParsedQuery) -> Tuple[str, str, str]:
     if query.type and query.type == "blob":
         return _ingest_single_file(path, query)
 
+    apply_gitingest_file(path, query)
     return _ingest_directory(path, query)
+
+
+def apply_gitingest_file(path: Path, query: ParsedQuery) -> None:
+    """
+    Apply the .gitingest file to the query object.
+
+    This function reads the .gitingest file in the specified path and updates the query object with the ignore
+    patterns found in the file.
+
+    Parameters
+    ----------
+    path : Path
+        The path of the directory to ingest.
+    query : ParsedQuery
+        The parsed query object containing information about the repository and query parameters.
+        It should have an attribute `ignore_patterns` which is either None or a set of strings.
+    """
+    path_gitingest = path / ".gitingest"
+
+    if not path_gitingest.is_file():
+        return
+
+    try:
+        with path_gitingest.open("rb") as f:
+            data = tomli.load(f)
+    except tomli.TOMLDecodeError as exc:
+        warnings.warn(f"Invalid TOML in {path_gitingest}: {exc}", UserWarning)
+        return
+
+    config_section = data.get("config", {})
+    ignore_patterns = config_section.get("ignore_patterns")
+
+    if not ignore_patterns:
+        return
+
+    # If a single string is provided, make it a list of one element
+    if isinstance(ignore_patterns, str):
+        ignore_patterns = [ignore_patterns]
+
+    if not isinstance(ignore_patterns, (list, set)):
+        warnings.warn(
+            f"Expected a list/set for 'ignore_patterns', got {type(ignore_patterns)} in {path_gitingest}. Skipping.",
+            UserWarning,
+        )
+        return
+
+    # Filter out duplicated patterns
+    ignore_patterns = set(ignore_patterns)
+
+    # Filter out any non-string entries
+    valid_patterns = {pattern for pattern in ignore_patterns if isinstance(pattern, str)}
+    invalid_patterns = ignore_patterns - valid_patterns
+
+    if invalid_patterns:
+        warnings.warn(f"Ignore patterns {invalid_patterns} are not strings. Skipping.", UserWarning)
+
+    if not valid_patterns:
+        return
+
+    if query.ignore_patterns is None:
+        query.ignore_patterns = valid_patterns
+    else:
+        query.ignore_patterns.update(valid_patterns)
+
+    return
