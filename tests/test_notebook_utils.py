@@ -8,7 +8,7 @@ empty cells, outputs, etc.) are handled appropriately.
 
 import pytest
 
-from gitingest.notebook_utils import process_notebook
+from gitingest.utils.notebook_utils import process_notebook
 from tests.conftest import WriteNotebookFunc
 
 

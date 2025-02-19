@@ -99,8 +99,8 @@ async def _async_main(
         click.echo("\nSummary:")
         click.echo(summary)
 
-    except Exception as e:
-        click.echo(f"Error: {e}", err=True)
+    except Exception as exc:
+        click.echo(f"Error: {exc}", err=True)
         raise click.Abort()
 
 

@@ -46,8 +46,8 @@ def cleanup_temp_directories():
     if temp_dir.exists():
         try:
             shutil.rmtree(temp_dir)
-        except PermissionError as e:
-            print(f"Error cleaning up {temp_dir}: {e}")
+        except PermissionError as exc:
+            print(f"Error cleaning up {temp_dir}: {exc}")
 
 
 @pytest.fixture(scope="module", autouse=True)

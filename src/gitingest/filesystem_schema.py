@@ -1,0 +1,156 @@
+""" Define the schema for the filesystem representation. """
+
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass
+from enum import Enum, auto
+from pathlib import Path
+
+from gitingest.exceptions import InvalidNotebookError
+from gitingest.utils.ingestion_utils import _get_encoding_list
+from gitingest.utils.notebook_utils import process_notebook
+
+SEPARATOR = "=" * 48 + "\n"
+
+
+class FileSystemNodeType(Enum):
+    DIRECTORY = auto()
+    FILE = auto()
+
+
+@dataclass
+class FileSystemNode:
+    name: str
+    type: FileSystemNodeType  # e.g., "directory" or "file"
+    size: int
+    children: list[FileSystemNode]  # Forward reference to the same TypedDict
+    file_count: int
+    dir_count: int
+    path: str
+    real_path: Path
+
+    def sort_children(self) -> None:
+        """
+        Sort the children nodes of a directory according to a specific order.
+
+        Order of sorting:
+        1. README.md first
+        2. Regular files (not starting with dot)
+        3. Hidden files (starting with dot)
+        4. Regular directories (not starting with dot)
+        5. Hidden directories (starting with dot)
+        All groups are sorted alphanumerically within themselves.
+        """
+        # Separate files and directories
+        files = [child for child in self.children if child.type == FileSystemNodeType.FILE]
+        directories = [child for child in self.children if child.type == FileSystemNodeType.DIRECTORY]
+
+        # Find README.md
+        readme_files = [f for f in files if f.name.lower() == "readme.md"]
+        other_files = [f for f in files if f.name.lower() != "readme.md"]
+
+        # Separate hidden and regular files/directories
+        regular_files = [f for f in other_files if not f.name.startswith(".")]
+        hidden_files = [f for f in other_files if f.name.startswith(".")]
+        regular_dirs = [d for d in directories if not d.name.startswith(".")]
+        hidden_dirs = [d for d in directories if d.name.startswith(".")]
+
+        # Sort each group alphanumerically
+        regular_files.sort(key=lambda x: x.name)
+        hidden_files.sort(key=lambda x: x.name)
+        regular_dirs.sort(key=lambda x: x.name)
+        hidden_dirs.sort(key=lambda x: x.name)
+
+        self.children = readme_files + regular_files + hidden_files + regular_dirs + hidden_dirs
+
+    @property
+    def content_string(self) -> str:
+        """
+        Return the content of the node as a string.
+
+        This property returns the content of the node as a string, including the path and content.
+
+        Returns
+        -------
+        str
+            A string representation of the node's content.
+        """
+        if not self.content:
+            return ""
+
+        content_repr = SEPARATOR
+
+        # Use forward slashes in output paths
+        content_repr += f"File: {str(self.path).replace(os.sep, '/')}\n"
+        content_repr += SEPARATOR
+        content_repr += f"{self.content}\n\n"
+        return content_repr
+
+    @property
+    def content(self) -> str:
+        """
+        Read the content of a file.
+
+        This function attempts to open a file and read its contents using UTF-8 encoding.
+        If an error occurs during reading (e.g., file is not found or permission error),
+        it returns an error message.
+
+        Parameters
+        ----------
+        file_path : Path
+            The path to the file to read.
+
+        Returns
+        -------
+        str
+            The content of the file, or an error message if the file could not be read.
+        """
+        if self.type == FileSystemNodeType.FILE and not self.is_text_file():
+            return "[Non-text file]"
+
+        try:
+            if self.real_path.suffix == ".ipynb":
+                try:
+                    return process_notebook(self.real_path)
+                except Exception as exc:
+                    return f"Error processing notebook: {exc}"
+
+            for encoding in _get_encoding_list():
+                try:
+                    with open(self.real_path, encoding=encoding) as f:
+                        return f.read()
+                except UnicodeDecodeError:
+                    continue
+                except OSError as exc:
+                    return f"Error reading file: {exc}"
+
+            return "Error: Unable to decode file with available encodings"
+
+        except (OSError, InvalidNotebookError) as exc:
+            return f"Error reading file: {exc}"
+
+    def is_text_file(self) -> bool:
+        """
+        Determine if a file is likely a text file based on its content.
+
+        This function attempts to read the first 1024 bytes of a file and checks for the presence
+        of non-text characters. It returns `True` if the file is determined to be a text file,
+        otherwise returns `False`.
+
+        Parameters
+        ----------
+        file_path : Path
+            The path to the file to check.
+
+        Returns
+        -------
+        bool
+            `True` if the file is likely a text file, `False` otherwise.
+        """
+        try:
+            with self.real_path.open("rb") as file:
+                chunk = file.read(1024)
+            return not bool(chunk.translate(None, bytes([7, 8, 9, 10, 12, 13, 27] + list(range(0x20, 0x100)))))
+        except OSError:
+            return False

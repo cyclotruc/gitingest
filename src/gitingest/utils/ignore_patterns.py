@@ -17,7 +17,7 @@ DEFAULT_IGNORE_PATTERNS: Set[str] = {
     ".hypothesis",
     "poetry.lock",
     "Pipfile.lock",
-    # JavaScript/Node
+    # JavaScript/FileSystemNode
     "node_modules",
     "bower_components",
     "package-lock.json",
