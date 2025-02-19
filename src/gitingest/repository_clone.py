@@ -39,35 +39,6 @@ class CloneConfig:
 
 @async_timeout(TIMEOUT)
 async def clone_repo(config: CloneConfig) -> Tuple[bytes, bytes]:
-    """
-    Clone a repository to a local path based on the provided configuration.
-
-    This function handles the process of cloning a Git repository to the local file system.
-    It can clone a specific branch or commit if provided, and it raises exceptions if
-    any errors occur during the cloning process.
-
-    Parameters
-    ----------
-    config : CloneConfig
-        A dictionary containing the following keys:
-            - url (str): The URL of the repository.
-            - local_path (str): The local path to clone the repository to.
-            - commit (str, optional): The specific commit hash to checkout.
-            - branch (str, optional): The branch to clone. Defaults to 'main' or 'master' if not provided.
-
-    Returns
-    -------
-    Tuple[bytes, bytes]
-        A tuple containing the stdout and stderr of the Git commands executed.
-
-    Raises
-    ------
-    ValueError
-        If the 'url' or 'local_path' parameters are missing, or if the repository is not found.
-    OSError
-        If there is an error creating the parent directory structure.
-    """
-    # Extract and validate query parameters
     url: str = config.url
     local_path: str = config.local_path
     commit: Optional[str] = config.commit
@@ -75,9 +46,24 @@ async def clone_repo(config: CloneConfig) -> Tuple[bytes, bytes]:
 
     if not url:
         raise ValueError("The 'url' parameter is required.")
-
     if not local_path:
         raise ValueError("The 'local_path' parameter is required.")
+
+    # Use os from the module-level import
+    auth_token = os.getenv("GIT_AUTH_TOKEN", "")
+
+    if auth_token:
+        if not await _check_repo_exists(url):
+            raise ValueError("Repository not found or invalid token provided.")
+    else:
+        if not await _check_repo_exists(url):
+            raise ValueError("Repository not found, make sure it is public or that you provided a valid token.")
+
+    if auth_token and "github.com" in url.lower() and url.startswith("https://"):
+        remainder = url[len("https://"):]
+        token_url = f"https://x-access-token:{auth_token}@{remainder}"
+    else:
+        token_url = url
 
     # Create parent directory if it doesn't exist
     parent_dir = Path(local_path).parent
@@ -86,22 +72,13 @@ async def clone_repo(config: CloneConfig) -> Tuple[bytes, bytes]:
     except OSError as e:
         raise OSError(f"Failed to create parent directory {parent_dir}: {e}") from e
 
-    # Check if the repository exists
-    if not await _check_repo_exists(url):
-        raise ValueError("Repository not found, make sure it is public")
-
     if commit:
-        # Scenario 1: Clone and checkout a specific commit
-        # Clone the repository without depth to ensure full history for checkout
-        clone_cmd = ["git", "clone", "--recurse-submodules", "--single-branch", url, local_path]
+        clone_cmd = ["git", "clone", "--recurse-submodules", "--single-branch", token_url, local_path]
         await _run_git_command(*clone_cmd)
-
-        # Checkout the specific commit
         checkout_cmd = ["git", "-C", local_path, "checkout", commit]
         return await _run_git_command(*checkout_cmd)
 
     if branch and branch.lower() not in ("main", "master"):
-        # Scenario 2: Clone a specific branch with shallow depth
         clone_cmd = [
             "git",
             "clone",
@@ -110,38 +87,48 @@ async def clone_repo(config: CloneConfig) -> Tuple[bytes, bytes]:
             "--single-branch",
             "--branch",
             branch,
-            url,
+            token_url,
             local_path,
         ]
         return await _run_git_command(*clone_cmd)
 
-    # Scenario 3: Clone the default branch with shallow depth
-    clone_cmd = ["git", "clone", "--recurse-submodules", "--depth=1", "--single-branch", url, local_path]
+    clone_cmd = ["git", "clone", "--recurse-submodules", "--depth=1", "--single-branch", token_url, local_path]
     return await _run_git_command(*clone_cmd)
+
+
 
 
 async def _check_repo_exists(url: str) -> bool:
     """
     Check if a Git repository exists at the provided URL.
-
-    Parameters
-    ----------
-    url : str
-        The URL of the Git repository to check.
-    Returns
-    -------
-    bool
-        True if the repository exists, False otherwise.
-
-    Raises
-    ------
-    RuntimeError
-        If the curl command returns an unexpected status code.
+    For GitHub, we use the GitHub API which properly supports authentication for private repos.
     """
+    import os
+
+    headers = ["-H", "User-Agent: Gitingest"]
+    auth_token = os.getenv("GIT_AUTH_TOKEN", "")
+    if auth_token:
+        headers += ["-H", f"Authorization: token {auth_token}"]
+
+    # If the URL is from GitHub, build the API URL.
+    if "github.com" in url:
+        # Remove protocol and possible .git suffix.
+        parts = url.split("/")
+        if len(parts) >= 5:
+            owner = parts[3]
+            repo = parts[4].replace(".git", "")
+            url_to_check = f"https://api.github.com/repos/{owner}/{repo}"
+        else:
+            url_to_check = url
+    else:
+        url_to_check = url
+
     proc = await asyncio.create_subprocess_exec(
         "curl",
         "-I",
-        url,
+        "-L",
+        *headers,
+        url_to_check,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
@@ -160,6 +147,7 @@ async def _check_repo_exists(url: str) -> bool:
         return False
 
     raise RuntimeError(f"Unexpected status code: {status_code}")
+
 
 
 @async_timeout(TIMEOUT)
