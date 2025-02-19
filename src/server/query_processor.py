@@ -7,7 +7,7 @@ from starlette.templating import _TemplateResponse
 
 from gitingest.query_ingestion import run_ingest_query
 from gitingest.query_parser import ParsedQuery, parse_query
-from gitingest.repository_clone import CloneConfig, clone_repo
+from gitingest.repository_clone import clone_repo
 from server.server_config import EXAMPLE_REPOS, MAX_DISPLAY_SIZE, templates
 from server.server_utils import Colors, log_slider_to_size
 
@@ -84,15 +84,11 @@ async def process_query(
         if not parsed_query.url:
             raise ValueError("The 'url' parameter is required.")
 
-        clone_config = CloneConfig(
-            url=parsed_query.url,
-            local_path=str(parsed_query.local_path),
-            commit=parsed_query.commit,
-            branch=parsed_query.branch,
-        )
+        clone_config = parsed_query.extact_clone_config()
         await clone_repo(clone_config)
+
         summary, tree, content = run_ingest_query(parsed_query)
-        with open(f"{clone_config.local_path}.txt", "w", encoding="utf-8") as f:
+        with open(f"{parsed_query.local_path}.txt", "w", encoding="utf-8") as f:
             f.write(tree + "\n" + content)
     except Exception as e:
         # hack to print error message when query is not defined
