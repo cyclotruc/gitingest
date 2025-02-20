@@ -11,6 +11,7 @@ from typing import Set
 from gitingest.exceptions import InvalidNotebookError
 from gitingest.utils.ingestion_utils import _get_encoding_list
 from gitingest.utils.notebook_utils import process_notebook
+from gitingest.utils.textfile_checker_utils import is_textfile
 
 SEPARATOR = "=" * 48 + "\n"
 
@@ -112,7 +113,7 @@ class FileSystemNode:
         str
             The content of the file, or an error message if the file could not be read.
         """
-        if self.type == FileSystemNodeType.FILE and not self.is_text_file():
+        if self.type == FileSystemNodeType.FILE and not is_textfile(self.path):
             return "[Non-text file]"
 
         try:
@@ -135,34 +136,3 @@ class FileSystemNode:
 
         except (OSError, InvalidNotebookError) as exc:
             return f"Error reading file: {exc}"
-
-    def is_text_file(self) -> bool:
-        """
-        Determine if a file is likely a text file based on its content.
-
-        This function attempts to read the first 1024 bytes of a file and checks for the presence
-        of non-text characters. It returns `True` if the file is determined to be a text file,
-        otherwise returns `False`.
-
-        Parameters
-        ----------
-        file_path : Path
-            The path to the file to check.
-
-        Returns
-        -------
-        bool
-            `True` if the file is likely a text file, `False` otherwise.
-        """
-
-        for encoding in _get_encoding_list():
-            try:
-                with self.path.open(encoding=encoding) as f:
-                    f.read()
-                    return True
-            except UnicodeDecodeError:
-                continue
-            except OSError:
-                return False
-
-        return False
