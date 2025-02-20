@@ -22,9 +22,10 @@ class FileSystemNodeType(Enum):
 
 @dataclass
 class FileSystemStats:
-    visited: Set[Path] = field(default_factory=set)
+    visited: set[Path] = field(default_factory=set)
     total_files: int = 0
     total_size: int = 0
+
 
 @dataclass
 class FileSystemNode:
@@ -36,7 +37,7 @@ class FileSystemNode:
     file_count: int = 0
     dir_count: int = 0
     depth: int = 0
-    children: list[FileSystemNode] = []  # Forward reference to the same TypedDict
+    children: list[FileSystemNode] = field(default_factory=list)  # Using default_factory instead of empty list
 
     def sort_children(self) -> None:
         """
@@ -160,7 +161,6 @@ class FileSystemNode:
         except OSError:
             return False
 
-
         # for encoding in _get_encoding_list():
         #     try:
         #         with self.path.open(encoding=encoding) as f:
@@ -172,4 +172,3 @@ class FileSystemNode:
         #         return False
 
         # return False
-
