@@ -42,6 +42,7 @@ def ingest_query(query: ParsedQuery) -> Tuple[str, str, str]:
         raise ValueError(f"{query.slug} cannot be found")
 
     if query.type and query.type == "blob":
+        # TODO: We do this wrong! We should still check the branch and commit!
         if not path.is_file():
             raise ValueError(f"Path {path} is not a file")
 
@@ -62,8 +63,6 @@ def ingest_query(query: ParsedQuery) -> Tuple[str, str, str]:
     root_node = scan_directory(path=path, query=query)
     if not root_node:
         raise ValueError(f"No files found in {path}")
-
-    print(root_node)
 
     return format_directory(root_node, query)
 
@@ -196,7 +195,7 @@ def _process_node(
         # Test if this is a symlink
         if path.is_symlink():
             if not _is_safe_symlink(path, query.local_path):
-                raise RuntimeError("CALL THIS SOMETHING ELSE")
+                raise RuntimeError("Unsafe ingestion from outside the repository")
 
             symlink_path = path
             path = path.resolve()

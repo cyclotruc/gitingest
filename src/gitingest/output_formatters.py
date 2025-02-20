@@ -30,18 +30,55 @@ def _create_summary_string(query: ParsedQuery, node: FileSystemNode) -> str:
     if query.user_name:
         summary = f"Repository: {query.user_name}/{query.repo_name}\n"
     else:
-        summary = f"Repository: {query.slug}\n"
+        # Local scenario
+        summary = f"Directory: {query.slug}\n"
 
-    summary += f"Files analyzed: {node.file_count}\n"
-
-    if query.subpath != "/":
-        summary += f"Subpath: {query.subpath}\n"
     if query.commit:
         summary += f"Commit: {query.commit}\n"
     elif query.branch and query.branch not in ("main", "master"):
         summary += f"Branch: {query.branch}\n"
 
+    if query.subpath != "/":
+        summary += f"Subpath: {query.subpath}\n"
+
+    summary += f"Files analyzed: {node.file_count}\n"
+    # TODO: Do we want to add the total number of lines?
+
     return summary
+
+
+def format_single_file(file_node: FileSystemNode, query: ParsedQuery) -> Tuple[str, str, str]:
+    if not file_node.content:
+        raise ValueError(f"File {file_node.name} has no content")
+
+    summary = f"Repository: {query.user_name}/{query.repo_name}\n"
+
+    if query.commit:
+        summary += f"Commit: {query.commit}\n"
+    elif query.branch and query.branch not in ("main", "master"):
+        summary += f"Branch: {query.branch}\n"
+
+    summary += f"File: {file_node.name}\n"
+    summary += f"Lines: {len(file_node.content.splitlines()):,}\n"
+
+    files_content = file_node.content_string
+
+    tree = "Directory structure:\n└── " + file_node.name
+
+    formatted_tokens = _generate_token_string(files_content)
+    if formatted_tokens:
+        summary += f"\nEstimated tokens: {formatted_tokens}"
+
+    return summary, tree, files_content
+
+
+def _get_files_content(node: FileSystemNode) -> str:
+    if node.type == FileSystemNodeType.FILE:
+        return node.content_string
+    elif node.type == FileSystemNodeType.DIRECTORY:
+        return "\n".join(_get_files_content(child) for child in node.children)
+    else:
+        return ""
 
 
 def _create_tree_structure(query: ParsedQuery, node: FileSystemNode, prefix: str = "", is_last: bool = True) -> str:
@@ -118,37 +155,6 @@ def _generate_token_string(context_string: str) -> Optional[str]:
         return f"{total_tokens / 1_000:.1f}k"
 
     return str(total_tokens)
-
-
-def format_single_file(file_node: FileSystemNode, query: ParsedQuery) -> Tuple[str, str, str]:
-    if not file_node.content:
-        raise ValueError(f"File {file_node.name} has no content")
-
-    summary = (
-        f"Repository: {query.user_name}/{query.repo_name}\n"
-        f"File: {file_node.name}\n"
-        f"Size: {file_node.size:,} bytes\n"
-        f"Lines: {len(file_node.content.splitlines()):,}\n"
-    )
-
-    files_content = file_node.content_string
-
-    tree = "Directory structure:\n└── " + file_node.name
-
-    formatted_tokens = _generate_token_string(files_content)
-    if formatted_tokens:
-        summary += f"\nEstimated tokens: {formatted_tokens}"
-
-    return summary, tree, files_content
-
-
-def _get_files_content(node: FileSystemNode) -> str:
-    if node.type == FileSystemNodeType.FILE:
-        return node.content_string
-    elif node.type == FileSystemNodeType.DIRECTORY:
-        return "\n".join(_get_files_content(child) for child in node.children)
-    else:
-        return ""
 
 
 def format_directory(root_node: FileSystemNode, query: ParsedQuery) -> Tuple[str, str, str]:

@@ -157,4 +157,6 @@ DEFAULT_IGNORE_PATTERNS: Set[str] = {
     "*.tfstate*",
     ## Dependencies in various languages
     "vendor/",
+    # Gitingest
+    "digest.txt",
 }

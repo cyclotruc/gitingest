@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 import pytest
 
-from gitingest.ingestion import FileSystemNodeType, _extract_files_content, ingest_query, scan_directory
+from gitingest.ingestion import FileSystemNodeType, ingest_query, scan_directory
 from gitingest.query_parsing import ParsedQuery
 
 

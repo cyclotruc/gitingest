@@ -294,13 +294,14 @@ def _parse_local_dir_path(path_str: str) -> ParsedQuery:
         A dictionary containing the parsed details of the file path.
     """
     path_obj = Path(path_str).resolve()
+    slug = path_obj.name if path_str == "." else path_str.strip("/")
     return ParsedQuery(
         user_name=None,
         repo_name=None,
         url=None,
         subpath="/",
         local_path=path_obj,
-        slug=f"{path_obj.parent.name}/{path_obj.name}",
+        slug=slug,
         id=str(uuid.uuid4()),
     )
 
