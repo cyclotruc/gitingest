@@ -154,21 +154,15 @@ class FileSystemNode:
         bool
             `True` if the file is likely a text file, `False` otherwise.
         """
-        try:
-            with self.path.open("rb") as file:
-                chunk = file.read(1024)
-            return not bool(chunk.translate(None, bytes([7, 8, 9, 10, 12, 13, 27] + list(range(0x20, 0x100)))))
-        except OSError:
-            return False
 
-        # for encoding in _get_encoding_list():
-        #     try:
-        #         with self.path.open(encoding=encoding) as f:
-        #             f.read()
-        #             return True
-        #     except UnicodeDecodeError:
-        #         continue
-        #     except OSError:
-        #         return False
+        for encoding in _get_encoding_list():
+            try:
+                with self.path.open(encoding=encoding) as f:
+                    f.read()
+                    return True
+            except UnicodeDecodeError:
+                continue
+            except OSError:
+                return False
 
-        # return False
+        return False
