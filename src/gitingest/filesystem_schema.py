@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum, auto
 from pathlib import Path
+from typing import Set
 
 from gitingest.exceptions import InvalidNotebookError
 from gitingest.utils.ingestion_utils import _get_encoding_list
@@ -20,15 +21,22 @@ class FileSystemNodeType(Enum):
 
 
 @dataclass
+class FileSystemStats:
+    visited: Set[Path] = field(default_factory=set)
+    total_files: int = 0
+    total_size: int = 0
+
+@dataclass
 class FileSystemNode:
     name: str
     type: FileSystemNodeType  # e.g., "directory" or "file"
-    size: int
-    children: list[FileSystemNode]  # Forward reference to the same TypedDict
-    file_count: int
-    dir_count: int
-    path: str
-    real_path: Path
+    path_str: str
+    path: Path
+    size: int = 0
+    file_count: int = 0
+    dir_count: int = 0
+    depth: int = 0
+    children: list[FileSystemNode] = []  # Forward reference to the same TypedDict
 
     def sort_children(self) -> None:
         """
@@ -76,13 +84,10 @@ class FileSystemNode:
         str
             A string representation of the node's content.
         """
-        if not self.content:
-            return ""
-
         content_repr = SEPARATOR
 
         # Use forward slashes in output paths
-        content_repr += f"File: {str(self.path).replace(os.sep, '/')}\n"
+        content_repr += f"File: {str(self.path_str).replace(os.sep, '/')}\n"
         content_repr += SEPARATOR
         content_repr += f"{self.content}\n\n"
         return content_repr
@@ -110,15 +115,15 @@ class FileSystemNode:
             return "[Non-text file]"
 
         try:
-            if self.real_path.suffix == ".ipynb":
+            if self.path.suffix == ".ipynb":
                 try:
-                    return process_notebook(self.real_path)
+                    return process_notebook(self.path)
                 except Exception as exc:
                     return f"Error processing notebook: {exc}"
 
             for encoding in _get_encoding_list():
                 try:
-                    with open(self.real_path, encoding=encoding) as f:
+                    with self.path.open(encoding=encoding) as f:
                         return f.read()
                 except UnicodeDecodeError:
                     continue
@@ -149,8 +154,22 @@ class FileSystemNode:
             `True` if the file is likely a text file, `False` otherwise.
         """
         try:
-            with self.real_path.open("rb") as file:
+            with self.path.open("rb") as file:
                 chunk = file.read(1024)
             return not bool(chunk.translate(None, bytes([7, 8, 9, 10, 12, 13, 27] + list(range(0x20, 0x100)))))
         except OSError:
             return False
+
+
+        # for encoding in _get_encoding_list():
+        #     try:
+        #         with self.path.open(encoding=encoding) as f:
+        #             f.read()
+        #             return True
+        #     except UnicodeDecodeError:
+        #         continue
+        #     except OSError:
+        #         return False
+
+        # return False
+

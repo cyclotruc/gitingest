@@ -5,17 +5,17 @@ import os
 from click.testing import CliRunner
 
 from gitingest.cli import main
-from gitingest.config import MAX_FILE_SIZE, OUTPUT_FILE_PATH
+from gitingest.config import MAX_FILE_SIZE, OUTPUT_FILE_NAME
 
 
 def test_cli_with_default_options():
     runner = CliRunner()
     result = runner.invoke(main, ["./"])
     output_lines = result.output.strip().split("\n")
-    assert f"Analysis complete! Output written to: {OUTPUT_FILE_PATH}" in output_lines
-    assert os.path.exists(OUTPUT_FILE_PATH), f"Output file was not created at {OUTPUT_FILE_PATH}"
+    assert f"Analysis complete! Output written to: {OUTPUT_FILE_NAME}" in output_lines
+    assert os.path.exists(OUTPUT_FILE_NAME), f"Output file was not created at {OUTPUT_FILE_NAME}"
 
-    os.remove(OUTPUT_FILE_PATH)
+    os.remove(OUTPUT_FILE_NAME)
 
 
 def test_cli_with_options():
@@ -25,7 +25,7 @@ def test_cli_with_options():
         [
             "./",
             "--output",
-            str(OUTPUT_FILE_PATH),
+            str(OUTPUT_FILE_NAME),
             "--max-size",
             str(MAX_FILE_SIZE),
             "--exclude-pattern",
@@ -35,7 +35,7 @@ def test_cli_with_options():
         ],
     )
     output_lines = result.output.strip().split("\n")
-    assert f"Analysis complete! Output written to: {OUTPUT_FILE_PATH}" in output_lines
-    assert os.path.exists(OUTPUT_FILE_PATH), f"Output file was not created at {OUTPUT_FILE_PATH}"
+    assert f"Analysis complete! Output written to: {OUTPUT_FILE_NAME}" in output_lines
+    assert os.path.exists(OUTPUT_FILE_NAME), f"Output file was not created at {OUTPUT_FILE_NAME}"
 
-    os.remove(OUTPUT_FILE_PATH)
+    os.remove(OUTPUT_FILE_NAME)
