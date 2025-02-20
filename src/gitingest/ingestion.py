@@ -142,11 +142,7 @@ def _process_node(
                 path=sub_path,
                 depth=node.depth + 1,
             )
-            node.children.append(child_directory_node)
-            node.size += child_directory_node.size
-            node.file_count += child_directory_node.file_count
-            node.dir_count += 1 + child_directory_node.dir_count
-
+            
             # rename the subdir to reflect the symlink name
             if symlink_path:
                 child_directory_node.name = symlink_path.name
@@ -157,6 +153,11 @@ def _process_node(
                 query=query,
                 stats=stats,
             )
+            node.children.append(child_directory_node)
+            node.size += child_directory_node.size
+            node.file_count += child_directory_node.file_count
+            node.dir_count += 1 + child_directory_node.dir_count
+
         else:
             raise ValueError(f"Unexpected error: {sub_path} is neither a file nor a directory")
 
