@@ -13,7 +13,7 @@ from urllib.parse import unquote, urlparse
 from gitingest.config import MAX_FILE_SIZE, TMP_BASE_PATH
 from gitingest.exceptions import InvalidPatternError
 from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
-from gitingest.repository_clone import _check_repo_exists, fetch_remote_branch_list
+from gitingest.repository_clone import CloneConfig, _check_repo_exists, fetch_remote_branch_list
 
 HEX_DIGITS: Set[str] = set(string.hexdigits)
 
@@ -35,11 +35,11 @@ class ParsedQuery:  # pylint: disable=too-many-instance-attributes
 
     user_name: Optional[str]
     repo_name: Optional[str]
-    subpath: str
     local_path: Path
     url: Optional[str]
     slug: str
     id: str
+    subpath: str = "/"
     type: Optional[str] = None
     branch: Optional[str] = None
     commit: Optional[str] = None
@@ -47,6 +47,31 @@ class ParsedQuery:  # pylint: disable=too-many-instance-attributes
     ignore_patterns: Optional[Set[str]] = None
     include_patterns: Optional[Set[str]] = None
     pattern_type: Optional[str] = None
+
+    def extact_clone_config(self) -> CloneConfig:
+        """
+        Extract the relevant fields for the CloneConfig object.
+
+        Returns
+        -------
+        CloneConfig
+            A CloneConfig object containing the relevant fields.
+
+        Raises
+        ------
+        ValueError
+            If the 'url' parameter is not provided.
+        """
+        if not self.url:
+            raise ValueError("The 'url' parameter is required.")
+
+        return CloneConfig(
+            url=self.url,
+            local_path=str(self.local_path),
+            commit=self.commit,
+            branch=self.branch,
+            subpath=self.subpath,
+        )
 
 
 async def parse_query(
@@ -171,7 +196,6 @@ async def _parse_repo_source(source: str) -> ParsedQuery:
         user_name=user_name,
         repo_name=repo_name,
         url=url,
-        subpath="/",
         local_path=local_path,
         slug=slug,
         id=_id,
@@ -363,7 +387,6 @@ def _parse_path(path_str: str) -> ParsedQuery:
         user_name=None,
         repo_name=None,
         url=None,
-        subpath="/",
         local_path=path_obj,
         slug=f"{path_obj.parent.name}/{path_obj.name}",
         id=str(uuid.uuid4()),

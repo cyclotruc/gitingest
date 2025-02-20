@@ -8,7 +8,7 @@ from typing import Optional, Set, Tuple, Union
 from gitingest.config import TMP_BASE_PATH
 from gitingest.query_ingestion import run_ingest_query
 from gitingest.query_parser import ParsedQuery, parse_query
-from gitingest.repository_clone import CloneConfig, clone_repo
+from gitingest.repository_clone import clone_repo
 
 
 async def ingest_async(
@@ -70,13 +70,7 @@ async def ingest_async(
             selected_branch = branch if branch else parsed_query.branch  # prioritize branch argument
             parsed_query.branch = selected_branch
 
-            # Extract relevant fields for CloneConfig
-            clone_config = CloneConfig(
-                url=parsed_query.url,
-                local_path=str(parsed_query.local_path),
-                commit=parsed_query.commit,
-                branch=selected_branch,
-            )
+            clone_config = parsed_query.extact_clone_config()
             clone_coroutine = clone_repo(clone_config)
 
             if inspect.iscoroutine(clone_coroutine):
