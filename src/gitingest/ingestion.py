@@ -1,10 +1,9 @@
 """ Functions to ingest and analyze a codebase directory or single file. """
 
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Tuple
 
 from gitingest.config import MAX_DIRECTORY_DEPTH, MAX_FILES, MAX_TOTAL_SIZE_BYTES
-from gitingest.exceptions import AlreadyVisitedError, MaxFileSizeReachedError, MaxFilesReachedError
 from gitingest.filesystem_schema import FileSystemNode, FileSystemNodeType, FileSystemStats
 from gitingest.output_formatters import format_directory, format_single_file
 from gitingest.query_parsing import ParsedQuery
@@ -41,7 +40,7 @@ def ingest_query(query: ParsedQuery) -> Tuple[str, str, str]:
     if not path.exists():
         raise ValueError(f"{query.slug} cannot be found")
 
-    if query.type and query.type == "blob":
+    if (query.type and query.type == "blob") or query.local_path.is_file():
         # TODO: We do this wrong! We should still check the branch and commit!
         if not path.is_file():
             raise ValueError(f"Path {path} is not a file")
