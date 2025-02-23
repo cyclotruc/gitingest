@@ -27,7 +27,7 @@
               id="ingestForm"
               onsubmit="handleSubmit(event{% if is_index %}, true{% endif %})">
             <div class="relative w-full h-full">
-                <div class="w-full h-full rounded bg-gray-900 translate-y-1 translate-x-1 absolute inset-0 z-10"></div>
+                <div class="w-full h-full rounded bg-gray-800 translate-y-1 translate-x-1 absolute inset-0 z-10"></div>
                 <input type="text"
                        name="input_text"
                        id="input_text"
@@ -50,13 +50,13 @@
             <!-- Pattern selector -->
             <div class="w-[200px] sm:w-[250px] mr-9 mt-4">
                 <div class="relative">
-                    <div class="w-full h-full rounded bg-gray-900 translate-y-1 translate-x-1 absolute inset-0 z-10"></div>
+                    <div class="w-full h-full rounded bg-gray-800 translate-y-1 translate-x-1 absolute inset-0 z-10"></div>
                     <div class="flex relative z-20 border-[3px] border-gray-900 rounded bg-white">
                         <div class="relative flex items-center">
                             <select id="pattern_type"
                                     onchange="changePattern(this)"
                                     name="pattern_type"
-                                    class="w-21 py-2 pl-2 pr-6 appearance-none bg-[#e6e8eb] focus:outline-none border-r-[3px] border-gray-900">
+                                    class="w-21 py-2 pl-2 pr-6 text-gray-700 appearance-none bg-[#e6e8eb] focus:outline-none border-r-[3px] border-gray-900">
                                 <option value="exclude"
                                         {% if pattern_type == 'exclude' or not pattern_type %}selected{% endif %}>
                                     Exclude
@@ -100,7 +100,7 @@
         {% if show_examples %}
             <!-- Example repositories section -->
             <div class="mt-4">
-                <p class="opacity-70 mb-1">Try these example repositories:</p>
+                <p class="opacity-70 text-gray-700 mb-1">Try these example repositories:</p>
                 <div class="flex flex-wrap gap-2">
                     {% for example in examples %}
                         <button onclick="submitExample('{{ example.url }}')"

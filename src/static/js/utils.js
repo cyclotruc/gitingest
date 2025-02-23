@@ -211,3 +211,93 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeSlider();
     setupGlobalEnterHandler();
 });
+
+document.addEventListener("DOMContentLoaded", function () {
+    const toggleBtn = document.getElementById("dark-mode-toggle");
+    const body = document.body;
+
+    if (!toggleBtn) {
+        console.error("❌ Dark mode toggle button not found.");
+        return;
+    }
+
+    console.log("✅ Dark mode toggle button found.");
+
+    // Function to enable dark mode styles
+    function enableDarkMode() {
+        body.style.backgroundColor = "black"; // Body background black
+        
+        // Update all text-gray-900 elements
+        document.querySelectorAll(".text-blacknwhite").forEach(el => {
+            el.style.color = "white";
+        });
+
+        // Update all bg-gray-900 elements
+        document.querySelectorAll(".bg-gray-900").forEach(el => {
+            el.style.backgroundColor = "white";
+        });
+
+        // Update all h1 elements
+        document.querySelectorAll("h1").forEach(el => {
+            el.style.color = "white";
+        });
+
+        // Update all bg-blacked-900 elements
+        document.querySelectorAll(".bg-blacked-900").forEach(el => {
+            el.style.backgroundColor = "black"; // Set background to black in dark mode
+            el.style.opacity = "1";
+        });
+
+        localStorage.setItem("dark-mode", "enabled");
+        console.log("🌙 Dark mode applied");
+    }
+
+    // Function to disable dark mode styles
+    function disableDarkMode() {
+        body.style.backgroundColor = "";
+
+        // Reset all text-gray-900 elements
+        document.querySelectorAll(".text-blacknwhite").forEach(el => {
+            el.style.color = "rgb(17, 24, 39)"; // Original gray-900 color
+        });
+
+        // Reset all bg-gray-900 elements
+        document.querySelectorAll(".bg-gray-900").forEach(el => {
+            el.style.backgroundColor = "rgb(17, 24, 39)"; // Original bg-gray-900 color
+        });
+
+        // Reset all h1 elements
+        document.querySelectorAll("h1").forEach(el => {
+            el.style.color = "";
+        });
+
+        // Reset all bg-blacked-900 elements
+        document.querySelectorAll(".bg-blacked-900").forEach(el => {
+            el.style.backgroundColor = "#FFFDF8"; // Set background to light mode color
+            el.style.opacity = "1";
+        });
+
+        localStorage.setItem("dark-mode", "disabled");
+        console.log("☀️ Light mode applied");
+    }
+
+    // Check localStorage for saved mode
+    if (localStorage.getItem("dark-mode") === "enabled") {
+        enableDarkMode();
+    } else {
+        disableDarkMode();
+    }
+
+    // Toggle dark mode on button click
+    toggleBtn.addEventListener("click", () => {
+        if (localStorage.getItem("dark-mode") === "enabled") {
+            disableDarkMode();
+        } else {
+            enableDarkMode();
+        }
+    });
+});
+
+
+
+
