@@ -217,68 +217,55 @@ document.addEventListener("DOMContentLoaded", function () {
     const body = document.body;
 
     if (!toggleBtn) {
-        console.error("❌ Dark mode toggle button not found.");
+        //console.error("Dark mode toggle button not found.");
         return;
     }
 
-    console.log("✅ Dark mode toggle button found.");
-
-    // Function to enable dark mode styles
     function enableDarkMode() {
-        body.style.backgroundColor = "black"; // Body background black
+        body.style.backgroundColor = "black"; 
         
-        // Update all text-gray-900 elements
         document.querySelectorAll(".text-blacknwhite").forEach(el => {
             el.style.color = "white";
         });
 
-        // Update all bg-gray-900 elements
         document.querySelectorAll(".bg-gray-900").forEach(el => {
             el.style.backgroundColor = "white";
         });
 
-        // Update all h1 elements
         document.querySelectorAll("h1").forEach(el => {
             el.style.color = "white";
         });
 
-        // Update all bg-blacked-900 elements
         document.querySelectorAll(".bg-blacked-900").forEach(el => {
-            el.style.backgroundColor = "black"; // Set background to black in dark mode
+            el.style.backgroundColor = "black"; 
             el.style.opacity = "1";
         });
 
         localStorage.setItem("dark-mode", "enabled");
-        console.log("🌙 Dark mode applied");
     }
 
-    // Function to disable dark mode styles
     function disableDarkMode() {
         body.style.backgroundColor = "";
 
-        // Reset all text-gray-900 elements
         document.querySelectorAll(".text-blacknwhite").forEach(el => {
-            el.style.color = "rgb(17, 24, 39)"; // Original gray-900 color
+            el.style.color = "rgb(17, 24, 39)"; 
         });
 
-        // Reset all bg-gray-900 elements
+
         document.querySelectorAll(".bg-gray-900").forEach(el => {
-            el.style.backgroundColor = "rgb(17, 24, 39)"; // Original bg-gray-900 color
+            el.style.backgroundColor = "rgb(17, 24, 39)"; 
         });
 
-        // Reset all h1 elements
         document.querySelectorAll("h1").forEach(el => {
             el.style.color = "";
         });
 
-        // Reset all bg-blacked-900 elements
         document.querySelectorAll(".bg-blacked-900").forEach(el => {
-            el.style.backgroundColor = "#FFFDF8"; // Set background to light mode color
+            el.style.backgroundColor = "#FFFDF8"; 
             el.style.opacity = "1";
         });
 
         localStorage.setItem("dark-mode", "disabled");
-        console.log("☀️ Light mode applied");
     }
 
     // Check localStorage for saved mode
