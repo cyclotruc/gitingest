@@ -157,3 +157,37 @@ async def test_repository_with_patterns(request):
     response = client.post("/", data=form_data)
     assert response.status_code == 200, f"Request failed: {response.text}"
     assert "Mocked Template Response" in response.text
+
+
+@pytest.mark.asyncio
+async def test_repository_with_submodules(request):
+    """Test repository analysis with submodules enabled."""
+    client = request.getfixturevalue("test_client")
+    form_data = {
+        "input_text": "https://github.com/octocat/Hello-World",
+        "max_file_size": "243",
+        "pattern_type": "exclude",
+        "pattern": "",
+        "include_submodules": "true",
+    }
+
+    response = client.post("/", data=form_data)
+    assert response.status_code == 200, f"Request failed: {response.text}"
+    assert "Mocked Template Response" in response.text
+
+
+@pytest.mark.asyncio
+async def test_repository_without_submodules(request):
+    """Test repository analysis with submodules disabled."""
+    client = request.getfixturevalue("test_client")
+    form_data = {
+        "input_text": "https://github.com/octocat/Hello-World",
+        "max_file_size": "243",
+        "pattern_type": "exclude",
+        "pattern": "",
+        "include_submodules": "false",
+    }
+
+    response = client.post("/", data=form_data)
+    assert response.status_code == 200, f"Request failed: {response.text}"
+    assert "Mocked Template Response" in response.text

@@ -40,6 +40,7 @@ def sample_query() -> ParsedQuery:
         max_file_size=1_000_000,
         ignore_patterns={"*.pyc", "__pycache__", ".git"},
         include_patterns=None,
+        include_submodules=False,
         pattern_type="exclude",
     )
 

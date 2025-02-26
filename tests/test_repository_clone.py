@@ -407,3 +407,94 @@ async def test_clone_repo_creates_parent_directory(tmp_path: Path) -> None:
                 clone_config.url,
                 str(nested_path),
             )
+
+
+@pytest.mark.asyncio
+async def test_clone_repo_with_submodules():
+    """
+    Test cloning a repository with submodules enabled.
+
+    Given a valid URL and include_submodules=True:
+    When `clone_repo` is called,
+    Then the repository should be cloned with the --recurse-submodules flag.
+    """
+    clone_config = CloneConfig(url="https://github.com/user/repo", local_path="/tmp/repo", include_submodules=True)
+
+    with patch("gitingest.cloning._check_repo_exists", return_value=True):
+        with patch("gitingest.cloning._run_git_command", new_callable=AsyncMock) as mock_exec:
+            await clone_repo(clone_config)
+
+            mock_exec.assert_called_once_with(
+                "git",
+                "clone",
+                "--single-branch",
+                "--recurse-submodules",
+                "--depth=1",
+                clone_config.url,
+                clone_config.local_path,
+            )
+
+
+@pytest.mark.asyncio
+async def test_clone_repo_without_submodules():
+    """
+    Test cloning a repository with submodules disabled.
+
+    Given a valid URL and include_submodules=False:
+    When `clone_repo` is called,
+    Then the repository should be cloned without the --recurse-submodules flag.
+    """
+    clone_config = CloneConfig(url="https://github.com/user/repo", local_path="/tmp/repo", include_submodules=False)
+
+    with patch("gitingest.cloning._check_repo_exists", return_value=True):
+        with patch("gitingest.cloning._run_git_command", new_callable=AsyncMock) as mock_exec:
+            await clone_repo(clone_config)
+
+            mock_exec.assert_called_once_with(
+                "git",
+                "clone",
+                "--single-branch",
+                "--depth=1",
+                clone_config.url,
+                clone_config.local_path,
+            )
+
+
+@pytest.mark.asyncio
+async def test_clone_repo_with_submodules_failure():
+    """Test handling of submodule cloning failures."""
+    clone_config = CloneConfig(url="https://github.com/user/repo", local_path="/tmp/repo", include_submodules=True)
+    with patch("gitingest.cloning._check_repo_exists", return_value=True):
+        with patch("gitingest.cloning._run_git_command", side_effect=RuntimeError("Submodule clone failed")):
+            with pytest.raises(RuntimeError, match="Submodule clone failed"):
+                await clone_repo(clone_config)
+
+
+@pytest.mark.asyncio
+async def test_clone_repo_with_invalid_submodules():
+    """Test cloning a repository with invalid/missing submodules."""
+    clone_config = CloneConfig(url="https://github.com/user/repo", local_path="/tmp/repo", include_submodules=True)
+
+    async def mock_run_git(*args):
+        if "--recurse-submodules" in args:
+            raise RuntimeError("Failed to initialize submodules")
+        return None
+
+    with patch("gitingest.cloning._check_repo_exists", return_value=True):
+        with patch("gitingest.cloning._run_git_command", side_effect=mock_run_git):
+            with pytest.raises(RuntimeError, match="Failed to initialize submodules"):
+                await clone_repo(clone_config)
+
+
+@pytest.mark.asyncio
+async def test_clone_repo_with_empty_submodules():
+    """Test cloning a repository that has no submodules when include_submodules is True."""
+    clone_config = CloneConfig(url="https://github.com/user/repo", local_path="/tmp/repo", include_submodules=True)
+
+    with patch("gitingest.cloning._check_repo_exists", return_value=True):
+        with patch("gitingest.cloning._run_git_command", new_callable=AsyncMock) as mock_exec:
+            await clone_repo(clone_config)
+
+            # Verify the clone command included --recurse-submodules
+            clone_call = mock_exec.call_args_list[0]
+            assert "--recurse-submodules" in clone_call[0], "Clone command should include --recurse-submodules flag"
