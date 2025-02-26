@@ -3,7 +3,7 @@
 import asyncio
 import inspect
 import shutil
-from typing import Optional, Set, Tuple, Union
+from typing import List, Optional, Set, Tuple, Union
 
 from gitingest.cloning import CloneConfig, clone_repo
 from gitingest.config import TMP_BASE_PATH
@@ -16,6 +16,7 @@ async def ingest_async(
     max_file_size: int = 10 * 1024 * 1024,  # 10 MB
     include_patterns: Optional[Union[str, Set[str]]] = None,
     exclude_patterns: Optional[Union[str, Set[str]]] = None,
+    include_submodules: bool = False,
     branch: Optional[str] = None,
     output: Optional[str] = None,
 ) -> Tuple[str, str, str]:
@@ -37,10 +38,13 @@ async def ingest_async(
         Pattern or set of patterns specifying which files to include. If `None`, all files are included.
     exclude_patterns : Union[str, Set[str]], optional
         Pattern or set of patterns specifying which files to exclude. If `None`, no files are excluded.
+    include_submodules : bool
+        Whether to include git submodules in the analysis. Defaults to False.
     branch : str, optional
         The branch to clone and ingest. If `None`, the default branch is used.
     output : str, optional
         File path where the summary and content should be written. If `None`, the results are not written to a file.
+
 
     Returns
     -------
@@ -64,6 +68,7 @@ async def ingest_async(
             from_web=False,
             include_patterns=include_patterns,
             ignore_patterns=exclude_patterns,
+            include_submodules=include_submodules,
         )
 
         if parsed_query.url:
@@ -76,6 +81,7 @@ async def ingest_async(
                 local_path=str(parsed_query.local_path),
                 commit=parsed_query.commit,
                 branch=selected_branch,
+                include_submodules=include_submodules,
             )
             clone_coroutine = clone_repo(clone_config)
 
@@ -107,6 +113,7 @@ def ingest(
     max_file_size: int = 10 * 1024 * 1024,  # 10 MB
     include_patterns: Optional[Union[str, Set[str]]] = None,
     exclude_patterns: Optional[Union[str, Set[str]]] = None,
+    include_submodules: bool = False,
     branch: Optional[str] = None,
     output: Optional[str] = None,
 ) -> Tuple[str, str, str]:
@@ -128,6 +135,8 @@ def ingest(
         Pattern or set of patterns specifying which files to include. If `None`, all files are included.
     exclude_patterns : Union[str, Set[str]], optional
         Pattern or set of patterns specifying which files to exclude. If `None`, no files are excluded.
+    include_submodules : bool
+        Whether to include git submodules in the analysis. Defaults to False.
     branch : str, optional
         The branch to clone and ingest. If `None`, the default branch is used.
     output : str, optional
@@ -151,6 +160,7 @@ def ingest(
             max_file_size=max_file_size,
             include_patterns=include_patterns,
             exclude_patterns=exclude_patterns,
+            include_submodules=include_submodules,
             branch=branch,
             output=output,
         )
