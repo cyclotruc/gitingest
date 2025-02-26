@@ -29,12 +29,15 @@ class CloneConfig:
         The specific commit hash to check out after cloning (default is None).
     branch : str, optional
         The branch to clone (default is None).
+    include_submodules : bool, optional
+        Whether to include submodules when cloning (default is False).
     """
 
     url: str
     local_path: str
     commit: Optional[str] = None
     branch: Optional[str] = None
+    include_submodules: bool = False
 
 
 @async_timeout(TIMEOUT)
@@ -90,10 +93,40 @@ async def clone_repo(config: CloneConfig) -> Tuple[bytes, bytes]:
     if not await _check_repo_exists(url):
         raise ValueError("Repository not found, make sure it is public")
 
+    def build_clone_cmd(*extra_args: str) -> List[str]:
+        """
+        Build a git clone command with standard flags and configuration.
+
+        This function constructs a git clone command with common flags and proper
+        submodules configuration based on the CloneConfig settings.
+
+        Parameters
+        ----------
+        *extra_args : str
+            Additional arguments to be included in the clone command.
+
+        Returns
+        -------
+        List[str]
+            A complete git clone command as a list of strings.
+            Always includes: "git", "clone", "--single-branch", url, local_path,
+            and optionally "--recurse-submodules" based on config.include_submodules.
+
+        Notes
+        -----
+        The command will always include the repository URL and local path from the config
+        as the final arguments. If config.include_submodules is True, the command will
+        include the "--recurse-submodules" flag.
+        """
+        cmd = ["git", "clone", "--single-branch"]
+        if config.include_submodules:
+            cmd.append("--recurse-submodules")
+        return cmd + list(extra_args) + [url, local_path]
+
     if commit:
         # Scenario 1: Clone and checkout a specific commit
         # Clone the repository without depth to ensure full history for checkout
-        clone_cmd = ["git", "clone", "--recurse-submodules", "--single-branch", url, local_path]
+        clone_cmd = build_clone_cmd()
         await _run_git_command(*clone_cmd)
 
         # Checkout the specific commit
@@ -102,21 +135,15 @@ async def clone_repo(config: CloneConfig) -> Tuple[bytes, bytes]:
 
     if branch and branch.lower() not in ("main", "master"):
         # Scenario 2: Clone a specific branch with shallow depth
-        clone_cmd = [
-            "git",
-            "clone",
-            "--recurse-submodules",
+        clone_cmd = build_clone_cmd(
             "--depth=1",
-            "--single-branch",
             "--branch",
             branch,
-            url,
-            local_path,
-        ]
+        )
         return await _run_git_command(*clone_cmd)
 
     # Scenario 3: Clone the default branch with shallow depth
-    clone_cmd = ["git", "clone", "--recurse-submodules", "--depth=1", "--single-branch", url, local_path]
+    clone_cmd = build_clone_cmd("--depth=1")
     return await _run_git_command(*clone_cmd)
 
 

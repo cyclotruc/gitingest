@@ -18,6 +18,7 @@ async def process_query(
     slider_position: int,
     pattern_type: str = "exclude",
     pattern: str = "",
+    include_submodules: bool = False,
     is_index: bool = False,
 ) -> _TemplateResponse:
     """
@@ -38,6 +39,8 @@ async def process_query(
         Type of pattern to use, either "include" or "exclude" (default is "exclude").
     pattern : str
         Pattern to include or exclude in the query, depending on the pattern type.
+    include_submodules : bool
+        Flag indicating whether to include submodules in the query.
     is_index : bool
         Flag indicating whether the request is for the index page (default is False).
 
@@ -71,6 +74,7 @@ async def process_query(
         "default_file_size": slider_position,
         "pattern_type": pattern_type,
         "pattern": pattern,
+        "include_submodules": include_submodules,
     }
 
     try:
@@ -80,6 +84,7 @@ async def process_query(
             from_web=True,
             include_patterns=include_patterns,
             ignore_patterns=exclude_patterns,
+            include_submodules=include_submodules,
         )
         if not parsed_query.url:
             raise ValueError("The 'url' parameter is required.")
@@ -89,6 +94,7 @@ async def process_query(
             local_path=str(parsed_query.local_path),
             commit=parsed_query.commit,
             branch=parsed_query.branch,
+            include_submodules=include_submodules,
         )
         await clone_repo(clone_config)
         summary, tree, content = ingest_query(parsed_query)

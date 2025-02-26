@@ -17,6 +17,11 @@
             element.classList.toggle('hover:text-gray-500');
         });
     }
+
+    function updateSubmodulesValue(checkbox) {
+        const hiddenInput = document.querySelector('input[type="hidden"][name="include_submodules"]');
+        hiddenInput.value = checkbox.checked.toString();
+    }
 </script>
 <div class="relative">
     <div class="w-full h-full absolute inset-0 bg-gray-900 rounded-xl translate-y-2 translate-x-2"></div>
@@ -45,6 +50,7 @@
             </div>
             <input type="hidden" name="pattern_type" value="exclude">
             <input type="hidden" name="pattern" value="">
+            <input type="hidden" name="include_submodules" value="false">
         </form>
         <div class="mt-4 relative z-20 flex flex-wrap gap-4 items-start">
             <!-- Pattern selector -->
@@ -79,22 +85,53 @@
                                name="pattern"
                                placeholder="*.md, src/ "
                                value="{{ pattern if pattern else '' }}"
-                               class=" py-2 px-2 bg-[#E8F0FE] focus:outline-none w-full">
+                               class="py-2 px-2 bg-[#E8F0FE] focus:outline-none w-full">
                     </div>
                 </div>
             </div>
-            <div class="w-[200px] sm:w-[200px] mt-3">
-                <label for="file_size" class="block text-gray-700 mb-1">
-                    Include files under: <span id="size_value" class="font-bold">50kb</span>
-                </label>
-                <input type="range"
-                       id="file_size"
-                       name="max_file_size"
-                       min="0"
-                       max="500"
-                       required
-                       value="{{ default_file_size }}"
-                       class="w-full h-3 bg-[#FAFAFA] bg-no-repeat bg-[length:50%_100%] bg-[#ebdbb7] appearance-none border-[3px] border-gray-900 rounded-sm focus:outline-none bg-gradient-to-r from-[#FE4A60] to-[#FE4A60] [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-7 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-sm [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-solid [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-gray-900 [&::-webkit-slider-thumb]:shadow-[3px_3px_0_#000]  ">
+            <div class="flex flex-col gap-2">
+                <!-- File size slider -->
+                <div class="w-[200px] sm:w-[200px]">
+                    <label for="file_size" class="block text-gray-700 mb-1">
+                        Include files under: <span id="size_value" class="font-bold">50kb</span>
+                    </label>
+                    <input type="range"
+                           id="file_size"
+                           name="max_file_size"
+                           min="0"
+                           max="500"
+                           required
+                           value="{{ default_file_size }}"
+                           class="w-full h-3 bg-[#FAFAFA] bg-no-repeat bg-[length:50%_100%] bg-[#ebdbb7] appearance-none border-[3px] border-gray-900 rounded-sm focus:outline-none bg-gradient-to-r from-[#FE4A60] to-[#FE4A60] [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-7 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-sm [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-solid [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-gray-900 [&::-webkit-slider-thumb]:shadow-[3px_3px_0_#000]">
+                </div>
+                <!-- Submodules checkbox -->
+                <div class="w-[200px] sm:w-[200px] flex items-center mt-2">
+                    <div class="relative inline-block">
+                        <input type="checkbox"
+                               id="include_submodules"
+                               name="include_submodules"
+                               form="ingestForm"
+                               onchange="updateSubmodulesValue(this)"
+                               oninput="updateSubmodulesValue(this)"
+                               class="peer absolute opacity-0 w-5 h-5 cursor-pointer z-20">
+                        <div class="w-5 h-5 bg-gray-900 absolute translate-y-[3px] translate-x-[3px] rounded peer-checked:translate-y-[1px] peer-checked:translate-x-[1px] transition-transform duration-200">
+                        </div>
+                        <div class="w-5 h-5 border-[3px] border-gray-900 bg-[#fff4da] rounded relative peer-checked:bg-[#FE4A60] peer-focus:outline-none peer-checked:translate-y-[2px] peer-checked:translate-x-[2px] transition-all duration-200">
+                            <svg class="w-full h-full text-white hidden peer-checked:block p-[2px]"
+                                 xmlns="http://www.w3.org/2000/svg"
+                                 viewBox="0 0 24 24"
+                                 fill="none"
+                                 stroke="currentColor"
+                                 stroke-width="4"
+                                 stroke-linecap="round"
+                                 stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                        </div>
+                    </div>
+                    <label for="include_submodules"
+                           class="ml-2 text-gray-700 cursor-pointer select-none">Include submodules</label>
+                </div>
             </div>
         </div>
         {% if show_examples %}

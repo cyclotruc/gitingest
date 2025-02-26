@@ -5,7 +5,7 @@ import uuid
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Set, Union
+from typing import Any, List, Optional, Set, Union
 from urllib.parse import unquote, urlparse
 
 from gitingest.cloning import _check_repo_exists, fetch_remote_branch_list
@@ -43,6 +43,7 @@ class ParsedQuery:  # pylint: disable=too-many-instance-attributes
     ignore_patterns: Optional[Set[str]] = None
     include_patterns: Optional[Set[str]] = None
     pattern_type: Optional[str] = None
+    include_submodules: bool = False
 
 
 async def parse_query(
@@ -51,6 +52,7 @@ async def parse_query(
     from_web: bool,
     include_patterns: Optional[Union[str, Set[str]]] = None,
     ignore_patterns: Optional[Union[str, Set[str]]] = None,
+    include_submodules: bool = False,
 ) -> ParsedQuery:
     """
     Parse the input source (URL or path) to extract relevant details for the query.
@@ -71,6 +73,8 @@ async def parse_query(
         Patterns to include, by default None. Can be a set of strings or a single string.
     ignore_patterns : Union[str, Set[str]], optional
         Patterns to ignore, by default None. Can be a set of strings or a single string.
+    include_submodules : bool
+        Whether to include git submodules in the analysis
 
     Returns
     -------
@@ -99,6 +103,11 @@ async def parse_query(
     else:
         parsed_include = None
 
+    if include_submodules:
+        include_submodules = True
+    else:
+        include_submodules = False
+
     return ParsedQuery(
         user_name=parsed_query.user_name,
         repo_name=parsed_query.repo_name,
@@ -113,6 +122,7 @@ async def parse_query(
         max_file_size=max_file_size,
         ignore_patterns=ignore_patterns_set,
         include_patterns=parsed_include,
+        include_submodules=include_submodules,
     )
 
 
@@ -332,3 +342,21 @@ async def try_domains_for_user_and_repo(user_name: str, repo_name: str) -> str:
         if await _check_repo_exists(candidate):
             return domain
     raise ValueError(f"Could not find a valid repository host for '{user_name}/{repo_name}'.")
+
+
+def simplify_condition(condition: Any) -> Any:
+    """
+    Simplify a condition by reducing it to its simplest form.
+
+    Parameters
+    ----------
+    condition : Any
+        The condition to simplify
+
+    Returns
+    -------
+    Any
+        The simplified condition
+    """
+    result = bool(condition)
+    return result
