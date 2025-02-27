@@ -12,7 +12,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from gitingest.cloning import CloneConfig, _check_repo_exists, clone_repo
+from gitingest.cloning import CloneConfig, _check_repo_exists, clone_repo, fetch_remote_tag_list
 from gitingest.exceptions import AsyncTimeoutError
 
 
@@ -498,3 +498,84 @@ async def test_clone_repo_with_empty_submodules():
             # Verify the clone command included --recurse-submodules
             clone_call = mock_exec.call_args_list[0]
             assert "--recurse-submodules" in clone_call[0], "Clone command should include --recurse-submodules flag"
+
+
+@pytest.mark.asyncio
+async def test_clone_repo_with_tag() -> None:
+    """
+    Test cloning a repository with a specified tag.
+
+    Given a valid URL and a tag:
+    When `clone_repo` is called,
+    Then the repository should be cloned shallowly to that tag.
+    """
+    clone_config = CloneConfig(url="https://github.com/user/repo", local_path="/tmp/repo", tag="v1.0.0")
+    with patch("gitingest.cloning._check_repo_exists", return_value=True) as mock_check:
+        with patch("gitingest.cloning._run_git_command", new_callable=AsyncMock) as mock_exec:
+            mock_exec.return_value = (b"", b"")
+            await clone_repo(clone_config)
+
+            mock_check.assert_called_once_with(clone_config.url)
+            mock_exec.assert_called_once_with(
+                "git",
+                "clone",
+                "--single-branch",
+                "--depth=1",
+                "--branch",
+                "v1.0.0",
+                clone_config.url,
+                clone_config.local_path,
+            )
+
+
+@pytest.mark.asyncio
+async def test_clone_repo_tag_with_slashes() -> None:
+    """
+    Test cloning a repository with a tag that contains slashes.
+
+    Given a valid URL and a tag with slashes:
+    When `clone_repo` is called,
+    Then the repository should be cloned shallowly to that tag.
+    """
+    clone_config = CloneConfig(url="https://github.com/user/repo", local_path="/tmp/repo", tag="release/v1.0.0")
+    with patch("gitingest.cloning._check_repo_exists", return_value=True) as mock_check:
+        with patch("gitingest.cloning._run_git_command", new_callable=AsyncMock) as mock_exec:
+            mock_exec.return_value = (b"", b"")
+            await clone_repo(clone_config)
+
+            mock_check.assert_called_once_with(clone_config.url)
+            mock_exec.assert_called_once_with(
+                "git",
+                "clone",
+                "--single-branch",
+                "--depth=1",
+                "--branch",
+                "release/v1.0.0",
+                clone_config.url,
+                clone_config.local_path,
+            )
+
+
+@pytest.mark.asyncio
+async def test_fetch_remote_tag_list() -> None:
+    """
+    Test fetching the list of tags from a remote repository.
+
+    Given a valid repository URL:
+    When `fetch_remote_tag_list` is called,
+    Then it should return a list of available tags.
+    """
+    url = "https://github.com/user/repo"
+    mock_stdout = b"""
+        a1b2c3d4e5f6g7h8i9j0 refs/tags/v1.0.0
+        b2c3d4e5f6g7h8i9j0k1 refs/tags/v1.1.0
+        c3d4e5f6g7h8i9j0k1l2 refs/tags/release/v2.0.0
+    """
+
+    with patch("gitingest.cloning._run_git_command", new_callable=AsyncMock) as mock_exec:
+        mock_exec.return_value = (mock_stdout, b"")
+
+        tags = await fetch_remote_tag_list(url)
+
+        assert tags == ["v1.0.0", "v1.1.0", "release/v2.0.0"]
+        mock_exec.assert_called_once_with("git", "ls-remote", "--tags", url)

@@ -37,6 +37,7 @@ def sample_query() -> ParsedQuery:
         slug="test_user/test_repo",
         id="id",
         branch="main",
+        tag=None,
         max_file_size=1_000_000,
         ignore_patterns={"*.pyc", "__pycache__", ".git"},
         include_patterns=None,
