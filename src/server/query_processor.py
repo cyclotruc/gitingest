@@ -94,6 +94,7 @@ async def process_query(
             local_path=str(parsed_query.local_path),
             commit=parsed_query.commit,
             branch=parsed_query.branch,
+            tag=parsed_query.tag,
             include_submodules=include_submodules,
         )
         await clone_repo(clone_config)

@@ -3,7 +3,7 @@
 import asyncio
 import inspect
 import shutil
-from typing import List, Optional, Set, Tuple, Union
+from typing import Optional, Set, Tuple, Union
 
 from gitingest.cloning import CloneConfig, clone_repo
 from gitingest.config import TMP_BASE_PATH
@@ -18,6 +18,7 @@ async def ingest_async(
     exclude_patterns: Optional[Union[str, Set[str]]] = None,
     include_submodules: bool = False,
     branch: Optional[str] = None,
+    tag: Optional[str] = None,
     output: Optional[str] = None,
 ) -> Tuple[str, str, str]:
     """
@@ -42,6 +43,8 @@ async def ingest_async(
         Whether to include git submodules in the analysis. Defaults to False.
     branch : str, optional
         The branch to clone and ingest. If `None`, the default branch is used.
+    tag : str, optional
+        The tag to clone and ingest. If `None`, tag is not used.
     output : str, optional
         File path where the summary and content should be written. If `None`, the results are not written to a file.
 
@@ -72,15 +75,16 @@ async def ingest_async(
         )
 
         if parsed_query.url:
-            selected_branch = branch if branch else parsed_query.branch  # prioritize branch argument
-            parsed_query.branch = selected_branch
+            parsed_query.branch = branch or parsed_query.branch
+            parsed_query.tag = tag or parsed_query.tag
 
             # Extract relevant fields for CloneConfig
             clone_config = CloneConfig(
                 url=parsed_query.url,
                 local_path=str(parsed_query.local_path),
                 commit=parsed_query.commit,
-                branch=selected_branch,
+                branch=parsed_query.branch,
+                tag=parsed_query.tag,
                 include_submodules=include_submodules,
             )
             clone_coroutine = clone_repo(clone_config)
@@ -115,6 +119,7 @@ def ingest(
     exclude_patterns: Optional[Union[str, Set[str]]] = None,
     include_submodules: bool = False,
     branch: Optional[str] = None,
+    tag: Optional[str] = None,
     output: Optional[str] = None,
 ) -> Tuple[str, str, str]:
     """
@@ -139,6 +144,8 @@ def ingest(
         Whether to include git submodules in the analysis. Defaults to False.
     branch : str, optional
         The branch to clone and ingest. If `None`, the default branch is used.
+    tag : str, optional
+        The tag to clone and ingest. If `None`, tag is not used.
     output : str, optional
         File path where the summary and content should be written. If `None`, the results are not written to a file.
 
@@ -162,6 +169,7 @@ def ingest(
             exclude_patterns=exclude_patterns,
             include_submodules=include_submodules,
             branch=branch,
+            tag=tag,
             output=output,
         )
     )

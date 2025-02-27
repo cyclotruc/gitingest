@@ -18,6 +18,7 @@ from gitingest.repository_ingest import ingest_async
 @click.option("--exclude-pattern", "-e", multiple=True, help="Patterns to exclude")
 @click.option("--include-pattern", "-i", multiple=True, help="Patterns to include")
 @click.option("--branch", "-b", default=None, help="Branch to clone and ingest")
+@click.option("--tag", "-t", default=None, help="Tag to clone and ingest")
 @click.option("--include-submodules", is_flag=True, help="Include git submodules in the analysis")
 def main(
     source: str,
@@ -26,6 +27,7 @@ def main(
     exclude_pattern: Tuple[str, ...],
     include_pattern: Tuple[str, ...],
     branch: Optional[str],
+    tag: Optional[str],
     include_submodules: bool,
 ):
     """
@@ -48,11 +50,24 @@ def main(
         A tuple of patterns to include during the analysis. Only files matching these patterns will be processed.
     branch : str, optional
         The branch to clone (optional).
+    tag : str, optional
+        The tag to clone (optional).
     include_submodules : bool
         Whether to include git submodules in the analysis.
     """
     # Main entry point for the CLI. This function is called when the CLI is run as a script.
-    asyncio.run(_async_main(source, output, max_size, exclude_pattern, include_pattern, branch, include_submodules))
+    asyncio.run(
+        _async_main(
+            source=source,
+            output=output,
+            max_size=max_size,
+            exclude_pattern=exclude_pattern,
+            include_pattern=include_pattern,
+            branch=branch,
+            tag=tag,
+            include_submodules=include_submodules,
+        )
+    )
 
 
 async def _async_main(
@@ -62,6 +77,7 @@ async def _async_main(
     exclude_pattern: Tuple[str, ...],
     include_pattern: Tuple[str, ...],
     branch: Optional[str],
+    tag: Optional[str],
     include_submodules: bool,
 ) -> None:
     """
@@ -85,6 +101,8 @@ async def _async_main(
         A tuple of patterns to include during the analysis. Only files matching these patterns will be processed.
     branch : str, optional
         The branch to clone (optional).
+    tag : str, optional
+        The tag to clone (optional).
     include_submodules : bool
         Whether to include git submodules in the analysis.
 
@@ -100,7 +118,9 @@ async def _async_main(
 
         if not output:
             output = OUTPUT_FILE_NAME
-        summary, _, _ = await ingest_async(source, max_size, include_patterns, exclude_patterns, branch, include_submodules, output=output)
+        summary, _, _ = await ingest_async(
+            source, max_size, include_patterns, exclude_patterns, include_submodules, branch, tag, output=output
+        )
 
         click.echo(f"Analysis complete! Output written to: {output}")
         click.echo("\nSummary:")

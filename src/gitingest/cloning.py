@@ -17,7 +17,7 @@ class CloneConfig:
     Configuration for cloning a Git repository.
 
     This class holds the necessary parameters for cloning a repository to a local path, including
-    the repository's URL, the target local path, and optional parameters for a specific commit or branch.
+    the repository's URL, the target local path, and optional parameters for a specific commit, branch, or tag.
 
     Attributes
     ----------
@@ -29,6 +29,8 @@ class CloneConfig:
         The specific commit hash to check out after cloning (default is None).
     branch : str, optional
         The branch to clone (default is None).
+    tag : str, optional
+        The tag to clone (default is None).
     include_submodules : bool, optional
         Whether to include submodules when cloning (default is False).
     """
@@ -37,6 +39,7 @@ class CloneConfig:
     local_path: str
     commit: Optional[str] = None
     branch: Optional[str] = None
+    tag: Optional[str] = None
     include_submodules: bool = False
 
 
@@ -46,7 +49,7 @@ async def clone_repo(config: CloneConfig) -> Tuple[bytes, bytes]:
     Clone a repository to a local path based on the provided configuration.
 
     This function handles the process of cloning a Git repository to the local file system.
-    It can clone a specific branch or commit if provided, and it raises exceptions if
+    It can clone a specific branch, commit, or tag if provided, and it raises exceptions if
     any errors occur during the cloning process.
 
     Parameters
@@ -57,7 +60,7 @@ async def clone_repo(config: CloneConfig) -> Tuple[bytes, bytes]:
             - local_path (str): The local path to clone the repository to.
             - commit (str, optional): The specific commit hash to checkout.
             - branch (str, optional): The branch to clone. Defaults to 'main' or 'master' if not provided.
-
+            - tag (str, optional): The tag to clone.
     Returns
     -------
     Tuple[bytes, bytes]
@@ -67,6 +70,7 @@ async def clone_repo(config: CloneConfig) -> Tuple[bytes, bytes]:
     ------
     ValueError
         If the 'url' or 'local_path' parameters are missing, or if the repository is not found.
+        If branch and tag are both provided.
     OSError
         If there is an error creating the parent directory structure.
     """
@@ -75,6 +79,7 @@ async def clone_repo(config: CloneConfig) -> Tuple[bytes, bytes]:
     local_path: str = config.local_path
     commit: Optional[str] = config.commit
     branch: Optional[str] = config.branch
+    tag: Optional[str] = config.tag
 
     if not url:
         raise ValueError("The 'url' parameter is required.")
@@ -88,6 +93,9 @@ async def clone_repo(config: CloneConfig) -> Tuple[bytes, bytes]:
         os.makedirs(parent_dir, exist_ok=True)
     except OSError as exc:
         raise OSError(f"Failed to create parent directory {parent_dir}: {exc}") from exc
+
+    if tag and branch:
+        raise ValueError("Cannot specify both branch and tag")
 
     # Check if the repository exists
     if not await _check_repo_exists(url):
@@ -142,7 +150,16 @@ async def clone_repo(config: CloneConfig) -> Tuple[bytes, bytes]:
         )
         return await _run_git_command(*clone_cmd)
 
-    # Scenario 3: Clone the default branch with shallow depth
+    if tag:
+        # Scenario 3: Clone a specific tag
+        clone_cmd = build_clone_cmd(
+            "--depth=1",
+            "--branch",
+            tag,
+        )
+        return await _run_git_command(*clone_cmd)
+
+    # Scenario 4: Clone the default branch with shallow depth
     clone_cmd = build_clone_cmd("--depth=1")
     return await _run_git_command(*clone_cmd)
 
@@ -209,6 +226,27 @@ async def fetch_remote_branch_list(url: str) -> List[str]:
         line.split("refs/heads/", 1)[1]
         for line in stdout_decoded.splitlines()
         if line.strip() and "refs/heads/" in line
+    ]
+
+
+async def fetch_remote_tag_list(url: str) -> List[str]:
+    """
+    Fetch the list of tags from a remote Git repository.
+    Parameters
+    ----------
+    url : str
+        The URL of the Git repository to fetch tags from.
+    Returns
+    -------
+    List[str]
+        A list of tag names available in the remote repository.
+    """
+    fetch_tags_command = ["git", "ls-remote", "--tags", url]
+    stdout, _ = await _run_git_command(*fetch_tags_command)
+    stdout_decoded = stdout.decode()
+
+    return [
+        line.split("refs/tags/", 1)[1] for line in stdout_decoded.splitlines() if line.strip() and "refs/tags/" in line
     ]
 
 
