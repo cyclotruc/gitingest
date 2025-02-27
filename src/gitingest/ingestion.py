@@ -72,9 +72,7 @@ def ingest_query(query: ParsedQuery) -> Tuple[str, str, str]:
         stats=stats,
     )
 
-
     return format_directory(root_node, query)
-
 
 
 def _process_node(
@@ -90,18 +88,21 @@ def _process_node(
 
     Parameters
     ----------
-    path : Path
-        The full path of the file or directory to process.
+    node : FileSystemNode
+        The node representing the file or directory to process.
     query : ParsedQuery
         The parsed query object containing information about the repository and query parameters.
-    node : FileSystemNode
-        The current directory or file node being processed.
-    seen_paths : Set[Path]
-        A set of paths that have already been visited.
-    stats : Dict[str, int]
-        A dictionary of statistics like the total file count and size.
-    depth : int
-        The current depth of directory traversal.
+    stats : FileSystemStats
+        Statistics object to track file counts and sizes.
+
+    Returns
+    -------
+    None
+
+    Raises
+    ------
+    ValueError
+        If the node type is not recognized.
     """
 
     if limit_exceeded(stats, node.depth):
@@ -141,7 +142,7 @@ def _process_node(
                 path=sub_path,
                 depth=node.depth + 1,
             )
-            
+
             # rename the subdir to reflect the symlink name
             if symlink_path:
                 child_directory_node.name = symlink_path.name
@@ -176,8 +177,10 @@ def _process_file(path: Path, parent_node: FileSystemNode, stats: FileSystemStat
         The full path of the file.
     parent_node : FileSystemNode
         The dictionary to accumulate the results.
-    stats : Dict[str, int]
-        The dictionary to track statistics such as file count and size.
+    stats : FileSystemStats
+        Statistics object to track file counts and sizes.
+    local_path : Path
+        The local path relative to the repository root.
     """
     file_size = path.stat().st_size
     if stats.total_size + file_size > MAX_TOTAL_SIZE_BYTES:
@@ -198,7 +201,7 @@ def _process_file(path: Path, parent_node: FileSystemNode, stats: FileSystemStat
         file_count=1,
         path_str=str(path.relative_to(local_path)),
         path=path,
-        depth=parent_node.depth + 1
+        depth=parent_node.depth + 1,
     )
 
     parent_node.children.append(child)
@@ -207,7 +210,24 @@ def _process_file(path: Path, parent_node: FileSystemNode, stats: FileSystemStat
 
 
 def limit_exceeded(stats: FileSystemStats, depth: int) -> bool:
+    """
+    Check if any of the processing limits have been exceeded.
 
+    This function checks if the current processing has exceeded any of the defined limits:
+    maximum directory depth, maximum number of files, or maximum total size.
+
+    Parameters
+    ----------
+    stats : FileSystemStats
+        The current statistics object tracking file counts and sizes.
+    depth : int
+        The current depth in the directory tree.
+
+    Returns
+    -------
+    bool
+        True if any limit has been exceeded, False otherwise.
+    """
     if depth > MAX_DIRECTORY_DEPTH:
         print(f"Maximum depth limit ({MAX_DIRECTORY_DEPTH}) reached")
         return True

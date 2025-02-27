@@ -5,10 +5,10 @@ import uuid
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Set, Union
+from typing import Any, List, Optional, Set, Tuple, Union
 from urllib.parse import unquote, urlparse
 
-from gitingest.cloning import _check_repo_exists, fetch_remote_branch_list
+from gitingest.cloning import _check_repo_exists, fetch_remote_branch_list, fetch_remote_tag_list
 from gitingest.config import MAX_FILE_SIZE, TMP_BASE_PATH
 from gitingest.exceptions import InvalidPatternError
 from gitingest.utils.ignore_patterns import DEFAULT_IGNORE_PATTERNS
@@ -38,11 +38,13 @@ class ParsedQuery:  # pylint: disable=too-many-instance-attributes
     id: str
     type: Optional[str] = None
     branch: Optional[str] = None
+    tag: Optional[str] = None
     commit: Optional[str] = None
     max_file_size: int = MAX_FILE_SIZE
     ignore_patterns: Optional[Set[str]] = None
     include_patterns: Optional[Set[str]] = None
     pattern_type: Optional[str] = None
+    include_submodules: bool = False
 
 
 async def parse_query(
@@ -51,12 +53,13 @@ async def parse_query(
     from_web: bool,
     include_patterns: Optional[Union[str, Set[str]]] = None,
     ignore_patterns: Optional[Union[str, Set[str]]] = None,
+    include_submodules: bool = False,
 ) -> ParsedQuery:
     """
     Parse the input source (URL or path) to extract relevant details for the query.
 
     This function parses the input source to extract details such as the username, repository name,
-    commit hash, branch name, and other relevant information. It also processes the include and ignore
+    commit hash, branch name, tag name, and other relevant information. It also processes the include and ignore
     patterns to filter the files and directories to include or exclude from the query.
 
     Parameters
@@ -71,6 +74,8 @@ async def parse_query(
         Patterns to include, by default None. Can be a set of strings or a single string.
     ignore_patterns : Union[str, Set[str]], optional
         Patterns to ignore, by default None. Can be a set of strings or a single string.
+    include_submodules : bool
+        Whether to include git submodules in the analysis
 
     Returns
     -------
@@ -109,10 +114,12 @@ async def parse_query(
         id=parsed_query.id,
         type=parsed_query.type,
         branch=parsed_query.branch,
+        tag=parsed_query.tag,
         commit=parsed_query.commit,
         max_file_size=max_file_size,
         ignore_patterns=ignore_patterns_set,
         include_patterns=parsed_include,
+        include_submodules=include_submodules,
     )
 
 
@@ -191,13 +198,17 @@ async def _parse_remote_repo(source: str) -> ParsedQuery:
 
     parsed.type = possible_type
 
-    # Commit or branch
-    commit_or_branch = remaining_parts[0]
-    if _is_valid_git_commit_hash(commit_or_branch):
-        parsed.commit = commit_or_branch
+    # Git reference (commit, branch, or tag)
+    git_reference = remaining_parts[0]
+    if _is_valid_git_commit_hash(git_reference):
+        parsed.commit = git_reference
         remaining_parts.pop(0)
     else:
-        parsed.branch = await _configure_branch_and_subpath(remaining_parts, url)
+        # Try to configure branch first
+        parsed.branch, remaining_parts = await _configure_branch_and_subpath(remaining_parts, url)
+        if parsed.branch is None:
+            # If no branch is matched, try to configure tag
+            parsed.tag, remaining_parts = await _configure_tag_and_subpath(remaining_parts, url)
 
     # Subpath if anything left
     if remaining_parts:
@@ -206,7 +217,7 @@ async def _parse_remote_repo(source: str) -> ParsedQuery:
     return parsed
 
 
-async def _configure_branch_and_subpath(remaining_parts: List[str], url: str) -> Optional[str]:
+async def _configure_branch_and_subpath(remaining_parts: List[str], url: str) -> Tuple[Optional[str], List[str]]:
     """
     Configure the branch and subpath based on the remaining parts of the URL.
     Parameters
@@ -217,25 +228,61 @@ async def _configure_branch_and_subpath(remaining_parts: List[str], url: str) ->
         The URL of the repository.
     Returns
     -------
-    str, optional
-        The branch name if found, otherwise None.
-
+    Tuple[str, List[str]]
+        - The branch name if found, otherwise None.
+        - The remaining parts of the URL path.
     """
     try:
         # Fetch the list of branches from the remote repository
         branches: List[str] = await fetch_remote_branch_list(url)
     except RuntimeError as exc:
         warnings.warn(f"Warning: Failed to fetch branch list: {exc}", RuntimeWarning)
-        return remaining_parts.pop(0)
+        return remaining_parts.pop(0), remaining_parts
 
     branch = []
-    while remaining_parts:
-        branch.append(remaining_parts.pop(0))
+    for part in remaining_parts:
+        branch.append(part)
         branch_name = "/".join(branch)
         if branch_name in branches:
-            return branch_name
+            # Only remove the branch name from the remaining parts if it matches a remote branch
+            remaining_parts = remaining_parts[len(branch) :]
+            return branch_name, remaining_parts
 
-    return None
+    return None, remaining_parts
+
+
+async def _configure_tag_and_subpath(remaining_parts: List[str], url: str) -> Tuple[Optional[str], List[str]]:
+    """
+    Configure the tag and subpath based on the remaining parts of the URL.
+    Parameters
+    ----------
+    remaining_parts : List[str]
+        The remaining parts of the URL path.
+    url : str
+        The URL of the repository.
+    Returns
+    -------
+    Tuple[str, List[str]]
+        - The tag name if found, otherwise None.
+        - The remaining parts of the URL path.
+    """
+    try:
+        # Fetch the list of tags from the remote repository
+        tags: List[str] = await fetch_remote_tag_list(url)
+    except RuntimeError as exc:
+        warnings.warn(f"Warning: Failed to fetch tag list: {exc}", RuntimeWarning)
+        return remaining_parts.pop(0), remaining_parts
+
+    tag = []
+    for part in remaining_parts:
+        tag.append(part)
+        tag_name = "/".join(tag)
+        if tag_name in tags:
+            # Only remove the tag name from the remaining parts if it matches a remote tag
+            remaining_parts = remaining_parts[len(tag) :]
+            return tag_name, remaining_parts
+
+    return None, remaining_parts
 
 
 def _parse_patterns(pattern: Union[str, Set[str]]) -> Set[str]:
@@ -332,3 +379,21 @@ async def try_domains_for_user_and_repo(user_name: str, repo_name: str) -> str:
         if await _check_repo_exists(candidate):
             return domain
     raise ValueError(f"Could not find a valid repository host for '{user_name}/{repo_name}'.")
+
+
+def simplify_condition(condition: Any) -> Any:
+    """
+    Simplify a condition by reducing it to its simplest form.
+
+    Parameters
+    ----------
+    condition : Any
+        The condition to simplify
+
+    Returns
+    -------
+    Any
+        The simplified condition
+    """
+    result = bool(condition)
+    return result

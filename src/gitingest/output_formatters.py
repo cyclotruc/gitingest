@@ -1,6 +1,6 @@
 """ Functions to ingest and analyze a codebase directory or single file. """
 
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 import tiktoken
 
@@ -18,14 +18,14 @@ def _create_summary_string(query: ParsedQuery, node: FileSystemNode) -> str:
     Parameters
     ----------
     query : ParsedQuery
-        The parsed query object containing information about the repository and query parameters.
-    nodes : Dict[str, Any]
-        Dictionary representing the directory structure, including file and directory counts.
+        The parsed query containing search parameters and options.
+    node : FileSystemNode
+        The root node of the file system tree.
 
     Returns
     -------
     str
-        Summary string containing details such as repository name, file count, and other query-specific information.
+        A formatted summary string.
     """
     if query.user_name:
         summary = f"Repository: {query.user_name}/{query.repo_name}\n"
@@ -37,6 +37,8 @@ def _create_summary_string(query: ParsedQuery, node: FileSystemNode) -> str:
         summary += f"Commit: {query.commit}\n"
     elif query.branch and query.branch not in ("main", "master"):
         summary += f"Branch: {query.branch}\n"
+    elif query.tag:
+        summary += f"Tag: {query.tag}\n"
 
     if query.subpath != "/":
         summary += f"Subpath: {query.subpath}\n"
@@ -48,6 +50,29 @@ def _create_summary_string(query: ParsedQuery, node: FileSystemNode) -> str:
 
 
 def format_single_file(file_node: FileSystemNode, query: ParsedQuery) -> Tuple[str, str, str]:
+    """
+    Format a single file's content with summary and tree structure.
+
+    This function processes a single file and generates a summary, simple tree structure,
+    and its content. It also includes token estimation if possible.
+
+    Parameters
+    ----------
+    file_node : FileSystemNode
+        The file node to process.
+    query : ParsedQuery
+        The parsed query object containing information about the repository and query parameters.
+
+    Returns
+    -------
+    Tuple[str, str, str]
+        A tuple containing the summary, directory structure, and file contents.
+
+    Raises
+    ------
+    ValueError
+        If the file has no content.
+    """
     if not file_node.content:
         raise ValueError(f"File {file_node.name} has no content")
 
@@ -57,6 +82,8 @@ def format_single_file(file_node: FileSystemNode, query: ParsedQuery) -> Tuple[s
         summary += f"Commit: {query.commit}\n"
     elif query.branch and query.branch not in ("main", "master"):
         summary += f"Branch: {query.branch}\n"
+    elif query.tag:
+        summary += f"Tag: {query.tag}\n"
 
     summary += f"File: {file_node.name}\n"
     summary += f"Lines: {len(file_node.content.splitlines()):,}\n"
@@ -73,12 +100,24 @@ def format_single_file(file_node: FileSystemNode, query: ParsedQuery) -> Tuple[s
 
 
 def _get_files_content(node: FileSystemNode) -> str:
+    """
+    Recursively get the content of all files in the file system tree.
+
+    Parameters
+    ----------
+    node : FileSystemNode
+        The current node in the file system tree.
+
+    Returns
+    -------
+    str
+        Concatenated content of all files in the tree.
+    """
     if node.type == FileSystemNodeType.FILE:
         return node.content_string
-    elif node.type == FileSystemNodeType.DIRECTORY:
+    if node.type == FileSystemNodeType.DIRECTORY:
         return "\n".join(_get_files_content(child) for child in node.children)
-    else:
-        return ""
+    return ""
 
 
 def _create_tree_structure(query: ParsedQuery, node: FileSystemNode, prefix: str = "", is_last: bool = True) -> str:
@@ -92,7 +131,7 @@ def _create_tree_structure(query: ParsedQuery, node: FileSystemNode, prefix: str
     ----------
     query : ParsedQuery
         The parsed query object containing information about the repository and query parameters.
-    node : Dict[str, Any]
+    node : FileSystemNode
         The current directory or file node being processed.
     prefix : str
         A string used for indentation and formatting of the tree structure, by default "".
@@ -166,8 +205,8 @@ def format_directory(root_node: FileSystemNode, query: ParsedQuery) -> Tuple[str
 
     Parameters
     ----------
-    path : Path
-        The path of the directory to ingest.
+    root_node : FileSystemNode
+        The root node of the directory to process.
     query : ParsedQuery
         The parsed query object containing information about the repository and query parameters.
 
@@ -175,11 +214,6 @@ def format_directory(root_node: FileSystemNode, query: ParsedQuery) -> Tuple[str
     -------
     Tuple[str, str, str]
         A tuple containing the summary, directory structure, and file contents.
-
-    Raises
-    ------
-    ValueError
-        If no files are found in the directory.
     """
     summary = _create_summary_string(query, node=root_node)
     tree = "Directory structure:\n" + _create_tree_structure(query, root_node)

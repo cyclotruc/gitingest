@@ -16,7 +16,9 @@ async def ingest_async(
     max_file_size: int = 10 * 1024 * 1024,  # 10 MB
     include_patterns: Optional[Union[str, Set[str]]] = None,
     exclude_patterns: Optional[Union[str, Set[str]]] = None,
+    include_submodules: bool = False,
     branch: Optional[str] = None,
+    tag: Optional[str] = None,
     output: Optional[str] = None,
 ) -> Tuple[str, str, str]:
     """
@@ -37,10 +39,15 @@ async def ingest_async(
         Pattern or set of patterns specifying which files to include. If `None`, all files are included.
     exclude_patterns : Union[str, Set[str]], optional
         Pattern or set of patterns specifying which files to exclude. If `None`, no files are excluded.
+    include_submodules : bool
+        Whether to include git submodules in the analysis. Defaults to False.
     branch : str, optional
         The branch to clone and ingest. If `None`, the default branch is used.
+    tag : str, optional
+        The tag to clone and ingest. If `None`, tag is not used.
     output : str, optional
         File path where the summary and content should be written. If `None`, the results are not written to a file.
+
 
     Returns
     -------
@@ -64,18 +71,21 @@ async def ingest_async(
             from_web=False,
             include_patterns=include_patterns,
             ignore_patterns=exclude_patterns,
+            include_submodules=include_submodules,
         )
 
         if parsed_query.url:
-            selected_branch = branch if branch else parsed_query.branch  # prioritize branch argument
-            parsed_query.branch = selected_branch
+            parsed_query.branch = branch or parsed_query.branch
+            parsed_query.tag = tag or parsed_query.tag
 
             # Extract relevant fields for CloneConfig
             clone_config = CloneConfig(
                 url=parsed_query.url,
                 local_path=str(parsed_query.local_path),
                 commit=parsed_query.commit,
-                branch=selected_branch,
+                branch=parsed_query.branch,
+                tag=parsed_query.tag,
+                include_submodules=include_submodules,
             )
             clone_coroutine = clone_repo(clone_config)
 
@@ -107,7 +117,9 @@ def ingest(
     max_file_size: int = 10 * 1024 * 1024,  # 10 MB
     include_patterns: Optional[Union[str, Set[str]]] = None,
     exclude_patterns: Optional[Union[str, Set[str]]] = None,
+    include_submodules: bool = False,
     branch: Optional[str] = None,
+    tag: Optional[str] = None,
     output: Optional[str] = None,
 ) -> Tuple[str, str, str]:
     """
@@ -128,8 +140,12 @@ def ingest(
         Pattern or set of patterns specifying which files to include. If `None`, all files are included.
     exclude_patterns : Union[str, Set[str]], optional
         Pattern or set of patterns specifying which files to exclude. If `None`, no files are excluded.
+    include_submodules : bool
+        Whether to include git submodules in the analysis. Defaults to False.
     branch : str, optional
         The branch to clone and ingest. If `None`, the default branch is used.
+    tag : str, optional
+        The tag to clone and ingest. If `None`, tag is not used.
     output : str, optional
         File path where the summary and content should be written. If `None`, the results are not written to a file.
 
@@ -151,7 +167,9 @@ def ingest(
             max_file_size=max_file_size,
             include_patterns=include_patterns,
             exclude_patterns=exclude_patterns,
+            include_submodules=include_submodules,
             branch=branch,
+            tag=tag,
             output=output,
         )
     )
