@@ -67,6 +67,7 @@ class ParsedQuery:  # pylint: disable=too-many-instance-attributes
             commit=self.commit,
             branch=self.branch,
             subpath=self.subpath,
+            blob=self.type == "blob",
         )
 
 

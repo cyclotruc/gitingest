@@ -38,6 +38,7 @@ class CloneConfig:
     commit: Optional[str] = None
     branch: Optional[str] = None
     subpath: str = "/"
+    blob: bool = False
 
 
 @async_timeout(TIMEOUT)
@@ -98,7 +99,10 @@ async def clone_repo(config: CloneConfig) -> None:
         checkout_cmd = ["git", "-C", local_path]
 
         if partial_clone:
-            checkout_cmd += ["sparse-checkout", "set", config.subpath.lstrip("/")]
+            if config.blob:
+                checkout_cmd += ["sparse-checkout", "set", config.subpath.lstrip("/")[:-1]]
+            else:
+                checkout_cmd += ["sparse-checkout", "set", config.subpath.lstrip("/")]
 
         if commit:
             checkout_cmd += ["checkout", commit]
