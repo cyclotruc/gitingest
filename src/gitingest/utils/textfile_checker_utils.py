@@ -23,7 +23,7 @@ def is_textfile(path: Path) -> bool:
     try:
         with path.open("rb") as f:
             chunk = f.read(1024)
-    except (IOError, OSError):
+    except OSError:
         # If we cannot read the file for any reason, treat it as non-textual.
         return False
 
