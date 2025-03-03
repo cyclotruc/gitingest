@@ -142,7 +142,6 @@ async def test_clone_repo_with_custom_branch() -> None:
             mock_exec.assert_called_once_with(
                 "git",
                 "clone",
-                "--recurse-submodules",
                 "--single-branch",
                 "--depth=1",
                 "--branch",
@@ -192,7 +191,6 @@ async def test_clone_repo_default_shallow_clone() -> None:
             mock_exec.assert_called_once_with(
                 "git",
                 "clone",
-                "--recurse-submodules",
                 "--single-branch",
                 "--depth=1",
                 clone_config.url,
@@ -219,9 +217,7 @@ async def test_clone_repo_commit_without_branch() -> None:
             await clone_repo(clone_config)
 
             assert mock_exec.call_count == 2  # Clone and checkout calls
-            mock_exec.assert_any_call(
-                "git", "clone", "--recurse-submodules", "--single-branch", clone_config.url, clone_config.local_path
-            )
+            mock_exec.assert_any_call("git", "clone", "--single-branch", clone_config.url, clone_config.local_path)
             mock_exec.assert_any_call("git", "-C", clone_config.local_path, "checkout", clone_config.commit)
 
 
@@ -331,7 +327,6 @@ async def test_clone_branch_with_slashes(tmp_path):
             mock_exec.assert_called_once_with(
                 "git",
                 "clone",
-                "--recurse-submodules",
                 "--single-branch",
                 "--depth=1",
                 "--branch",
@@ -367,7 +362,6 @@ async def test_clone_repo_creates_parent_directory(tmp_path: Path) -> None:
             mock_exec.assert_called_once_with(
                 "git",
                 "clone",
-                "--recurse-submodules",
                 "--single-branch",
                 "--depth=1",
                 clone_config.url,
@@ -394,7 +388,6 @@ async def test_clone_with_specific_subpath() -> None:
             mock_exec.assert_any_call(
                 "git",
                 "clone",
-                "--recurse-submodules",
                 "--single-branch",
                 "--filter=blob:none",
                 "--sparse",
@@ -434,7 +427,6 @@ async def test_clone_with_commit_and_subpath() -> None:
             mock_exec.assert_any_call(
                 "git",
                 "clone",
-                "--recurse-submodules",
                 "--single-branch",
                 "--filter=blob:none",
                 "--sparse",
