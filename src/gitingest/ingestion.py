@@ -1,5 +1,6 @@
 """ Functions to ingest and analyze a codebase directory or single file. """
 
+import warnings
 from pathlib import Path
 from typing import Tuple
 
@@ -9,6 +10,11 @@ from gitingest.output_formatters import format_directory, format_single_file
 from gitingest.query_parsing import ParsedQuery
 from gitingest.utils.ingestion_utils import _should_exclude, _should_include
 from gitingest.utils.path_utils import _is_safe_symlink
+
+try:
+    import tomllib
+except ImportError:
+    import tomli as tomllib
 
 
 def ingest_query(query: ParsedQuery) -> Tuple[str, str, str]:
@@ -36,6 +42,8 @@ def ingest_query(query: ParsedQuery) -> Tuple[str, str, str]:
     """
     subpath = Path(query.subpath.strip("/")).as_posix()
     path = query.local_path / subpath
+
+    apply_gitingest_file(path, query)
 
     if not path.exists():
         raise ValueError(f"{query.slug} cannot be found")
@@ -73,6 +81,71 @@ def ingest_query(query: ParsedQuery) -> Tuple[str, str, str]:
     )
 
     return format_directory(root_node, query)
+
+
+def apply_gitingest_file(path: Path, query: ParsedQuery) -> None:
+    """
+    Apply the .gitingest file to the query object.
+
+    This function reads the .gitingest file in the specified path and updates the query object with the ignore
+    patterns found in the file.
+
+    Parameters
+    ----------
+    path : Path
+        The path of the directory to ingest.
+    query : ParsedQuery
+        The parsed query object containing information about the repository and query parameters.
+        It should have an attribute `ignore_patterns` which is either None or a set of strings.
+    """
+    path_gitingest = path / ".gitingest"
+
+    if not path_gitingest.is_file():
+        return
+
+    try:
+        with path_gitingest.open("rb") as f:
+            data = tomllib.load(f)
+    except tomllib.TOMLDecodeError as exc:
+        warnings.warn(f"Invalid TOML in {path_gitingest}: {exc}", UserWarning)
+        return
+
+    config_section = data.get("config", {})
+    ignore_patterns = config_section.get("ignore_patterns")
+
+    if not ignore_patterns:
+        return
+
+    # If a single string is provided, make it a list of one element
+    if isinstance(ignore_patterns, str):
+        ignore_patterns = [ignore_patterns]
+
+    if not isinstance(ignore_patterns, (list, set)):
+        warnings.warn(
+            f"Expected a list/set for 'ignore_patterns', got {type(ignore_patterns)} in {path_gitingest}. Skipping.",
+            UserWarning,
+        )
+        return
+
+    # Filter out duplicated patterns
+    ignore_patterns = set(ignore_patterns)
+
+    # Filter out any non-string entries
+    valid_patterns = {pattern for pattern in ignore_patterns if isinstance(pattern, str)}
+    invalid_patterns = ignore_patterns - valid_patterns
+
+    if invalid_patterns:
+        warnings.warn(f"Ignore patterns {invalid_patterns} are not strings. Skipping.", UserWarning)
+
+    if not valid_patterns:
+        return
+
+    if query.ignore_patterns is None:
+        query.ignore_patterns = valid_patterns
+    else:
+        query.ignore_patterns.update(valid_patterns)
+
+    return
 
 
 def _process_node(
