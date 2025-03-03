@@ -80,7 +80,8 @@ async def clone_repo(config: CloneConfig) -> None:
     if not await _check_repo_exists(url):
         raise ValueError("Repository not found, make sure it is public")
 
-    clone_cmd = ["git", "clone", "--recurse-submodules", "--single-branch"]
+    clone_cmd = ["git", "clone", "--single-branch"]
+    # TODO re-enable --recurse-submodules
 
     if partial_clone:
         clone_cmd += ["--filter=blob:none", "--sparse"]
