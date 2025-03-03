@@ -5,7 +5,7 @@ import inspect
 import shutil
 from typing import Optional, Set, Tuple, Union
 
-from gitingest.cloning import CloneConfig, clone_repo
+from gitingest.cloning import clone_repo
 from gitingest.config import TMP_BASE_PATH
 from gitingest.ingestion import ingest_query
 from gitingest.query_parsing import ParsedQuery, parse_query
@@ -70,13 +70,7 @@ async def ingest_async(
             selected_branch = branch if branch else parsed_query.branch  # prioritize branch argument
             parsed_query.branch = selected_branch
 
-            # Extract relevant fields for CloneConfig
-            clone_config = CloneConfig(
-                url=parsed_query.url,
-                local_path=str(parsed_query.local_path),
-                commit=parsed_query.commit,
-                branch=selected_branch,
-            )
+            clone_config = parsed_query.extact_clone_config()
             clone_coroutine = clone_repo(clone_config)
 
             if inspect.iscoroutine(clone_coroutine):
