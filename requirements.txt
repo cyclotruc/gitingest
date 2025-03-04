@@ -5,4 +5,5 @@ python-dotenv
 slowapi
 starlette
 tiktoken
+tomli
 uvicorn

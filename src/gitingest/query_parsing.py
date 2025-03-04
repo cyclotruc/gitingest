@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, List, Optional, Set, Union
 from urllib.parse import unquote, urlparse
 
-from gitingest.cloning import _check_repo_exists, fetch_remote_branch_list
+from gitingest.cloning import CloneConfig, _check_repo_exists, fetch_remote_branch_list
 from gitingest.config import MAX_FILE_SIZE, TMP_BASE_PATH
 from gitingest.exceptions import InvalidPatternError
 from gitingest.utils.ignore_patterns import DEFAULT_IGNORE_PATTERNS
@@ -31,11 +31,11 @@ class ParsedQuery:  # pylint: disable=too-many-instance-attributes
 
     user_name: Optional[str]
     repo_name: Optional[str]
-    subpath: str
     local_path: Path
     url: Optional[str]
     slug: str
     id: str
+    subpath: str = "/"
     type: Optional[str] = None
     branch: Optional[str] = None
     commit: Optional[str] = None
@@ -44,6 +44,32 @@ class ParsedQuery:  # pylint: disable=too-many-instance-attributes
     include_patterns: Optional[Set[str]] = None
     pattern_type: Optional[str] = None
     include_submodules: bool = False
+
+    def extact_clone_config(self) -> CloneConfig:
+        """
+        Extract the relevant fields for the CloneConfig object.
+
+        Returns
+        -------
+        CloneConfig
+            A CloneConfig object containing the relevant fields.
+
+        Raises
+        ------
+        ValueError
+            If the 'url' parameter is not provided.
+        """
+        if not self.url:
+            raise ValueError("The 'url' parameter is required.")
+
+        return CloneConfig(
+            url=self.url,
+            local_path=str(self.local_path),
+            commit=self.commit,
+            branch=self.branch,
+            subpath=self.subpath,
+            blob=self.type == "blob",
+        )
 
 
 async def parse_query(
@@ -178,7 +204,6 @@ async def _parse_remote_repo(source: str) -> ParsedQuery:
         user_name=user_name,
         repo_name=repo_name,
         url=url,
-        subpath="/",
         local_path=local_path,
         slug=slug,
         id=_id,
@@ -309,7 +334,6 @@ def _parse_local_dir_path(path_str: str) -> ParsedQuery:
         user_name=None,
         repo_name=None,
         url=None,
-        subpath="/",
         local_path=path_obj,
         slug=slug,
         id=str(uuid.uuid4()),

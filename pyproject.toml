@@ -1,12 +1,13 @@
 [project]
 name = "gitingest"
-version = "0.1.3"
+version = "0.1.4"
 description="CLI tool to analyze and create text dumps of codebases for LLMs"
 readme = {file = "README.md", content-type = "text/markdown" }
 requires-python = ">= 3.8"
 dependencies = [
     "click>=8.0.0",
     "tiktoken",
+    "tomli",
     "typing_extensions; python_version < '3.10'",
 ]
 
@@ -52,6 +53,7 @@ disable = [
     "too-few-public-methods",
     "broad-exception-caught",
     "duplicate-code",
+    "fixme",
 ]
 
 [tool.pycln]
