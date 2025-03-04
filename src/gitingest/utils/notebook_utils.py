@@ -33,8 +33,8 @@ def process_notebook(file: Path, include_output: bool = True) -> str:
     try:
         with file.open(encoding="utf-8") as f:
             notebook: Dict[str, Any] = json.load(f)
-    except json.JSONDecodeError as e:
-        raise InvalidNotebookError(f"Invalid JSON in notebook: {file}") from e
+    except json.JSONDecodeError as exc:
+        raise InvalidNotebookError(f"Invalid JSON in notebook: {file}") from exc
 
     # Check if the notebook contains worksheets
     worksheets = notebook.get("worksheets")

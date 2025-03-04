@@ -173,3 +173,6 @@ Caddyfile
 
 # ignore default output directory
 tmp/*
+
+# Gitingest
+digest.txt

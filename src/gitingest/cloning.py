@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-from gitingest.utils import async_timeout
+from gitingest.utils.timeout_wrapper import async_timeout
 
 TIMEOUT: int = 60
 
@@ -38,6 +38,7 @@ class CloneConfig:
     commit: Optional[str] = None
     branch: Optional[str] = None
     subpath: str = "/"
+    blob: bool = False
 
 
 @async_timeout(TIMEOUT)
@@ -72,14 +73,15 @@ async def clone_repo(config: CloneConfig) -> None:
     parent_dir = Path(local_path).parent
     try:
         os.makedirs(parent_dir, exist_ok=True)
-    except OSError as e:
-        raise OSError(f"Failed to create parent directory {parent_dir}: {e}") from e
+    except OSError as exc:
+        raise OSError(f"Failed to create parent directory {parent_dir}: {exc}") from exc
 
     # Check if the repository exists
     if not await _check_repo_exists(url):
         raise ValueError("Repository not found, make sure it is public")
 
-    clone_cmd = ["git", "clone", "--recurse-submodules", "--single-branch"]
+    clone_cmd = ["git", "clone", "--single-branch"]
+    # TODO re-enable --recurse-submodules
 
     if partial_clone:
         clone_cmd += ["--filter=blob:none", "--sparse"]
@@ -98,7 +100,10 @@ async def clone_repo(config: CloneConfig) -> None:
         checkout_cmd = ["git", "-C", local_path]
 
         if partial_clone:
-            checkout_cmd += ["sparse-checkout", "set", config.subpath.lstrip("/")]
+            if config.blob:
+                checkout_cmd += ["sparse-checkout", "set", config.subpath.lstrip("/")[:-1]]
+            else:
+                checkout_cmd += ["sparse-checkout", "set", config.subpath.lstrip("/")]
 
         if commit:
             checkout_cmd += ["checkout", commit]
@@ -149,7 +154,6 @@ async def _check_repo_exists(url: str) -> bool:
     raise RuntimeError(f"Unexpected status code: {status_code}")
 
 
-@async_timeout(TIMEOUT)
 async def fetch_remote_branch_list(url: str) -> List[str]:
     """
     Fetch the list of branches from a remote Git repository.

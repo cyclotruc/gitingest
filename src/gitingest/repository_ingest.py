@@ -5,10 +5,10 @@ import inspect
 import shutil
 from typing import Optional, Set, Tuple, Union
 
+from gitingest.cloning import clone_repo
 from gitingest.config import TMP_BASE_PATH
-from gitingest.query_ingestion import run_ingest_query
-from gitingest.query_parser import ParsedQuery, parse_query
-from gitingest.repository_clone import clone_repo
+from gitingest.ingestion import ingest_query
+from gitingest.query_parsing import ParsedQuery, parse_query
 
 
 async def ingest_async(
@@ -83,7 +83,7 @@ async def ingest_async(
 
             repo_cloned = True
 
-        summary, tree, content = run_ingest_query(parsed_query)
+        summary, tree, content = ingest_query(parsed_query)
 
         if output is not None:
             with open(output, "w", encoding="utf-8") as f:
@@ -93,7 +93,7 @@ async def ingest_async(
     finally:
         # Clean up the temporary directory if it was created
         if repo_cloned:
-            shutil.rmtree(TMP_BASE_PATH)
+            shutil.rmtree(TMP_BASE_PATH, ignore_errors=True)
 
 
 def ingest(

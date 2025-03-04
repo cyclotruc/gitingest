@@ -5,9 +5,9 @@ from functools import partial
 from fastapi import Request
 from starlette.templating import _TemplateResponse
 
-from gitingest.query_ingestion import run_ingest_query
-from gitingest.query_parser import ParsedQuery, parse_query
-from gitingest.repository_clone import clone_repo
+from gitingest.cloning import clone_repo
+from gitingest.ingestion import ingest_query
+from gitingest.query_parsing import ParsedQuery, parse_query
 from server.server_config import EXAMPLE_REPOS, MAX_DISPLAY_SIZE, templates
 from server.server_utils import Colors, log_slider_to_size
 
@@ -86,20 +86,19 @@ async def process_query(
 
         clone_config = parsed_query.extact_clone_config()
         await clone_repo(clone_config)
-
-        summary, tree, content = run_ingest_query(parsed_query)
-        with open(f"{parsed_query.local_path}.txt", "w", encoding="utf-8") as f:
+        summary, tree, content = ingest_query(parsed_query)
+        with open(f"{clone_config.local_path}.txt", "w", encoding="utf-8") as f:
             f.write(tree + "\n" + content)
-    except Exception as e:
+    except Exception as exc:
         # hack to print error message when query is not defined
         if "query" in locals() and parsed_query is not None and isinstance(parsed_query, dict):
-            _print_error(parsed_query["url"], e, max_file_size, pattern_type, pattern)
+            _print_error(parsed_query["url"], exc, max_file_size, pattern_type, pattern)
         else:
             print(f"{Colors.BROWN}WARN{Colors.END}: {Colors.RED}<-  {Colors.END}", end="")
-            print(f"{Colors.RED}{e}{Colors.END}")
+            print(f"{Colors.RED}{exc}{Colors.END}")
 
-        context["error_message"] = f"Error: {e}"
-        if "405" in str(e):
+        context["error_message"] = f"Error: {exc}"
+        if "405" in str(exc):
             context["error_message"] = (
                 "Repository not found. Please make sure it is public (private repositories will be supported soon)"
             )

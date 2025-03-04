@@ -1,5 +1,5 @@
 """
-Tests for the `query_parser` module.
+Tests for the `query_parsing` module.
 
 These tests cover URL parsing, pattern parsing, and handling of branches/subpaths for HTTP(S) repositories and local
 paths.
@@ -10,17 +10,17 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
-from gitingest.query_parser import _parse_patterns, _parse_repo_source, parse_query
+from gitingest.query_parsing import _parse_patterns, _parse_remote_repo, parse_query
+from gitingest.utils.ignore_patterns import DEFAULT_IGNORE_PATTERNS
 
 
 @pytest.mark.asyncio
 async def test_parse_url_valid_https() -> None:
     """
-    Test `_parse_repo_source` with valid HTTPS URLs.
+    Test `_parse_remote_repo` with valid HTTPS URLs.
 
     Given various HTTPS URLs on supported platforms:
-    When `_parse_repo_source` is called,
+    When `_parse_remote_repo` is called,
     Then user name, repo name, and the URL should be extracted correctly.
     """
     test_cases = [
@@ -32,7 +32,7 @@ async def test_parse_url_valid_https() -> None:
         "https://gist.github.com/user/repo",
     ]
     for url in test_cases:
-        parsed_query = await _parse_repo_source(url)
+        parsed_query = await _parse_remote_repo(url)
 
         assert parsed_query.user_name == "user"
         assert parsed_query.repo_name == "repo"
@@ -42,10 +42,10 @@ async def test_parse_url_valid_https() -> None:
 @pytest.mark.asyncio
 async def test_parse_url_valid_http() -> None:
     """
-    Test `_parse_repo_source` with valid HTTP URLs.
+    Test `_parse_remote_repo` with valid HTTP URLs.
 
     Given various HTTP URLs on supported platforms:
-    When `_parse_repo_source` is called,
+    When `_parse_remote_repo` is called,
     Then user name, repo name, and the slug should be extracted correctly.
     """
     test_cases = [
@@ -57,7 +57,7 @@ async def test_parse_url_valid_http() -> None:
         "http://gist.github.com/user/repo",
     ]
     for url in test_cases:
-        parsed_query = await _parse_repo_source(url)
+        parsed_query = await _parse_remote_repo(url)
 
         assert parsed_query.user_name == "user"
         assert parsed_query.repo_name == "repo"
@@ -67,15 +67,15 @@ async def test_parse_url_valid_http() -> None:
 @pytest.mark.asyncio
 async def test_parse_url_invalid() -> None:
     """
-    Test `_parse_repo_source` with an invalid URL.
+    Test `_parse_remote_repo` with an invalid URL.
 
     Given an HTTPS URL lacking a repository structure (e.g., "https://github.com"),
-    When `_parse_repo_source` is called,
+    When `_parse_remote_repo` is called,
     Then a ValueError should be raised indicating an invalid repository URL.
     """
     url = "https://github.com"
     with pytest.raises(ValueError, match="Invalid repository URL"):
-        await _parse_repo_source(url)
+        await _parse_remote_repo(url)
 
 
 @pytest.mark.asyncio
@@ -146,20 +146,18 @@ async def test_parse_query_invalid_pattern() -> None:
 @pytest.mark.asyncio
 async def test_parse_url_with_subpaths() -> None:
     """
-    Test `_parse_repo_source` with a URL containing branch and subpath.
+    Test `_parse_remote_repo` with a URL containing branch and subpath.
 
     Given a URL referencing a branch ("main") and a subdir ("subdir/file"):
-    When `_parse_repo_source` is called with remote branch fetching,
+    When `_parse_remote_repo` is called with remote branch fetching,
     Then user, repo, branch, and subpath should be identified correctly.
     """
     url = "https://github.com/user/repo/tree/main/subdir/file"
-    with patch("gitingest.repository_clone._run_command", new_callable=AsyncMock) as mock_run_git_command:
-        mock_run_git_command.return_value = (b"refs/heads/main\nrefs/heads/dev\nrefs/heads/feature-branch\n", b"")
-        with patch(
-            "gitingest.repository_clone.fetch_remote_branch_list", new_callable=AsyncMock
-        ) as mock_fetch_branches:
+    with patch("gitingest.cloning._run_command", new_callable=AsyncMock) as mock_run_command:
+        mock_run_command.return_value = (b"refs/heads/main\nrefs/heads/dev\nrefs/heads/feature-branch\n", b"")
+        with patch("gitingest.cloning.fetch_remote_branch_list", new_callable=AsyncMock) as mock_fetch_branches:
             mock_fetch_branches.return_value = ["main", "dev", "feature-branch"]
-            parsed_query = await _parse_repo_source(url)
+            parsed_query = await _parse_remote_repo(url)
 
             assert parsed_query.user_name == "user"
             assert parsed_query.repo_name == "repo"
@@ -170,15 +168,15 @@ async def test_parse_url_with_subpaths() -> None:
 @pytest.mark.asyncio
 async def test_parse_url_invalid_repo_structure() -> None:
     """
-    Test `_parse_repo_source` with a URL missing a repository name.
+    Test `_parse_remote_repo` with a URL missing a repository name.
 
     Given a URL like "https://github.com/user":
-    When `_parse_repo_source` is called,
+    When `_parse_remote_repo` is called,
     Then a ValueError should be raised indicating an invalid repository URL.
     """
     url = "https://github.com/user"
     with pytest.raises(ValueError, match="Invalid repository URL"):
-        await _parse_repo_source(url)
+        await _parse_remote_repo(url)
 
 
 def test_parse_patterns_valid() -> None:
@@ -279,7 +277,7 @@ async def test_parse_query_local_path() -> None:
 
     assert parsed_query.local_path.parts[-len(tail.parts) :] == tail.parts
     assert parsed_query.id is not None
-    assert parsed_query.slug == "user/project"
+    assert parsed_query.slug == "home/user/project"
 
 
 @pytest.mark.asyncio
@@ -326,21 +324,19 @@ async def test_parse_query_empty_source() -> None:
 )
 async def test_parse_url_branch_and_commit_distinction(url: str, expected_branch: str, expected_commit: str) -> None:
     """
-    Test `_parse_repo_source` distinguishing branch vs. commit hash.
+    Test `_parse_remote_repo` distinguishing branch vs. commit hash.
 
     Given either a branch URL (e.g., ".../tree/main") or a 40-character commit URL:
-    When `_parse_repo_source` is called with branch fetching,
+    When `_parse_remote_repo` is called with branch fetching,
     Then the function should correctly set `branch` or `commit` based on the URL content.
     """
-    with patch("gitingest.repository_clone._run_command", new_callable=AsyncMock) as mock_run_git_command:
+    with patch("gitingest.cloning._run_command", new_callable=AsyncMock) as mock_run_command:
         # Mocking the return value to include 'main' and some additional branches
-        mock_run_git_command.return_value = (b"refs/heads/main\nrefs/heads/dev\nrefs/heads/feature-branch\n", b"")
-        with patch(
-            "gitingest.repository_clone.fetch_remote_branch_list", new_callable=AsyncMock
-        ) as mock_fetch_branches:
+        mock_run_command.return_value = (b"refs/heads/main\nrefs/heads/dev\nrefs/heads/feature-branch\n", b"")
+        with patch("gitingest.cloning.fetch_remote_branch_list", new_callable=AsyncMock) as mock_fetch_branches:
             mock_fetch_branches.return_value = ["main", "dev", "feature-branch"]
 
-            parsed_query = await _parse_repo_source(url)
+            parsed_query = await _parse_remote_repo(url)
 
             # Verify that `branch` and `commit` match our expectations
             assert parsed_query.branch == expected_branch
@@ -366,14 +362,14 @@ async def test_parse_query_uuid_uniqueness() -> None:
 @pytest.mark.asyncio
 async def test_parse_url_with_query_and_fragment() -> None:
     """
-    Test `_parse_repo_source` with query parameters and a fragment.
+    Test `_parse_remote_repo` with query parameters and a fragment.
 
     Given a URL like "https://github.com/user/repo?arg=value#fragment":
-    When `_parse_repo_source` is called,
+    When `_parse_remote_repo` is called,
     Then those parts should be stripped, leaving a clean user/repo URL.
     """
     url = "https://github.com/user/repo?arg=value#fragment"
-    parsed_query = await _parse_repo_source(url)
+    parsed_query = await _parse_remote_repo(url)
 
     assert parsed_query.user_name == "user"
     assert parsed_query.repo_name == "repo"
@@ -383,15 +379,15 @@ async def test_parse_url_with_query_and_fragment() -> None:
 @pytest.mark.asyncio
 async def test_parse_url_unsupported_host() -> None:
     """
-    Test `_parse_repo_source` with an unsupported host.
+    Test `_parse_remote_repo` with an unsupported host.
 
     Given "https://only-domain.com":
-    When `_parse_repo_source` is called,
+    When `_parse_remote_repo` is called,
     Then a ValueError should be raised for the unknown domain.
     """
     url = "https://only-domain.com"
     with pytest.raises(ValueError, match="Unknown domain 'only-domain.com' in URL"):
-        await _parse_repo_source(url)
+        await _parse_remote_repo(url)
 
 
 @pytest.mark.asyncio
@@ -428,13 +424,13 @@ async def test_parse_query_with_branch() -> None:
 )
 async def test_parse_repo_source_with_failed_git_command(url, expected_branch, expected_subpath):
     """
-    Test `_parse_repo_source` when git fetch fails.
+    Test `_parse_remote_repo` when git fetch fails.
 
     Given a URL referencing a branch, but Git fetching fails:
-    When `_parse_repo_source` is called,
+    When `_parse_remote_repo` is called,
     Then it should fall back to path components for branch identification.
     """
-    with patch("gitingest.repository_clone.fetch_remote_branch_list", new_callable=AsyncMock) as mock_fetch_branches:
+    with patch("gitingest.cloning.fetch_remote_branch_list", new_callable=AsyncMock) as mock_fetch_branches:
         mock_fetch_branches.side_effect = Exception("Failed to fetch branch list")
 
         with pytest.warns(
@@ -443,7 +439,7 @@ async def test_parse_repo_source_with_failed_git_command(url, expected_branch, e
             "git ls-remote --heads https://github.com/user/repo",
         ):
 
-            parsed_query = await _parse_repo_source(url)
+            parsed_query = await _parse_remote_repo(url)
 
             assert parsed_query.branch == expected_branch
             assert parsed_query.subpath == expected_subpath
@@ -463,23 +459,21 @@ async def test_parse_repo_source_with_failed_git_command(url, expected_branch, e
 )
 async def test_parse_repo_source_with_various_url_patterns(url, expected_branch, expected_subpath):
     """
-    Test `_parse_repo_source` with various URL patterns.
+    Test `_parse_remote_repo` with various URL patterns.
 
     Given multiple branch/blob patterns (including nonexistent branches):
-    When `_parse_repo_source` is called with remote branch fetching,
+    When `_parse_remote_repo` is called with remote branch fetching,
     Then the correct branch/subpath should be set or None if unmatched.
     """
-    with patch("gitingest.repository_clone._run_command", new_callable=AsyncMock) as mock_run_git_command:
-        with patch(
-            "gitingest.repository_clone.fetch_remote_branch_list", new_callable=AsyncMock
-        ) as mock_fetch_branches:
-            mock_run_git_command.return_value = (
+    with patch("gitingest.cloning._run_command", new_callable=AsyncMock) as mock_run_command:
+        with patch("gitingest.cloning.fetch_remote_branch_list", new_callable=AsyncMock) as mock_fetch_branches:
+            mock_run_command.return_value = (
                 b"refs/heads/feature/fix1\nrefs/heads/main\nrefs/heads/feature-branch\nrefs/heads/fix\n",
                 b"",
             )
             mock_fetch_branches.return_value = ["feature/fix1", "main", "feature-branch"]
 
-            parsed_query = await _parse_repo_source(url)
+            parsed_query = await _parse_remote_repo(url)
 
             assert parsed_query.branch == expected_branch
             assert parsed_query.subpath == expected_subpath

@@ -142,7 +142,7 @@ Gitingest aims to be friendly for first time contributors, with a simple Python 
 - [tiktoken](https://github.com/openai/tiktoken) - Token estimation
 - [posthog](https://github.com/PostHog/posthog) - Amazing analytics
 
-### Looking for a JavaScript/Node package?
+### Looking for a JavaScript/FileSystemNode package?
 
 Check out the NPM alternative 📦 Repomix: <https://github.com/yamadashy/repomix>
 

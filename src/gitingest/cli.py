@@ -7,7 +7,7 @@ from typing import Optional, Tuple
 
 import click
 
-from gitingest.config import MAX_FILE_SIZE, OUTPUT_FILE_PATH
+from gitingest.config import MAX_FILE_SIZE, OUTPUT_FILE_NAME
 from gitingest.repository_ingest import ingest_async
 
 
@@ -92,15 +92,15 @@ async def _async_main(
         include_patterns = set(include_pattern)
 
         if not output:
-            output = OUTPUT_FILE_PATH
+            output = OUTPUT_FILE_NAME
         summary, _, _ = await ingest_async(source, max_size, include_patterns, exclude_patterns, branch, output=output)
 
         click.echo(f"Analysis complete! Output written to: {output}")
         click.echo("\nSummary:")
         click.echo(summary)
 
-    except Exception as e:
-        click.echo(f"Error: {e}", err=True)
+    except Exception as exc:
+        click.echo(f"Error: {exc}", err=True)
         raise click.Abort()
 
 

@@ -1,30 +1,26 @@
 """ This module contains functions to parse and validate input sources and patterns. """
 
-import os
 import re
-import string
 import uuid
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Set, Tuple, Union
+from typing import List, Optional, Set, Union
 from urllib.parse import unquote, urlparse
 
+from gitingest.cloning import CloneConfig, _check_repo_exists, fetch_remote_branch_list
 from gitingest.config import MAX_FILE_SIZE, TMP_BASE_PATH
 from gitingest.exceptions import InvalidPatternError
-from gitingest.ignore_patterns import DEFAULT_IGNORE_PATTERNS
-from gitingest.repository_clone import CloneConfig, _check_repo_exists, fetch_remote_branch_list
-
-HEX_DIGITS: Set[str] = set(string.hexdigits)
-
-KNOWN_GIT_HOSTS: List[str] = [
-    "github.com",
-    "gitlab.com",
-    "bitbucket.org",
-    "gitea.com",
-    "codeberg.org",
-    "gist.github.com",
-]
+from gitingest.utils.ignore_patterns import DEFAULT_IGNORE_PATTERNS
+from gitingest.utils.query_parser_utils import (
+    KNOWN_GIT_HOSTS,
+    _get_user_and_repo_from_path,
+    _is_valid_git_commit_hash,
+    _is_valid_pattern,
+    _normalize_pattern,
+    _validate_host,
+    _validate_url_scheme,
+)
 
 
 @dataclass
@@ -71,6 +67,7 @@ class ParsedQuery:  # pylint: disable=too-many-instance-attributes
             commit=self.commit,
             branch=self.branch,
             subpath=self.subpath,
+            blob=self.type == "blob",
         )
 
 
@@ -110,10 +107,10 @@ async def parse_query(
     # Determine the parsing method based on the source type
     if from_web or urlparse(source).scheme in ("https", "http") or any(h in source for h in KNOWN_GIT_HOSTS):
         # We either have a full URL or a domain-less slug
-        parsed_query = await _parse_repo_source(source)
+        parsed_query = await _parse_remote_repo(source)
     else:
         # Local path scenario
-        parsed_query = _parse_path(source)
+        parsed_query = _parse_local_dir_path(source)
 
     # Combine default ignore patterns + custom patterns
     ignore_patterns_set = DEFAULT_IGNORE_PATTERNS.copy()
@@ -123,7 +120,8 @@ async def parse_query(
     # Process include patterns and override ignore patterns accordingly
     if include_patterns:
         parsed_include = _parse_patterns(include_patterns)
-        ignore_patterns_set = _override_ignore_patterns(ignore_patterns_set, include_patterns=parsed_include)
+        # Override ignore patterns with include patterns
+        ignore_patterns_set = set(ignore_patterns_set) - set(parsed_include)
     else:
         parsed_include = None
 
@@ -144,7 +142,7 @@ async def parse_query(
     )
 
 
-async def _parse_repo_source(source: str) -> ParsedQuery:
+async def _parse_remote_repo(source: str) -> ParsedQuery:
     """
     Parse a repository URL into a structured query dictionary.
 
@@ -169,7 +167,7 @@ async def _parse_repo_source(source: str) -> ParsedQuery:
     parsed_url = urlparse(source)
 
     if parsed_url.scheme:
-        _validate_scheme(parsed_url.scheme)
+        _validate_url_scheme(parsed_url.scheme)
         _validate_host(parsed_url.netloc.lower())
 
     else:  # Will be of the form 'host/user/repo' or 'user/repo'
@@ -251,8 +249,8 @@ async def _configure_branch_and_subpath(remaining_parts: List[str], url: str) ->
     try:
         # Fetch the list of branches from the remote repository
         branches: List[str] = await fetch_remote_branch_list(url)
-    except RuntimeError as e:
-        warnings.warn(f"Warning: Failed to fetch branch list: {e}", RuntimeWarning)
+    except RuntimeError as exc:
+        warnings.warn(f"Warning: Failed to fetch branch list: {exc}", RuntimeWarning)
         return remaining_parts.pop(0)
 
     branch = []
@@ -263,49 +261,6 @@ async def _configure_branch_and_subpath(remaining_parts: List[str], url: str) ->
             return branch_name
 
     return None
-
-
-def _is_valid_git_commit_hash(commit: str) -> bool:
-    """
-    Validate if the provided string is a valid Git commit hash.
-
-    This function checks if the commit hash is a 40-character string consisting only
-    of hexadecimal digits, which is the standard format for Git commit hashes.
-
-    Parameters
-    ----------
-    commit : str
-        The string to validate as a Git commit hash.
-
-    Returns
-    -------
-    bool
-        True if the string is a valid 40-character Git commit hash, otherwise False.
-    """
-    return len(commit) == 40 and all(c in HEX_DIGITS for c in commit)
-
-
-def _normalize_pattern(pattern: str) -> str:
-    """
-    Normalize the given pattern by removing leading separators and appending a wildcard.
-
-    This function processes the pattern string by stripping leading directory separators
-    and appending a wildcard (`*`) if the pattern ends with a separator.
-
-    Parameters
-    ----------
-    pattern : str
-        The pattern to normalize.
-
-    Returns
-    -------
-    str
-        The normalized pattern.
-    """
-    pattern = pattern.lstrip(os.sep)
-    if pattern.endswith(os.sep):
-        pattern += "*"
-    return pattern
 
 
 def _parse_patterns(pattern: Union[str, Set[str]]) -> Set[str]:
@@ -349,26 +304,7 @@ def _parse_patterns(pattern: Union[str, Set[str]]) -> Set[str]:
     return {_normalize_pattern(p) for p in parsed_patterns}
 
 
-def _override_ignore_patterns(ignore_patterns: Set[str], include_patterns: Set[str]) -> Set[str]:
-    """
-    Remove patterns from ignore_patterns that are present in include_patterns using set difference.
-
-    Parameters
-    ----------
-    ignore_patterns : Set[str]
-        The set of ignore patterns to filter.
-    include_patterns : Set[str]
-        The set of include patterns to remove from ignore_patterns.
-
-    Returns
-    -------
-    Set[str]
-        The filtered set of ignore patterns.
-    """
-    return set(ignore_patterns) - set(include_patterns)
-
-
-def _parse_path(path_str: str) -> ParsedQuery:
+def _parse_local_dir_path(path_str: str) -> ParsedQuery:
     """
     Parse the given file path into a structured query dictionary.
 
@@ -383,35 +319,15 @@ def _parse_path(path_str: str) -> ParsedQuery:
         A dictionary containing the parsed details of the file path.
     """
     path_obj = Path(path_str).resolve()
+    slug = path_obj.name if path_str == "." else path_str.strip("/")
     return ParsedQuery(
         user_name=None,
         repo_name=None,
         url=None,
         local_path=path_obj,
-        slug=f"{path_obj.parent.name}/{path_obj.name}",
+        slug=slug,
         id=str(uuid.uuid4()),
     )
-
-
-def _is_valid_pattern(pattern: str) -> bool:
-    """
-    Validate if the given pattern contains only valid characters.
-
-    This function checks if the pattern contains only alphanumeric characters or one
-    of the following allowed characters: dash (`-`), underscore (`_`), dot (`.`),
-    forward slash (`/`), plus (`+`), asterisk (`*`), or the at sign (`@`).
-
-    Parameters
-    ----------
-    pattern : str
-        The pattern to validate.
-
-    Returns
-    -------
-    bool
-        True if the pattern is valid, otherwise False.
-    """
-    return all(c.isalnum() or c in "-_./+*@" for c in pattern)
 
 
 async def try_domains_for_user_and_repo(user_name: str, repo_name: str) -> str:
@@ -440,64 +356,3 @@ async def try_domains_for_user_and_repo(user_name: str, repo_name: str) -> str:
         if await _check_repo_exists(candidate):
             return domain
     raise ValueError(f"Could not find a valid repository host for '{user_name}/{repo_name}'.")
-
-
-def _get_user_and_repo_from_path(path: str) -> Tuple[str, str]:
-    """
-    Extract the user and repository names from a given path.
-
-    Parameters
-    ----------
-    path : str
-        The path to extract the user and repository names from.
-
-    Returns
-    -------
-    Tuple[str, str]
-        A tuple containing the user and repository names.
-
-    Raises
-    ------
-    ValueError
-        If the path does not contain at least two parts.
-    """
-    path_parts = path.lower().strip("/").split("/")
-    if len(path_parts) < 2:
-        raise ValueError(f"Invalid repository URL '{path}'")
-    return path_parts[0], path_parts[1]
-
-
-def _validate_host(host: str) -> None:
-    """
-    Validate the given host against the known Git hosts.
-
-    Parameters
-    ----------
-    host : str
-        The host to validate.
-
-    Raises
-    ------
-    ValueError
-        If the host is not a known Git host.
-    """
-    if host not in KNOWN_GIT_HOSTS:
-        raise ValueError(f"Unknown domain '{host}' in URL")
-
-
-def _validate_scheme(scheme: str) -> None:
-    """
-    Validate the given scheme against the known schemes.
-
-    Parameters
-    ----------
-    scheme : str
-        The scheme to validate.
-
-    Raises
-    ------
-    ValueError
-        If the scheme is not 'http' or 'https'.
-    """
-    if scheme not in ("https", "http"):
-        raise ValueError(f"Invalid URL scheme '{scheme}' in URL")
