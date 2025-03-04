@@ -1,4 +1,4 @@
-name: OSSF Scorecard 
+name: OSSF Scorecard
 on:
   # For Branch-Protection check. Only the default branch is supported. See
   # https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection
@@ -34,7 +34,7 @@ jobs:
         with:
           results_file: results.sarif
           results_format: sarif
-          
+
           # Public repositories:
           #   - Publish results to OpenSSF REST API for easy access by consumers
           #   - Allows the repository to include the Scorecard badge.
