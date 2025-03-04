@@ -129,11 +129,6 @@ async def parse_query(
     else:
         parsed_include = None
 
-    if include_submodules:
-        include_submodules = True
-    else:
-        include_submodules = False
-
     return ParsedQuery(
         user_name=parsed_query.user_name,
         repo_name=parsed_query.repo_name,
@@ -366,21 +361,3 @@ async def try_domains_for_user_and_repo(user_name: str, repo_name: str) -> str:
         if await _check_repo_exists(candidate):
             return domain
     raise ValueError(f"Could not find a valid repository host for '{user_name}/{repo_name}'.")
-
-
-def simplify_condition(condition: Any) -> Any:
-    """
-    Simplify a condition by reducing it to its simplest form.
-
-    Parameters
-    ----------
-    condition : Any
-        The condition to simplify
-
-    Returns
-    -------
-    Any
-        The simplified condition
-    """
-    result = bool(condition)
-    return result

@@ -85,8 +85,7 @@ async def clone_repo(config: CloneConfig) -> None:
 
     clone_cmd = ["git", "clone", "--single-branch"]
     if config.include_submodules:
-            cmd.append("--recurse-submodules")
-
+        clone_cmd += ["--recurse-submodules"]
 
     if partial_clone:
         clone_cmd += ["--filter=blob:none", "--sparse"]

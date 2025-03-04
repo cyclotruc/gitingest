@@ -100,7 +100,7 @@ async def _async_main(
 
         if not output:
             output = OUTPUT_FILE_NAME
-        summary, _, _ = await ingest_async(source, max_size, include_patterns, exclude_patterns, branch, include_submodules, output=output)
+        summary, _, _ = await ingest_async(source, max_size, include_patterns, exclude_patterns, include_submodules, branch, output=output)
 
         click.echo(f"Analysis complete! Output written to: {output}")
         click.echo("\nSummary:")
