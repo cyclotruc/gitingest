@@ -107,7 +107,7 @@ async def test_parse_query_with_submodules():
     When parse_query is called,
     Then the include_submodules flag should be set to True.
     """
-    parsed = await parse_query(source="https://github.com/user/repo", max_file_size=1000, from_web=True, include_submodules=True)
+    parsed = await parse_query(source="https://github.com/user/repo", max_file_size=50, from_web=True, include_submodules=True)
     assert parsed.include_submodules is True
 
 

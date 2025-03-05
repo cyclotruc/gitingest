@@ -29,7 +29,7 @@ class CloneConfig:
         The specific commit hash to check out after cloning (default is None).
     branch : str, optional
         The branch to clone (default is None).
-    include_submodules : bool, optional
+    include_submodules : bool
         Whether to include submodules when cloning (default is False).
     subpath : str
         The subpath to clone from the repository (default is "/").

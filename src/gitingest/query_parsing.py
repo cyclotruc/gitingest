@@ -100,7 +100,7 @@ async def parse_query(
         Patterns to include, by default None. Can be a set of strings or a single string.
     ignore_patterns : Union[str, Set[str]], optional
         Patterns to ignore, by default None. Can be a set of strings or a single string.
-    include_submodules : bool, optional
+    include_submodules : bool
         Whether to include git submodules in the analysis. Defaults to False.
     
     Returns

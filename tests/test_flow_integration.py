@@ -70,7 +70,7 @@ async def test_remote_repository_analysis(request):
     }
 
     response = client.post("/", data=form_data)
-    assert response.status_code == 200, f"Request failed: {response.text}"
+    assert response.status_code == 200, f"Form submission failed: {response.text}"
     assert "Mocked Template Response" in response.text
 
 
@@ -169,4 +169,5 @@ async def test_repository_with_patterns(request):
 # Note: The test was not added due to rate limit errors.
 # Error encountered: tests/test_flow_integration.py::test_repository_with_submodules -
 # AssertionError: Request failed: {"error":"Rate limit exceeded: 10 per 1 minute"}
-# Reason: To keep changes minimal and because this test is not a priority for checking if include-submodules is working.
+# Reason: To keep changes minimal and because
+# this test is not a priority for checking if include-submodules is working.
