@@ -86,7 +86,7 @@ async def test_parse_query_basic(url):
 
     Given an HTTPS URL and ignore_patterns="*.txt":
     When `parse_query` is called,
-    Then user/repo, URL, and ignore patterns should be parsed correctly.
+    Then user/repo, URL, ignore patterns, and default submodules behavior should be correct.
     """
     parsed_query = await parse_query(source=url, max_file_size=50, from_web=True, ignore_patterns="*.txt")
 
@@ -95,6 +95,20 @@ async def test_parse_query_basic(url):
     assert parsed_query.url == url
     assert parsed_query.ignore_patterns
     assert "*.txt" in parsed_query.ignore_patterns
+    assert parsed_query.include_submodules is False
+
+
+@pytest.mark.asyncio
+async def test_parse_query_with_submodules():
+    """
+    Test `parse_query` with submodules enabled.
+
+    Given a URL with include_submodules=True:
+    When parse_query is called,
+    Then the include_submodules flag should be set to True.
+    """
+    parsed = await parse_query(source="https://github.com/user/repo", max_file_size=1000, from_web=True, include_submodules=True)
+    assert parsed.include_submodules is True
 
 
 @pytest.mark.asyncio

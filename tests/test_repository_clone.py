@@ -381,7 +381,7 @@ async def test_clone_repo_with_submodules():
     clone_config = CloneConfig(url="https://github.com/user/repo", local_path="/tmp/repo", include_submodules=True)
 
     with patch("gitingest.cloning._check_repo_exists", return_value=True):
-        with patch("gitingest.cloning._run_git_command", new_callable=AsyncMock) as mock_exec:
+        with patch("gitingest.cloning._run_command", new_callable=AsyncMock) as mock_exec:
             await clone_repo(clone_config)
 
             mock_exec.assert_called_once_with(
@@ -389,6 +389,11 @@ async def test_clone_repo_with_submodules():
                 "clone",
                 "--single-branch",
                 "--recurse-submodules",
+                "--depth=1",
+                clone_config.url,
+                clone_config.local_path,
+            )
+
 
 @pytest.mark.asyncio
 async def test_clone_with_specific_subpath() -> None:
@@ -416,7 +421,6 @@ async def test_clone_with_specific_subpath() -> None:
                 clone_config.url,
                 clone_config.local_path,
             )
-
 
 
 @pytest.mark.asyncio
@@ -458,22 +462,16 @@ async def test_clone_repo_with_empty_submodules():
     clone_config = CloneConfig(url="https://github.com/user/repo", local_path="/tmp/repo", include_submodules=True)
 
     with patch("gitingest.cloning._check_repo_exists", return_value=True):
-        with patch("gitingest.cloning._run_git_command", new_callable=AsyncMock) as mock_exec:
+        with patch("gitingest.cloning._run_command", new_callable=AsyncMock) as mock_exec:
             await clone_repo(clone_config)
 
             # Verify the clone command included --recurse-submodules
-            clone_call = mock_exec.call_args_list[0]
-            assert "--recurse-submodules" in clone_call[0], "Clone command should include --recurse-submodules flag"
-            # Verify the sparse-checkout command sets the correct path
-            mock_exec.assert_any_call(
+            mock_exec.assert_called_once_with(
                 "git",
-                "-C",
+                "clone",
+                "--single-branch",
+                "--recurse-submodules",
+                "--depth=1",
+                clone_config.url,
                 clone_config.local_path,
-                "sparse-checkout",
-                "set",
-                "src/docs",
-                "checkout",
-                clone_config.commit,
             )
-
-            assert mock_exec.call_count == 2
