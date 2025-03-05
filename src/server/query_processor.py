@@ -89,7 +89,7 @@ async def process_query(
         if not parsed_query.url:
             raise ValueError("The 'url' parameter is required.")
 
-        clone_config = parsed_query.extact_clone_config()
+        clone_config = parsed_query.extract_clone_config()
         await clone_repo(clone_config)
         summary, tree, content = ingest_query(parsed_query)
         with open(f"{clone_config.local_path}.txt", "w", encoding="utf-8") as f:

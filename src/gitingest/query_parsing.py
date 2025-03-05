@@ -45,7 +45,7 @@ class ParsedQuery:  # pylint: disable=too-many-instance-attributes
     pattern_type: Optional[str] = None
     include_submodules: bool = False
 
-    def extact_clone_config(self) -> CloneConfig:
+    def extract_clone_config(self) -> CloneConfig:
         """
         Extract the relevant fields for the CloneConfig object.
 
@@ -102,7 +102,7 @@ async def parse_query(
         Patterns to ignore, by default None. Can be a set of strings or a single string.
     include_submodules : bool
         Whether to include git submodules in the analysis. Defaults to False.
-    
+
     Returns
     -------
     ParsedQuery

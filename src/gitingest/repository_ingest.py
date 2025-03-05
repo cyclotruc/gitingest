@@ -74,7 +74,7 @@ async def ingest_async(
             selected_branch = branch if branch else parsed_query.branch  # prioritize branch argument
             parsed_query.branch = selected_branch
 
-            clone_config = parsed_query.extact_clone_config()
+            clone_config = parsed_query.extract_clone_config()
             clone_coroutine = clone_repo(clone_config)
 
             if inspect.iscoroutine(clone_coroutine):
