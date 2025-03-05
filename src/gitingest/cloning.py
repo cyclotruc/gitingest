@@ -84,9 +84,9 @@ async def clone_repo(config: CloneConfig) -> None:
         raise ValueError("Repository not found, make sure it is public")
 
     clone_cmd = ["git", "clone", "--single-branch"]
+    
     if config.include_submodules:
-            cmd.append("--recurse-submodules")
-
+        clone_cmd.append("--recurse-submodules")
 
     if partial_clone:
         clone_cmd += ["--filter=blob:none", "--sparse"]

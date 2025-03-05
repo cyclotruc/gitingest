@@ -3,7 +3,7 @@
 import asyncio
 import inspect
 import shutil
-from typing import List, Optional, Set, Tuple, Union
+from typing import Optional, Set, Tuple, Union
 
 from gitingest.cloning import clone_repo
 from gitingest.config import TMP_BASE_PATH
@@ -44,7 +44,6 @@ async def ingest_async(
         The branch to clone and ingest. If `None`, the default branch is used.
     output : str, optional
         File path where the summary and content should be written. If `None`, the results are not written to a file.
-
 
     Returns
     -------
