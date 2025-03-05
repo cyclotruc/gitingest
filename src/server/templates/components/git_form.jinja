@@ -18,9 +18,15 @@
         });
     }
     function updateSubmodulesValue(checkbox) {
-        const hiddenInput = document.querySelector('input[type="hidden"][name="include_submodules"]');
-        hiddenInput.value = checkbox.checked.toString();
+    const hiddenInput = document.querySelector('input[type="hidden"][name="include_submodules"]');
+    hiddenInput.value = checkbox.checked.toString();
     }
+    document.addEventListener('DOMContentLoaded', () => {
+    const checkbox = document.getElementById("include_submodules");
+    const hiddenInput = document.querySelector('input[type="hidden"][name="include_submodules"]');
+    checkbox.checked = hiddenInput.value === "true";
+    });
+
 </script>
 <div class="relative">
     <div class="w-full h-full absolute inset-0 bg-gray-900 rounded-xl translate-y-2 translate-x-2"></div>
@@ -111,7 +117,6 @@
                                name="include_submodules"
                                form="ingestForm"
                                onchange="updateSubmodulesValue(this)"
-                               oninput="updateSubmodulesValue(this)"
                                class="peer absolute opacity-0 w-5 h-5 cursor-pointer z-20">
                         <div class="w-5 h-5 bg-gray-900 absolute translate-y-[3px] translate-x-[3px] rounded peer-checked:translate-y-[1px] peer-checked:translate-x-[1px] transition-transform duration-200">
                         </div>
