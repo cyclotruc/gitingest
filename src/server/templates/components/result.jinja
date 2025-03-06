@@ -96,9 +96,9 @@
                                  readonly>
                                 <input type="hidden" id="directory-structure-content" value="{{ tree }}" />
                                 {% for line in tree.splitlines() %}
-                                    <div name="tree-line"
+                                    <pre name="tree-line"
                                          class="cursor-pointer hover:line-through hover:text-gray-500"
-                                         onclick="toggleFile(this)">{{ line }}</div>
+                                         onclick="toggleFile(this)">{{ line }}</pre>
                                 {% endfor %}
                             </div>
                         </div>
