@@ -101,7 +101,8 @@ async def clone_repo(config: CloneConfig) -> None:
 
         if partial_clone:
             if config.blob:
-                checkout_cmd += ["sparse-checkout", "set", config.subpath.lstrip("/")[:-1]]
+                # When ingesting from a file url (blob/branch/path/file.txt), we need to remove the file name
+                checkout_cmd += ["sparse-checkout", "set", Path(config.subpath.lstrip("/")).parent]
             else:
                 checkout_cmd += ["sparse-checkout", "set", config.subpath.lstrip("/")]
 
