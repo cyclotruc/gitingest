@@ -296,6 +296,9 @@ def _parse_patterns(pattern: Union[str, Set[str]]) -> Set[str]:
     # Remove empty string if present
     parsed_patterns = parsed_patterns - {""}
 
+    # Normalize Windows paths to Unix-style paths
+    parsed_patterns = {p.replace("\\", "/") for p in parsed_patterns}
+
     # Validate and normalize each pattern
     for p in parsed_patterns:
         if not _is_valid_pattern(p):

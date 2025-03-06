@@ -12,7 +12,7 @@ from gitingest.utils.ingestion_utils import _should_exclude, _should_include
 from gitingest.utils.path_utils import _is_safe_symlink
 
 try:
-    import tomllib
+    import tomllib  # type: ignore[import]
 except ImportError:
     import tomli as tomllib
 

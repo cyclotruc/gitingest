@@ -56,6 +56,9 @@ def _should_include(path: Path, base_path: Path, include_patterns: Set[str]) -> 
         return False
 
     rel_str = str(rel_path)
+    if path.is_dir():
+        rel_str += "/"
+
     for pattern in include_patterns:
         if fnmatch(rel_str, pattern):
             return True
