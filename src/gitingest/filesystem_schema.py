@@ -11,7 +11,7 @@ from gitingest.utils.ingestion_utils import _get_encoding_list
 from gitingest.utils.notebook_utils import process_notebook
 from gitingest.utils.textfile_checker_utils import is_textfile
 
-SEPARATOR = "=" * 48
+SEPARATOR = "=" * 48  # Tiktoken, the tokenizer openai uses, counts 2 tokens if we have more than 48
 
 
 class FileSystemNodeType(Enum):
@@ -69,6 +69,7 @@ class FileSystemNode:  # pylint: disable=too-many-instance-attributes
             raise ValueError("Cannot sort children of a non-directory node")
 
         def _sort_key(child: FileSystemNode) -> tuple[int, str]:
+            # returns the priority order for the sort function, 0 is first
             # Groups: 0=README, 1=regular file, 2=hidden file, 3=regular dir, 4=hidden dir
             name = child.name.lower()
             if child.type == FileSystemNodeType.FILE:
