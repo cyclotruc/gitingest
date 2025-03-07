@@ -29,6 +29,8 @@ class CloneConfig:
         The specific commit hash to check out after cloning (default is None).
     branch : str, optional
         The branch to clone (default is None).
+    include_submodules : bool
+        The flag whether to include submodules when cloning (default is False).
     subpath : str
         The subpath to clone from the repository (default is "/").
     """
@@ -37,6 +39,7 @@ class CloneConfig:
     local_path: str
     commit: Optional[str] = None
     branch: Optional[str] = None
+    include_submodules: bool = False
     subpath: str = "/"
     blob: bool = False
 
@@ -81,7 +84,9 @@ async def clone_repo(config: CloneConfig) -> None:
         raise ValueError("Repository not found, make sure it is public")
 
     clone_cmd = ["git", "clone", "--single-branch"]
-    # TODO re-enable --recurse-submodules
+
+    if config.include_submodules:
+        clone_cmd.append("--recurse-submodules")
 
     if partial_clone:
         clone_cmd += ["--filter=blob:none", "--sparse"]

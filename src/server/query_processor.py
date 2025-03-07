@@ -19,6 +19,7 @@ async def process_query(
     pattern_type: str = "exclude",
     pattern: str = "",
     is_index: bool = False,
+    include_submodules: bool = False,
 ) -> _TemplateResponse:
     """
     Process a query by parsing input, cloning a repository, and generating a summary.
@@ -40,6 +41,8 @@ async def process_query(
         Pattern to include or exclude in the query, depending on the pattern type.
     is_index : bool
         Flag indicating whether the request is for the index page (default is False).
+    include_submodules : bool
+        Flag indicating whether to include submodules in the query (default is False).
 
     Returns
     -------
@@ -71,6 +74,7 @@ async def process_query(
         "default_file_size": slider_position,
         "pattern_type": pattern_type,
         "pattern": pattern,
+        "include_submodules": include_submodules,
     }
 
     try:
@@ -80,6 +84,7 @@ async def process_query(
             from_web=True,
             include_patterns=include_patterns,
             ignore_patterns=exclude_patterns,
+            include_submodules=include_submodules,
         )
         if not parsed_query.url:
             raise ValueError("The 'url' parameter is required.")

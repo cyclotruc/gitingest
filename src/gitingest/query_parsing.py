@@ -43,6 +43,7 @@ class ParsedQuery:  # pylint: disable=too-many-instance-attributes
     ignore_patterns: Optional[Set[str]] = None
     include_patterns: Optional[Set[str]] = None
     pattern_type: Optional[str] = None
+    include_submodules: bool = False
 
     def extact_clone_config(self) -> CloneConfig:
         """
@@ -68,6 +69,7 @@ class ParsedQuery:  # pylint: disable=too-many-instance-attributes
             branch=self.branch,
             subpath=self.subpath,
             blob=self.type == "blob",
+            include_submodules=self.include_submodules,
         )
 
 
@@ -77,6 +79,7 @@ async def parse_query(
     from_web: bool,
     include_patterns: Optional[Union[str, Set[str]]] = None,
     ignore_patterns: Optional[Union[str, Set[str]]] = None,
+    include_submodules: bool = False,
 ) -> ParsedQuery:
     """
     Parse the input source (URL or path) to extract relevant details for the query.
@@ -97,6 +100,8 @@ async def parse_query(
         Patterns to include, by default None. Can be a set of strings or a single string.
     ignore_patterns : Union[str, Set[str]], optional
         Patterns to ignore, by default None. Can be a set of strings or a single string.
+    include_submodules : bool
+        The flag whether to include git submodules in the analysis. Defaults to False.
 
     Returns
     -------
@@ -139,6 +144,7 @@ async def parse_query(
         max_file_size=max_file_size,
         ignore_patterns=ignore_patterns_set,
         include_patterns=parsed_include,
+        include_submodules=include_submodules,
     )
 
 
