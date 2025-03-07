@@ -21,7 +21,10 @@ TEMPLATE_DIR = BASE_DIR / "src" / "templates"
 def test_client():
     """Create a test client fixture."""
     with TestClient(app) as client_instance:
-        client_instance.headers.update({"Host": "localhost"})
+        client_instance.headers.update({
+            "Host": "localhost",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        })
         yield client_instance
 
 

@@ -1,15 +1,18 @@
 """ Process a query by parsing input, cloning a repository, and generating a summary. """
 
+import json
 from functools import partial
+from typing import Dict, Union
 
 from fastapi import Request
+from fastapi.responses import JSONResponse, PlainTextResponse, Response
 from starlette.templating import _TemplateResponse
 
-from gitingest.cloning import clone_repo
+from gitingest.cloning import CloneConfig, clone_repo
 from gitingest.ingestion import ingest_query
 from gitingest.query_parsing import ParsedQuery, parse_query
 from server.server_config import EXAMPLE_REPOS, MAX_DISPLAY_SIZE, templates
-from server.server_utils import Colors, log_slider_to_size
+from server.server_utils import Colors, is_browser, log_slider_to_size
 
 
 async def process_query(
@@ -19,7 +22,8 @@ async def process_query(
     pattern_type: str = "exclude",
     pattern: str = "",
     is_index: bool = False,
-) -> _TemplateResponse:
+    response_format: str = "text",
+) -> Union[_TemplateResponse, PlainTextResponse, JSONResponse]:
     """
     Process a query by parsing input, cloning a repository, and generating a summary.
 
@@ -40,11 +44,13 @@ async def process_query(
         Pattern to include or exclude in the query, depending on the pattern type.
     is_index : bool
         Flag indicating whether the request is for the index page (default is False).
+    response_format : str
+        Format of the response for non-browser requests, one of "text" or "json" (default is "text").
 
     Returns
     -------
-    _TemplateResponse
-        Rendered template response containing the processed results or an error message.
+    Union[_TemplateResponse, PlainTextResponse, JSONResponse]
+        Response in the requested format containing the processed results or an error message.
 
     Raises
     ------
@@ -84,7 +90,12 @@ async def process_query(
         if not parsed_query.url:
             raise ValueError("The 'url' parameter is required.")
 
-        clone_config = parsed_query.extact_clone_config()
+        clone_config = CloneConfig(
+            url=parsed_query.url,
+            local_path=str(parsed_query.local_path),
+            commit=parsed_query.commit,
+            branch=parsed_query.branch,
+        )
         await clone_repo(clone_config)
         summary, tree, content = ingest_query(parsed_query)
         with open(f"{clone_config.local_path}.txt", "w", encoding="utf-8") as f:
@@ -118,17 +129,35 @@ async def process_query(
         summary=summary,
     )
 
-    context.update(
-        {
-            "result": True,
-            "summary": summary,
-            "tree": tree,
-            "content": content,
-            "ingest_id": parsed_query.id,
-        }
-    )
-
-    return template_response(context=context)
+    # Check if the request is from a browser based on User-Agent
+    wants_html = is_browser(request)
+    
+    # Return HTML for browsers, format-specific response for other clients
+    if not wants_html:
+        if response_format == "json":
+            # JSON response
+            json_data = {
+                "summary": summary,
+                "tree": tree,
+                "content": content,
+                "ingest_id": parsed_query.id,
+            }
+            return JSONResponse(content=json_data)
+        else:
+            # Default: Plain text response
+            plaintext_content = f"{summary}\n\n{tree}\n\n{content}"
+            return PlainTextResponse(content=plaintext_content)
+    else:
+        context.update(
+            {
+                "result": True,
+                "summary": summary,
+                "tree": tree,
+                "content": content,
+                "ingest_id": parsed_query.id,
+            }
+        )
+        return template_response(context=context)
 
 
 def _print_query(url: str, max_file_size: int, pattern_type: str, pattern: str) -> None:
