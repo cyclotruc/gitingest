@@ -30,27 +30,6 @@ class AsyncTimeoutError(Exception):
     """
 
 
-class MaxFilesReachedError(Exception):
-    """Exception raised when the maximum number of files is reached."""
-
-    def __init__(self, max_files: int) -> None:
-        super().__init__(f"Maximum number of files ({max_files}) reached.")
-
-
-class MaxFileSizeReachedError(Exception):
-    """Exception raised when the maximum file size is reached."""
-
-    def __init__(self, max_size: int):
-        super().__init__(f"Maximum file size limit ({max_size/1024/1024:.1f}MB) reached.")
-
-
-class AlreadyVisitedError(Exception):
-    """Exception raised when a symlink target has already been visited."""
-
-    def __init__(self, path: str) -> None:
-        super().__init__(f"Symlink target already visited: {path}")
-
-
 class InvalidNotebookError(Exception):
     """Exception raised when a Jupyter notebook is invalid or cannot be processed."""
 

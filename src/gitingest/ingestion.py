@@ -6,7 +6,7 @@ from typing import Tuple
 
 from gitingest.config import MAX_DIRECTORY_DEPTH, MAX_FILES, MAX_TOTAL_SIZE_BYTES
 from gitingest.filesystem_schema import FileSystemNode, FileSystemNodeType, FileSystemStats
-from gitingest.output_formatters import format_directory, format_single_file
+from gitingest.output_formatters import format_node
 from gitingest.query_parsing import ParsedQuery
 from gitingest.utils.ingestion_utils import _should_exclude, _should_include
 from gitingest.utils.path_utils import _is_safe_symlink
@@ -38,7 +38,7 @@ def ingest_query(query: ParsedQuery) -> Tuple[str, str, str]:
     Raises
     ------
     ValueError
-        If the specified path cannot be found or if the file is not a text file.
+        If the path cannot be found, is not a file, or the file has no content.
     """
     subpath = Path(query.subpath.strip("/")).as_posix()
     path = query.local_path / subpath
@@ -63,7 +63,11 @@ def ingest_query(query: ParsedQuery) -> Tuple[str, str, str]:
             path_str=str(relative_path),
             path=path,
         )
-        return format_single_file(file_node, query)
+
+        if not file_node.content:
+            raise ValueError(f"File {file_node.name} has no content")
+
+        return format_node(file_node, query)
 
     root_node = FileSystemNode(
         name=path.name,
@@ -80,7 +84,7 @@ def ingest_query(query: ParsedQuery) -> Tuple[str, str, str]:
         stats=stats,
     )
 
-    return format_directory(root_node, query)
+    return format_node(root_node, query)
 
 
 def apply_gitingest_file(path: Path, query: ParsedQuery) -> None:
