@@ -18,6 +18,7 @@ from gitingest.repository_ingest import ingest_async
 @click.option("--exclude-pattern", "-e", multiple=True, help="Patterns to exclude")
 @click.option("--include-pattern", "-i", multiple=True, help="Patterns to include")
 @click.option("--branch", "-b", default=None, help="Branch to clone and ingest")
+@click.option("--include-submodules", is_flag=True, help="Include git submodules in the analysis")
 def main(
     source: str,
     output: Optional[str],
@@ -25,6 +26,7 @@ def main(
     exclude_pattern: Tuple[str, ...],
     include_pattern: Tuple[str, ...],
     branch: Optional[str],
+    include_submodules: bool,
 ):
     """
      Main entry point for the CLI. This function is called when the CLI is run as a script.
@@ -46,9 +48,11 @@ def main(
         A tuple of patterns to include during the analysis. Only files matching these patterns will be processed.
     branch : str, optional
         The branch to clone (optional).
+    include_submodules : bool
+        Whether to include git submodules in the analysis.
     """
     # Main entry point for the CLI. This function is called when the CLI is run as a script.
-    asyncio.run(_async_main(source, output, max_size, exclude_pattern, include_pattern, branch))
+    asyncio.run(_async_main(source, output, max_size, exclude_pattern, include_pattern, branch, include_submodules))
 
 
 async def _async_main(
@@ -58,6 +62,7 @@ async def _async_main(
     exclude_pattern: Tuple[str, ...],
     include_pattern: Tuple[str, ...],
     branch: Optional[str],
+    include_submodules: bool,
 ) -> None:
     """
     Analyze a directory or repository and create a text dump of its contents.
@@ -80,6 +85,8 @@ async def _async_main(
         A tuple of patterns to include during the analysis. Only files matching these patterns will be processed.
     branch : str, optional
         The branch to clone (optional).
+    include_submodules : bool
+        Whether to include git submodules in the analysis.
 
     Raises
     ------
@@ -93,7 +100,7 @@ async def _async_main(
 
         if not output:
             output = OUTPUT_FILE_NAME
-        summary, _, _ = await ingest_async(source, max_size, include_patterns, exclude_patterns, branch, output=output)
+        summary, _, _ = await ingest_async(source, max_size, include_patterns, exclude_patterns, branch, include_submodules, output=output)
 
         click.echo(f"Analysis complete! Output written to: {output}")
         click.echo("\nSummary:")

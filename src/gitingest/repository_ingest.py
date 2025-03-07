@@ -17,6 +17,7 @@ async def ingest_async(
     include_patterns: Optional[Union[str, Set[str]]] = None,
     exclude_patterns: Optional[Union[str, Set[str]]] = None,
     branch: Optional[str] = None,
+    include_submodules: bool = False,
     output: Optional[str] = None,
 ) -> Tuple[str, str, str]:
     """
@@ -39,6 +40,8 @@ async def ingest_async(
         Pattern or set of patterns specifying which files to exclude. If `None`, no files are excluded.
     branch : str, optional
         The branch to clone and ingest. If `None`, the default branch is used.
+    include_submodules : bool
+        The flag whether to include git submodules in the analysis. Defaults to False.
     output : str, optional
         File path where the summary and content should be written. If `None`, the results are not written to a file.
 
@@ -64,6 +67,7 @@ async def ingest_async(
             from_web=False,
             include_patterns=include_patterns,
             ignore_patterns=exclude_patterns,
+            include_submodules=include_submodules,
         )
 
         if parsed_query.url:
@@ -102,6 +106,7 @@ def ingest(
     include_patterns: Optional[Union[str, Set[str]]] = None,
     exclude_patterns: Optional[Union[str, Set[str]]] = None,
     branch: Optional[str] = None,
+    include_submodules: bool = False,
     output: Optional[str] = None,
 ) -> Tuple[str, str, str]:
     """
@@ -124,6 +129,8 @@ def ingest(
         Pattern or set of patterns specifying which files to exclude. If `None`, no files are excluded.
     branch : str, optional
         The branch to clone and ingest. If `None`, the default branch is used.
+    include_submodules : bool
+        The flag whether to include git submodules in the analysis. Defaults to False.
     output : str, optional
         File path where the summary and content should be written. If `None`, the results are not written to a file.
 
@@ -146,6 +153,7 @@ def ingest(
             include_patterns=include_patterns,
             exclude_patterns=exclude_patterns,
             branch=branch,
+            include_submodules=include_submodules,
             output=output,
         )
     )

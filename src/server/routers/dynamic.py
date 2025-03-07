@@ -50,6 +50,7 @@ async def process_catch_all(
     max_file_size: int = Form(...),
     pattern_type: str = Form(...),
     pattern: str = Form(...),
+    include_submodules: bool = Form(...),
 ) -> HTMLResponse:
     """
     Process the form submission with user input for query parameters.
@@ -69,6 +70,8 @@ async def process_catch_all(
         The type of pattern used for the query, specified by the user.
     pattern : str
         The pattern string used in the query, specified by the user.
+    include_submodules : bool
+        The flag indicating whether to include submodules in the query, specified by the user.
 
     Returns
     -------
@@ -83,4 +86,5 @@ async def process_catch_all(
         pattern_type,
         pattern,
         is_index=False,
+        include_submodules=include_submodules,
     )
