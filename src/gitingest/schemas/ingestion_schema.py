@@ -31,6 +31,8 @@ class CloneConfig:
         The subpath to clone from the repository (default is "/").
     blob: bool
         Whether the repository is a blob (default is False).
+    include_submodules: bool
+        Whether to include Git submodules (default is False).
     """
 
     url: str
@@ -39,6 +41,7 @@ class CloneConfig:
     branch: Optional[str] = None
     subpath: str = "/"
     blob: bool = False
+    include_submodules: bool = False
 
 
 class IngestionQuery(BaseModel):  # pylint: disable=too-many-instance-attributes
@@ -59,6 +62,7 @@ class IngestionQuery(BaseModel):  # pylint: disable=too-many-instance-attributes
     max_file_size: int = Field(default=MAX_FILE_SIZE)
     ignore_patterns: Optional[Set[str]] = None
     include_patterns: Optional[Set[str]] = None
+    include_submodules: bool = False
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -86,4 +90,5 @@ class IngestionQuery(BaseModel):  # pylint: disable=too-many-instance-attributes
             branch=self.branch,
             subpath=self.subpath,
             blob=self.type == "blob",
+            include_submodules=self.include_submodules,
         )

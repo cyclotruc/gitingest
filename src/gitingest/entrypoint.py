@@ -20,6 +20,7 @@ async def ingest_async(
     exclude_patterns: Optional[Union[str, Set[str]]] = None,
     branch: Optional[str] = None,
     token: Optional[str] = None,
+    include_submodules: bool = False,
     output: Optional[str] = None,
 ) -> Tuple[str, str, str]:
     """
@@ -42,6 +43,9 @@ async def ingest_async(
         Pattern or set of patterns specifying which files to exclude. If `None`, no files are excluded.
     branch : str, optional
         The branch to clone and ingest. If `None`, the default branch is used.
+    include_submodules : bool
+        If True, recursively include and analyze all Git submodules within the repository.
+        Set to False to ignore submodules during analysis (default is False).
     token : str, optional
         GitHub personal-access token (PAT). Needed when *source* refers to a
         **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
@@ -73,6 +77,7 @@ async def ingest_async(
             from_web=False,
             include_patterns=include_patterns,
             ignore_patterns=exclude_patterns,
+            include_submodules=include_submodules,
             token=token,
         )
 
@@ -117,6 +122,7 @@ def ingest(
     include_patterns: Optional[Union[str, Set[str]]] = None,
     exclude_patterns: Optional[Union[str, Set[str]]] = None,
     branch: Optional[str] = None,
+    include_submodules: bool = False,
     token: Optional[str] = None,
     output: Optional[str] = None,
 ) -> Tuple[str, str, str]:
@@ -140,6 +146,9 @@ def ingest(
         Pattern or set of patterns specifying which files to exclude. If `None`, no files are excluded.
     branch : str, optional
         The branch to clone and ingest. If `None`, the default branch is used.
+    include_submodules : bool
+        If True, recursively include and analyze all Git submodules within the repository.
+        Set to False to ignore submodules during analysis (default is False).
     token : str, optional
         GitHub personal-access token (PAT). Needed when *source* refers to a
         **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
@@ -165,6 +174,7 @@ def ingest(
             include_patterns=include_patterns,
             exclude_patterns=exclude_patterns,
             branch=branch,
+            include_submodules=include_submodules,
             token=token,
             output=output,
         )

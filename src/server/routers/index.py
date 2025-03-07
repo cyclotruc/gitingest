@@ -47,6 +47,7 @@ async def index_post(
     max_file_size: int = Form(...),
     pattern_type: str = Form(...),
     pattern: str = Form(...),
+    include_submodules: str = Form(...),
     token: str = Form(...),
 ) -> HTMLResponse:
     """
@@ -68,6 +69,8 @@ async def index_post(
         The type of pattern used for the query, specified by the user.
     pattern : str
         The pattern string used in the query, specified by the user.
+    include_submodules : str
+        The flag indicating whether to include Git submodules in the query, specified by the user.
     token : str
         GitHub personal-access token (PAT). Needed when *input_text* refers to a
         **private** repository.
@@ -78,6 +81,9 @@ async def index_post(
         which will be rendered and returned to the user.
     """
     resolved_token = None if token == "" else token
+    # HTML forms send all values as strings, so we must convert 'include_submodules' to a boolean.
+    include_submodules_bool = include_submodules.strip().lower() == "true"
+
     return await process_query(
         request,
         input_text,
@@ -85,5 +91,6 @@ async def index_post(
         pattern_type,
         pattern,
         is_index=True,
+        include_submodules=include_submodules_bool,
         token=resolved_token,
     )
