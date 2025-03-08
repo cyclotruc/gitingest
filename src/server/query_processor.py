@@ -5,7 +5,7 @@ from functools import partial
 from fastapi import Request
 from starlette.templating import _TemplateResponse
 
-from gitingest.cloning import clone_repo
+from gitingest.cloning import clone
 from gitingest.ingestion import ingest_query
 from gitingest.query_parsing import ParsedQuery, parse_query
 from server.server_config import EXAMPLE_REPOS, MAX_DISPLAY_SIZE, templates
@@ -85,7 +85,7 @@ async def process_query(
             raise ValueError("The 'url' parameter is required.")
 
         clone_config = parsed_query.extact_clone_config()
-        await clone_repo(clone_config)
+        await clone(clone_config)
         summary, tree, content = ingest_query(parsed_query)
         with open(f"{clone_config.local_path}.txt", "w", encoding="utf-8") as f:
             f.write(tree + "\n" + content)

@@ -42,7 +42,7 @@ class CloneConfig:
 
 
 @async_timeout(TIMEOUT)
-async def clone_repo(config: CloneConfig) -> None:
+async def clone(config: CloneConfig) -> None:
     """
     Clone a repository to a local path based on the provided configuration.
 
