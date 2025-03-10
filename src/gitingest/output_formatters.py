@@ -5,10 +5,10 @@ from typing import Optional, Tuple
 import tiktoken
 
 from gitingest.filesystem_schema import FileSystemNode, FileSystemNodeType
-from gitingest.query_parsing import ParsedQuery
+from gitingest.query_parsing import IngestionQuery
 
 
-def format_node(node: FileSystemNode, query: ParsedQuery) -> Tuple[str, str, str]:
+def format_node(node: FileSystemNode, query: IngestionQuery) -> Tuple[str, str, str]:
     """
     Generate a summary, directory structure, and file contents for a given file system node.
 
@@ -18,7 +18,7 @@ def format_node(node: FileSystemNode, query: ParsedQuery) -> Tuple[str, str, str
     ----------
     node : FileSystemNode
         The file system node to be summarized.
-    query : ParsedQuery
+    query : IngestionQuery
         The parsed query object containing information about the repository and query parameters.
 
     Returns
@@ -47,7 +47,7 @@ def format_node(node: FileSystemNode, query: ParsedQuery) -> Tuple[str, str, str
     return summary, tree, content
 
 
-def _create_summary_prefix(query: ParsedQuery, single_file: bool = False) -> str:
+def _create_summary_prefix(query: IngestionQuery, single_file: bool = False) -> str:
     """
     Create a prefix string for summarizing a repository or local directory.
 
@@ -55,7 +55,7 @@ def _create_summary_prefix(query: ParsedQuery, single_file: bool = False) -> str
 
     Parameters
     ----------
-    query : ParsedQuery
+    query : IngestionQuery
         The parsed query object containing information about the repository and query parameters.
     single_file : bool
         A flag indicating whether the summary is for a single file, by default False.
@@ -108,7 +108,7 @@ def _gather_file_contents(node: FileSystemNode) -> str:
     return "\n".join(_gather_file_contents(child) for child in node.children)
 
 
-def _create_tree_structure(query: ParsedQuery, node: FileSystemNode, prefix: str = "", is_last: bool = True) -> str:
+def _create_tree_structure(query: IngestionQuery, node: FileSystemNode, prefix: str = "", is_last: bool = True) -> str:
     """
     Generate a tree-like string representation of the file structure.
 
@@ -117,7 +117,7 @@ def _create_tree_structure(query: ParsedQuery, node: FileSystemNode, prefix: str
 
     Parameters
     ----------
-    query : ParsedQuery
+    query : IngestionQuery
         The parsed query object containing information about the repository and query parameters.
     node : FileSystemNode
         The current directory or file node being processed.

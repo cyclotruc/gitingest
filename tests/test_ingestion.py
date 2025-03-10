@@ -8,10 +8,10 @@ including filtering patterns and subpaths.
 from pathlib import Path
 
 from gitingest.ingestion import ingest_query
-from gitingest.query_parsing import ParsedQuery
+from gitingest.query_parsing import IngestionQuery
 
 
-def test_run_ingest_query(temp_directory: Path, sample_query: ParsedQuery) -> None:
+def test_run_ingest_query(temp_directory: Path, sample_query: IngestionQuery) -> None:
     """
     Test `ingest_query` to ensure it processes the directory and returns expected results.
 

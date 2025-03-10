@@ -2,47 +2,17 @@
 
 import asyncio
 import os
-from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Tuple
 
+from gitingest.ingestion_schema import CloneConfig
 from gitingest.utils.timeout_wrapper import async_timeout
 
 TIMEOUT: int = 60
 
 
-@dataclass
-class CloneConfig:
-    """
-    Configuration for cloning a Git repository.
-
-    This class holds the necessary parameters for cloning a repository to a local path, including
-    the repository's URL, the target local path, and optional parameters for a specific commit or branch.
-
-    Attributes
-    ----------
-    url : str
-        The URL of the Git repository to clone.
-    local_path : str
-        The local directory where the repository will be cloned.
-    commit : str, optional
-        The specific commit hash to check out after cloning (default is None).
-    branch : str, optional
-        The branch to clone (default is None).
-    subpath : str
-        The subpath to clone from the repository (default is "/").
-    """
-
-    url: str
-    local_path: str
-    commit: Optional[str] = None
-    branch: Optional[str] = None
-    subpath: str = "/"
-    blob: bool = False
-
-
 @async_timeout(TIMEOUT)
-async def clone_repo(config: CloneConfig) -> None:
+async def clone(config: CloneConfig) -> None:
     """
     Clone a repository to a local path based on the provided configuration.
 

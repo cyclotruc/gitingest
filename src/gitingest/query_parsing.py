@@ -3,14 +3,14 @@
 import re
 import uuid
 import warnings
-from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Set, Union
 from urllib.parse import unquote, urlparse
 
-from gitingest.cloning import CloneConfig, _check_repo_exists, fetch_remote_branch_list
-from gitingest.config import MAX_FILE_SIZE, TMP_BASE_PATH
+from gitingest.cloning import _check_repo_exists, fetch_remote_branch_list
+from gitingest.config import TMP_BASE_PATH
 from gitingest.exceptions import InvalidPatternError
+from gitingest.ingestion_schema import IngestionQuery
 from gitingest.utils.ignore_patterns import DEFAULT_IGNORE_PATTERNS
 from gitingest.utils.query_parser_utils import (
     KNOWN_GIT_HOSTS,
@@ -23,61 +23,13 @@ from gitingest.utils.query_parser_utils import (
 )
 
 
-@dataclass
-class ParsedQuery:  # pylint: disable=too-many-instance-attributes
-    """
-    Dataclass to store the parsed details of the repository or file path.
-    """
-
-    user_name: Optional[str]
-    repo_name: Optional[str]
-    local_path: Path
-    url: Optional[str]
-    slug: str
-    id: str
-    subpath: str = "/"
-    type: Optional[str] = None
-    branch: Optional[str] = None
-    commit: Optional[str] = None
-    max_file_size: int = MAX_FILE_SIZE
-    ignore_patterns: Optional[Set[str]] = None
-    include_patterns: Optional[Set[str]] = None
-    pattern_type: Optional[str] = None
-
-    def extact_clone_config(self) -> CloneConfig:
-        """
-        Extract the relevant fields for the CloneConfig object.
-
-        Returns
-        -------
-        CloneConfig
-            A CloneConfig object containing the relevant fields.
-
-        Raises
-        ------
-        ValueError
-            If the 'url' parameter is not provided.
-        """
-        if not self.url:
-            raise ValueError("The 'url' parameter is required.")
-
-        return CloneConfig(
-            url=self.url,
-            local_path=str(self.local_path),
-            commit=self.commit,
-            branch=self.branch,
-            subpath=self.subpath,
-            blob=self.type == "blob",
-        )
-
-
 async def parse_query(
     source: str,
     max_file_size: int,
     from_web: bool,
     include_patterns: Optional[Union[str, Set[str]]] = None,
     ignore_patterns: Optional[Union[str, Set[str]]] = None,
-) -> ParsedQuery:
+) -> IngestionQuery:
     """
     Parse the input source (URL or path) to extract relevant details for the query.
 
@@ -100,17 +52,17 @@ async def parse_query(
 
     Returns
     -------
-    ParsedQuery
+    IngestionQuery
         A dataclass object containing the parsed details of the repository or file path.
     """
 
     # Determine the parsing method based on the source type
     if from_web or urlparse(source).scheme in ("https", "http") or any(h in source for h in KNOWN_GIT_HOSTS):
         # We either have a full URL or a domain-less slug
-        parsed_query = await _parse_remote_repo(source)
+        query = await _parse_remote_repo(source)
     else:
         # Local path scenario
-        parsed_query = _parse_local_dir_path(source)
+        query = _parse_local_dir_path(source)
 
     # Combine default ignore patterns + custom patterns
     ignore_patterns_set = DEFAULT_IGNORE_PATTERNS.copy()
@@ -125,24 +77,24 @@ async def parse_query(
     else:
         parsed_include = None
 
-    return ParsedQuery(
-        user_name=parsed_query.user_name,
-        repo_name=parsed_query.repo_name,
-        url=parsed_query.url,
-        subpath=parsed_query.subpath,
-        local_path=parsed_query.local_path,
-        slug=parsed_query.slug,
-        id=parsed_query.id,
-        type=parsed_query.type,
-        branch=parsed_query.branch,
-        commit=parsed_query.commit,
+    return IngestionQuery(
+        user_name=query.user_name,
+        repo_name=query.repo_name,
+        url=query.url,
+        subpath=query.subpath,
+        local_path=query.local_path,
+        slug=query.slug,
+        id=query.id,
+        type=query.type,
+        branch=query.branch,
+        commit=query.commit,
         max_file_size=max_file_size,
         ignore_patterns=ignore_patterns_set,
         include_patterns=parsed_include,
     )
 
 
-async def _parse_remote_repo(source: str) -> ParsedQuery:
+async def _parse_remote_repo(source: str) -> IngestionQuery:
     """
     Parse a repository URL into a structured query dictionary.
 
@@ -158,7 +110,7 @@ async def _parse_remote_repo(source: str) -> ParsedQuery:
 
     Returns
     -------
-    ParsedQuery
+    IngestionQuery
         A dictionary containing the parsed details of the repository.
     """
     source = unquote(source)
@@ -190,7 +142,7 @@ async def _parse_remote_repo(source: str) -> ParsedQuery:
     local_path = TMP_BASE_PATH / _id / slug
     url = f"https://{host}/{user_name}/{repo_name}"
 
-    parsed = ParsedQuery(
+    parsed = IngestionQuery(
         user_name=user_name,
         repo_name=repo_name,
         url=url,
@@ -307,7 +259,7 @@ def _parse_patterns(pattern: Union[str, Set[str]]) -> Set[str]:
     return {_normalize_pattern(p) for p in parsed_patterns}
 
 
-def _parse_local_dir_path(path_str: str) -> ParsedQuery:
+def _parse_local_dir_path(path_str: str) -> IngestionQuery:
     """
     Parse the given file path into a structured query dictionary.
 
@@ -318,12 +270,12 @@ def _parse_local_dir_path(path_str: str) -> ParsedQuery:
 
     Returns
     -------
-    ParsedQuery
+    IngestionQuery
         A dictionary containing the parsed details of the file path.
     """
     path_obj = Path(path_str).resolve()
     slug = path_obj.name if path_str == "." else path_str.strip("/")
-    return ParsedQuery(
+    return IngestionQuery(
         user_name=None,
         repo_name=None,
         url=None,
