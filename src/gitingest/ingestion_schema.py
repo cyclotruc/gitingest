@@ -57,7 +57,6 @@ class IngestionQuery(BaseModel):  # pylint: disable=too-many-instance-attributes
     max_file_size: int = Field(default=MAX_FILE_SIZE)
     ignore_patterns: Optional[Set[str]] = None
     include_patterns: Optional[Set[str]] = None
-    pattern_type: Optional[str] = None  # TODO remove this field
 
     class Config:
         """Pydantic model configuration."""
