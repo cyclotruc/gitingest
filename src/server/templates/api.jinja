@@ -6,28 +6,96 @@
         <div class="bg-[#fff4da] rounded-xl border-[3px] border-gray-900 p-8 relative z-20">
             <h1 class="text-3xl font-bold text-gray-900 mb-4">API Documentation</h1>
             <div class="prose prose-blue max-w-none">
-                <div class="bg-yellow-50 border-[3px] border-gray-900 p-4 mb-6 rounded-lg">
+                <div class="bg-green-50 border-[3px] border-gray-900 p-4 mb-6 rounded-lg">
                     <div class="flex">
                         <div class="flex-shrink-0">
-                            <svg class="h-5 w-5 text-yellow-400"
+                            <svg class="h-5 w-5 text-green-400"
                                  viewBox="0 0 20 20"
                                  fill="currentColor">
-                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                             </svg>
                         </div>
                         <div class="ml-3">
-                            <p class="text-sm text-gray-900">The API is currently under development..</p>
+                            <p class="text-sm text-gray-900">The API is now available for programmatic access!</p>
                         </div>
                     </div>
                 </div>
-                <p class="text-gray-900">
-                    We're working on making our API available to the public.
-                    In the meantime, you can
-                    <a href="https://github.com/cyclotruc/gitingest/issues/new"
+                
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">API Endpoints</h2>
+                
+                <h3 class="text-xl font-bold text-gray-900 mb-2">GET /{repository_path}</h3>
+                <p class="mb-4">Process a repository based on the path and query parameters.</p>
+                
+                <h4 class="text-lg font-bold text-gray-900 mb-2">Query Parameters</h4>
+                <table class="min-w-full mb-6 border-[2px] border-gray-900">
+                    <thead class="bg-[#ebdbb7]">
+                        <tr>
+                            <th class="py-2 px-4 border-b-[2px] border-gray-900 text-left">Parameter</th>
+                            <th class="py-2 px-4 border-b-[2px] border-gray-900 text-left">Type</th>
+                            <th class="py-2 px-4 border-b-[2px] border-gray-900 text-left">Default</th>
+                            <th class="py-2 px-4 border-b-[2px] border-gray-900 text-left">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white">
+                        <tr>
+                            <td class="py-2 px-4 border-b border-gray-300">max_size</td>
+                            <td class="py-2 px-4 border-b border-gray-300">Integer</td>
+                            <td class="py-2 px-4 border-b border-gray-300">243</td>
+                            <td class="py-2 px-4 border-b border-gray-300">Maximum file size to include (slider position 0-500)</td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 px-4 border-b border-gray-300">pattern_type</td>
+                            <td class="py-2 px-4 border-b border-gray-300">String</td>
+                            <td class="py-2 px-4 border-b border-gray-300">"exclude"</td>
+                            <td class="py-2 px-4 border-b border-gray-300">Type of pattern to use ("include" or "exclude")</td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 px-4 border-b border-gray-300">pattern</td>
+                            <td class="py-2 px-4 border-b border-gray-300">String</td>
+                            <td class="py-2 px-4 border-b border-gray-300">""</td>
+                            <td class="py-2 px-4 border-b border-gray-300">Pattern string to include or exclude files (comma or space separated)</td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 px-4">format</td>
+                            <td class="py-2 px-4">String</td>
+                            <td class="py-2 px-4">"text"</td>
+                            <td class="py-2 px-4">Response format: "text" or "json"</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h3 class="text-xl font-bold text-gray-900 mb-2">Example Usage</h3>
+                <div class="bg-gray-100 p-4 rounded-lg mb-6 font-mono text-sm overflow-x-auto">
+                    <pre>curl "https://gitingest.com/tiangolo/fastapi?max_size=300&pattern_type=include&pattern=*.py,*.md"</pre>
+                </div>
+                
+                <h3 class="text-xl font-bold text-gray-900 mb-2">Response Formats</h3>
+                <p class="mb-4">The API supports multiple response formats:</p>
+                
+                <h4 class="text-lg font-bold text-gray-900 mb-2">Plain Text (default)</h4>
+                <div class="bg-gray-100 p-4 rounded-lg mb-4 font-mono text-sm overflow-x-auto">
+                    <pre>curl "https://gitingest.com/tiangolo/fastapi"</pre>
+                </div>
+                
+                <h4 class="text-lg font-bold text-gray-900 mb-2">JSON</h4>
+                <div class="bg-gray-100 p-4 rounded-lg mb-4 font-mono text-sm overflow-x-auto">
+                    <pre>curl "https://gitingest.com/tiangolo/fastapi?format=json"</pre>
+                    <pre>curl -H "Accept: application/json" "https://gitingest.com/tiangolo/fastapi"</pre>
+                </div>
+                
+                
+                <h3 class="text-xl font-bold text-gray-900 mb-2">GET /download/{digest_id}</h3>
+                <p class="mb-4">Download a previously generated digest file.</p>
+                
+                <h3 class="text-xl font-bold text-gray-900 mb-2">GET /health</h3>
+                <p class="mb-4">Check API health status.</p>
+                
+                <p class="text-gray-900 mt-6">
+                    For more detailed documentation, please refer to our 
+                    <a href="https://github.com/cyclotruc/gitingest/blob/main/docs/api.md"
                        target="_blank"
                        rel="noopener noreferrer"
-                       class="text-[#6e5000] hover:underline">Open an issue on GitHub</a>
-                    to suggest features.
+                       class="text-[#6e5000] hover:underline">API Documentation on GitHub</a>.
                 </p>
             </div>
         </div>
