@@ -11,24 +11,24 @@ from typing import Any, Callable, Dict
 
 import pytest
 
-from gitingest.query_parsing import ParsedQuery
+from gitingest.query_parsing import IngestionQuery
 
 WriteNotebookFunc = Callable[[str, Dict[str, Any]], Path]
 
 
 @pytest.fixture
-def sample_query() -> ParsedQuery:
+def sample_query() -> IngestionQuery:
     """
-    Provide a default `ParsedQuery` object for use in tests.
+    Provide a default `IngestionQuery` object for use in tests.
 
-    This fixture returns a `ParsedQuery` pre-populated with typical fields and some default ignore patterns.
+    This fixture returns a `IngestionQuery` pre-populated with typical fields and some default ignore patterns.
 
     Returns
     -------
-    ParsedQuery
-        The sample `ParsedQuery` object.
+    IngestionQuery
+        The sample `IngestionQuery` object.
     """
-    return ParsedQuery(
+    return IngestionQuery(
         user_name="test_user",
         repo_name="test_repo",
         url=None,

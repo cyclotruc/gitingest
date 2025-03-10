@@ -82,14 +82,14 @@ async def test_parse_query_without_host(
     Then the parser should correctly identify the user, repo, canonical URL, and other default fields.
     """
     for url in urls:
-        parsed_query = await parse_query(url, max_file_size=50, from_web=True)
+        query = await parse_query(url, max_file_size=50, from_web=True)
 
-        assert parsed_query.user_name == expected_user
-        assert parsed_query.repo_name == expected_repo
-        assert parsed_query.url == expected_url
-        assert parsed_query.slug == f"{expected_user}-{expected_repo}"
-        assert parsed_query.id is not None
-        assert parsed_query.subpath == "/"
-        assert parsed_query.branch is None
-        assert parsed_query.commit is None
-        assert parsed_query.type is None
+        assert query.user_name == expected_user
+        assert query.repo_name == expected_repo
+        assert query.url == expected_url
+        assert query.slug == f"{expected_user}-{expected_repo}"
+        assert query.id is not None
+        assert query.subpath == "/"
+        assert query.branch is None
+        assert query.commit is None
+        assert query.type is None

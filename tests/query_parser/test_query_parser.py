@@ -32,11 +32,11 @@ async def test_parse_url_valid_https() -> None:
         "https://gist.github.com/user/repo",
     ]
     for url in test_cases:
-        parsed_query = await _parse_remote_repo(url)
+        query = await _parse_remote_repo(url)
 
-        assert parsed_query.user_name == "user"
-        assert parsed_query.repo_name == "repo"
-        assert parsed_query.url == url
+        assert query.user_name == "user"
+        assert query.repo_name == "repo"
+        assert query.url == url
 
 
 @pytest.mark.asyncio
@@ -57,11 +57,11 @@ async def test_parse_url_valid_http() -> None:
         "http://gist.github.com/user/repo",
     ]
     for url in test_cases:
-        parsed_query = await _parse_remote_repo(url)
+        query = await _parse_remote_repo(url)
 
-        assert parsed_query.user_name == "user"
-        assert parsed_query.repo_name == "repo"
-        assert parsed_query.slug == "user-repo"
+        assert query.user_name == "user"
+        assert query.repo_name == "repo"
+        assert query.slug == "user-repo"
 
 
 @pytest.mark.asyncio
@@ -88,13 +88,13 @@ async def test_parse_query_basic(url):
     When `parse_query` is called,
     Then user/repo, URL, and ignore patterns should be parsed correctly.
     """
-    parsed_query = await parse_query(source=url, max_file_size=50, from_web=True, ignore_patterns="*.txt")
+    query = await parse_query(source=url, max_file_size=50, from_web=True, ignore_patterns="*.txt")
 
-    assert parsed_query.user_name == "user"
-    assert parsed_query.repo_name == "repo"
-    assert parsed_query.url == url
-    assert parsed_query.ignore_patterns
-    assert "*.txt" in parsed_query.ignore_patterns
+    assert query.user_name == "user"
+    assert query.repo_name == "repo"
+    assert query.url == url
+    assert query.ignore_patterns
+    assert "*.txt" in query.ignore_patterns
 
 
 @pytest.mark.asyncio
@@ -107,10 +107,10 @@ async def test_parse_query_mixed_case() -> None:
     Then the user and repo names should be normalized to lowercase.
     """
     url = "Https://GitHub.COM/UsEr/rEpO"
-    parsed_query = await parse_query(url, max_file_size=50, from_web=True)
+    query = await parse_query(url, max_file_size=50, from_web=True)
 
-    assert parsed_query.user_name == "user"
-    assert parsed_query.repo_name == "repo"
+    assert query.user_name == "user"
+    assert query.repo_name == "repo"
 
 
 @pytest.mark.asyncio
@@ -123,10 +123,10 @@ async def test_parse_query_include_pattern() -> None:
     Then the include pattern should be set, and default ignore patterns remain applied.
     """
     url = "https://github.com/user/repo"
-    parsed_query = await parse_query(url, max_file_size=50, from_web=True, include_patterns="*.py")
+    query = await parse_query(url, max_file_size=50, from_web=True, include_patterns="*.py")
 
-    assert parsed_query.include_patterns == {"*.py"}
-    assert parsed_query.ignore_patterns == DEFAULT_IGNORE_PATTERNS
+    assert query.include_patterns == {"*.py"}
+    assert query.ignore_patterns == DEFAULT_IGNORE_PATTERNS
 
 
 @pytest.mark.asyncio
@@ -157,12 +157,12 @@ async def test_parse_url_with_subpaths() -> None:
         mock_run_command.return_value = (b"refs/heads/main\nrefs/heads/dev\nrefs/heads/feature-branch\n", b"")
         with patch("gitingest.cloning.fetch_remote_branch_list", new_callable=AsyncMock) as mock_fetch_branches:
             mock_fetch_branches.return_value = ["main", "dev", "feature-branch"]
-            parsed_query = await _parse_remote_repo(url)
+            query = await _parse_remote_repo(url)
 
-            assert parsed_query.user_name == "user"
-            assert parsed_query.repo_name == "repo"
-            assert parsed_query.branch == "main"
-            assert parsed_query.subpath == "/subdir/file"
+            assert query.user_name == "user"
+            assert query.repo_name == "repo"
+            assert query.branch == "main"
+            assert query.subpath == "/subdir/file"
 
 
 @pytest.mark.asyncio
@@ -216,10 +216,10 @@ async def test_parse_query_with_large_file_size() -> None:
     Then `max_file_size` should be set correctly and default ignore patterns remain unchanged.
     """
     url = "https://github.com/user/repo"
-    parsed_query = await parse_query(url, max_file_size=10**9, from_web=True)
+    query = await parse_query(url, max_file_size=10**9, from_web=True)
 
-    assert parsed_query.max_file_size == 10**9
-    assert parsed_query.ignore_patterns == DEFAULT_IGNORE_PATTERNS
+    assert query.max_file_size == 10**9
+    assert query.ignore_patterns == DEFAULT_IGNORE_PATTERNS
 
 
 @pytest.mark.asyncio
@@ -232,10 +232,10 @@ async def test_parse_query_empty_patterns() -> None:
     Then include_patterns becomes None and default ignore patterns apply.
     """
     url = "https://github.com/user/repo"
-    parsed_query = await parse_query(url, max_file_size=50, from_web=True, include_patterns="", ignore_patterns="")
+    query = await parse_query(url, max_file_size=50, from_web=True, include_patterns="", ignore_patterns="")
 
-    assert parsed_query.include_patterns is None
-    assert parsed_query.ignore_patterns == DEFAULT_IGNORE_PATTERNS
+    assert query.include_patterns is None
+    assert query.ignore_patterns == DEFAULT_IGNORE_PATTERNS
 
 
 @pytest.mark.asyncio
@@ -248,7 +248,7 @@ async def test_parse_query_include_and_ignore_overlap() -> None:
     Then "*.py" should be removed from ignore patterns.
     """
     url = "https://github.com/user/repo"
-    parsed_query = await parse_query(
+    query = await parse_query(
         url,
         max_file_size=50,
         from_web=True,
@@ -256,10 +256,10 @@ async def test_parse_query_include_and_ignore_overlap() -> None:
         ignore_patterns={"*.py", "*.txt"},
     )
 
-    assert parsed_query.include_patterns == {"*.py"}
-    assert parsed_query.ignore_patterns is not None
-    assert "*.py" not in parsed_query.ignore_patterns
-    assert "*.txt" in parsed_query.ignore_patterns
+    assert query.include_patterns == {"*.py"}
+    assert query.ignore_patterns is not None
+    assert "*.py" not in query.ignore_patterns
+    assert "*.txt" in query.ignore_patterns
 
 
 @pytest.mark.asyncio
@@ -272,12 +272,12 @@ async def test_parse_query_local_path() -> None:
     Then the local path should be set, id generated, and slug formed accordingly.
     """
     path = "/home/user/project"
-    parsed_query = await parse_query(path, max_file_size=100, from_web=False)
+    query = await parse_query(path, max_file_size=100, from_web=False)
     tail = Path("home/user/project")
 
-    assert parsed_query.local_path.parts[-len(tail.parts) :] == tail.parts
-    assert parsed_query.id is not None
-    assert parsed_query.slug == "home/user/project"
+    assert query.local_path.parts[-len(tail.parts) :] == tail.parts
+    assert query.id is not None
+    assert query.slug == "home/user/project"
 
 
 @pytest.mark.asyncio
@@ -290,11 +290,11 @@ async def test_parse_query_relative_path() -> None:
     Then local_path resolves relatively, and slug ends with "project".
     """
     path = "./project"
-    parsed_query = await parse_query(path, max_file_size=100, from_web=False)
+    query = await parse_query(path, max_file_size=100, from_web=False)
     tail = Path("project")
 
-    assert parsed_query.local_path.parts[-len(tail.parts) :] == tail.parts
-    assert parsed_query.slug.endswith("project")
+    assert query.local_path.parts[-len(tail.parts) :] == tail.parts
+    assert query.slug.endswith("project")
 
 
 @pytest.mark.asyncio
@@ -336,11 +336,11 @@ async def test_parse_url_branch_and_commit_distinction(url: str, expected_branch
         with patch("gitingest.cloning.fetch_remote_branch_list", new_callable=AsyncMock) as mock_fetch_branches:
             mock_fetch_branches.return_value = ["main", "dev", "feature-branch"]
 
-            parsed_query = await _parse_remote_repo(url)
+            query = await _parse_remote_repo(url)
 
             # Verify that `branch` and `commit` match our expectations
-            assert parsed_query.branch == expected_branch
-            assert parsed_query.commit == expected_commit
+            assert query.branch == expected_branch
+            assert query.commit == expected_commit
 
 
 @pytest.mark.asyncio
@@ -353,10 +353,10 @@ async def test_parse_query_uuid_uniqueness() -> None:
     Then each call should produce a different query id.
     """
     path = "/home/user/project"
-    parsed_query_1 = await parse_query(path, max_file_size=100, from_web=False)
-    parsed_query_2 = await parse_query(path, max_file_size=100, from_web=False)
+    query_1 = await parse_query(path, max_file_size=100, from_web=False)
+    query_2 = await parse_query(path, max_file_size=100, from_web=False)
 
-    assert parsed_query_1.id != parsed_query_2.id
+    assert query_1.id != query_2.id
 
 
 @pytest.mark.asyncio
@@ -369,11 +369,11 @@ async def test_parse_url_with_query_and_fragment() -> None:
     Then those parts should be stripped, leaving a clean user/repo URL.
     """
     url = "https://github.com/user/repo?arg=value#fragment"
-    parsed_query = await _parse_remote_repo(url)
+    query = await _parse_remote_repo(url)
 
-    assert parsed_query.user_name == "user"
-    assert parsed_query.repo_name == "repo"
-    assert parsed_query.url == "https://github.com/user/repo"  # URL should be cleaned
+    assert query.user_name == "user"
+    assert query.repo_name == "repo"
+    assert query.url == "https://github.com/user/repo"  # URL should be cleaned
 
 
 @pytest.mark.asyncio
@@ -400,17 +400,17 @@ async def test_parse_query_with_branch() -> None:
     Then the branch should be identified, subpath set, and commit remain None.
     """
     url = "https://github.com/pandas-dev/pandas/blob/2.2.x/.github/ISSUE_TEMPLATE/documentation_improvement.yaml"
-    parsed_query = await parse_query(url, max_file_size=10**9, from_web=True)
+    query = await parse_query(url, max_file_size=10**9, from_web=True)
 
-    assert parsed_query.user_name == "pandas-dev"
-    assert parsed_query.repo_name == "pandas"
-    assert parsed_query.url == "https://github.com/pandas-dev/pandas"
-    assert parsed_query.slug == "pandas-dev-pandas"
-    assert parsed_query.id is not None
-    assert parsed_query.subpath == "/.github/ISSUE_TEMPLATE/documentation_improvement.yaml"
-    assert parsed_query.branch == "2.2.x"
-    assert parsed_query.commit is None
-    assert parsed_query.type == "blob"
+    assert query.user_name == "pandas-dev"
+    assert query.repo_name == "pandas"
+    assert query.url == "https://github.com/pandas-dev/pandas"
+    assert query.slug == "pandas-dev-pandas"
+    assert query.id is not None
+    assert query.subpath == "/.github/ISSUE_TEMPLATE/documentation_improvement.yaml"
+    assert query.branch == "2.2.x"
+    assert query.commit is None
+    assert query.type == "blob"
 
 
 @pytest.mark.asyncio
@@ -439,10 +439,10 @@ async def test_parse_repo_source_with_failed_git_command(url, expected_branch, e
             "git ls-remote --heads https://github.com/user/repo",
         ):
 
-            parsed_query = await _parse_remote_repo(url)
+            query = await _parse_remote_repo(url)
 
-            assert parsed_query.branch == expected_branch
-            assert parsed_query.subpath == expected_subpath
+            assert query.branch == expected_branch
+            assert query.subpath == expected_subpath
 
 
 @pytest.mark.asyncio
@@ -473,7 +473,7 @@ async def test_parse_repo_source_with_various_url_patterns(url, expected_branch,
             )
             mock_fetch_branches.return_value = ["feature/fix1", "main", "feature-branch"]
 
-            parsed_query = await _parse_remote_repo(url)
+            query = await _parse_remote_repo(url)
 
-            assert parsed_query.branch == expected_branch
-            assert parsed_query.subpath == expected_subpath
+            assert query.branch == expected_branch
+            assert query.subpath == expected_subpath

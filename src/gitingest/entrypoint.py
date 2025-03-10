@@ -8,7 +8,7 @@ from typing import Optional, Set, Tuple, Union
 from gitingest.cloning import clone
 from gitingest.config import TMP_BASE_PATH
 from gitingest.ingestion import ingest_query
-from gitingest.query_parsing import ParsedQuery, parse_query
+from gitingest.query_parsing import IngestionQuery, parse_query
 
 
 async def ingest_async(
@@ -58,7 +58,7 @@ async def ingest_async(
     repo_cloned = False
 
     try:
-        parsed_query: ParsedQuery = await parse_query(
+        query: IngestionQuery = await parse_query(
             source=source,
             max_file_size=max_file_size,
             from_web=False,
@@ -66,11 +66,11 @@ async def ingest_async(
             ignore_patterns=exclude_patterns,
         )
 
-        if parsed_query.url:
-            selected_branch = branch if branch else parsed_query.branch  # prioritize branch argument
-            parsed_query.branch = selected_branch
+        if query.url:
+            selected_branch = branch if branch else query.branch  # prioritize branch argument
+            query.branch = selected_branch
 
-            clone_config = parsed_query.extact_clone_config()
+            clone_config = query.extact_clone_config()
             clone_coroutine = clone(clone_config)
 
             if inspect.iscoroutine(clone_coroutine):
@@ -83,7 +83,7 @@ async def ingest_async(
 
             repo_cloned = True
 
-        summary, tree, content = ingest_query(parsed_query)
+        summary, tree, content = ingest_query(query)
 
         if output is not None:
             with open(output, "w", encoding="utf-8") as f:

@@ -7,7 +7,7 @@ from typing import Tuple
 from gitingest.config import MAX_DIRECTORY_DEPTH, MAX_FILES, MAX_TOTAL_SIZE_BYTES
 from gitingest.filesystem_schema import FileSystemNode, FileSystemNodeType, FileSystemStats
 from gitingest.output_formatters import format_node
-from gitingest.query_parsing import ParsedQuery
+from gitingest.query_parsing import IngestionQuery
 from gitingest.utils.ingestion_utils import _should_exclude, _should_include
 from gitingest.utils.path_utils import _is_safe_symlink
 
@@ -17,7 +17,7 @@ except ImportError:
     import tomli as tomllib
 
 
-def ingest_query(query: ParsedQuery) -> Tuple[str, str, str]:
+def ingest_query(query: IngestionQuery) -> Tuple[str, str, str]:
     """
     Run the ingestion process for a parsed query.
 
@@ -27,7 +27,7 @@ def ingest_query(query: ParsedQuery) -> Tuple[str, str, str]:
 
     Parameters
     ----------
-    query : ParsedQuery
+    query : IngestionQuery
         The parsed query object containing information about the repository and query parameters.
 
     Returns
@@ -87,7 +87,7 @@ def ingest_query(query: ParsedQuery) -> Tuple[str, str, str]:
     return format_node(root_node, query)
 
 
-def apply_gitingest_file(path: Path, query: ParsedQuery) -> None:
+def apply_gitingest_file(path: Path, query: IngestionQuery) -> None:
     """
     Apply the .gitingest file to the query object.
 
@@ -98,7 +98,7 @@ def apply_gitingest_file(path: Path, query: ParsedQuery) -> None:
     ----------
     path : Path
         The path of the directory to ingest.
-    query : ParsedQuery
+    query : IngestionQuery
         The parsed query object containing information about the repository and query parameters.
         It should have an attribute `ignore_patterns` which is either None or a set of strings.
     """
@@ -154,7 +154,7 @@ def apply_gitingest_file(path: Path, query: ParsedQuery) -> None:
 
 def _process_node(
     node: FileSystemNode,
-    query: ParsedQuery,
+    query: IngestionQuery,
     stats: FileSystemStats,
 ) -> None:
     """
@@ -167,7 +167,7 @@ def _process_node(
     ----------
     node : FileSystemNode
         The current directory or file node being processed.
-    query : ParsedQuery
+    query : IngestionQuery
         The parsed query object containing information about the repository and query parameters.
     stats : FileSystemStats
         Statistics tracking object for the total file count and size.
