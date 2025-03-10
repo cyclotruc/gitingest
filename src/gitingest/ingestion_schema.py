@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Set
 
+from pydantic import BaseModel, Field
+
 from gitingest.config import MAX_FILE_SIZE
 
 
@@ -37,26 +39,30 @@ class CloneConfig:
     blob: bool = False
 
 
-@dataclass
-class IngestionQuery:  # pylint: disable=too-many-instance-attributes
+class IngestionQuery(BaseModel):  # pylint: disable=too-many-instance-attributes
     """
-    Dataclass to store the parsed details of the repository or file path.
+    Pydantic model to store the parsed details of the repository or file path.
     """
 
-    user_name: Optional[str]
-    repo_name: Optional[str]
+    user_name: Optional[str] = None
+    repo_name: Optional[str] = None
     local_path: Path
-    url: Optional[str]
+    url: Optional[str] = None
     slug: str
     id: str
     subpath: str = "/"
     type: Optional[str] = None
     branch: Optional[str] = None
     commit: Optional[str] = None
-    max_file_size: int = MAX_FILE_SIZE
+    max_file_size: int = Field(default=MAX_FILE_SIZE)
     ignore_patterns: Optional[Set[str]] = None
     include_patterns: Optional[Set[str]] = None
-    pattern_type: Optional[str] = None
+    pattern_type: Optional[str] = None  # TODO remove this field
+
+    class Config:
+        """Pydantic model configuration."""
+
+        arbitrary_types_allowed = True
 
     def extact_clone_config(self) -> CloneConfig:
         """
