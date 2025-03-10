@@ -64,7 +64,7 @@ class IngestionQuery(BaseModel):  # pylint: disable=too-many-instance-attributes
 
         arbitrary_types_allowed = True
 
-    def extact_clone_config(self) -> CloneConfig:
+    def extract_clone_config(self) -> CloneConfig:
         """
         Extract the relevant fields for the CloneConfig object.
 
