@@ -211,3 +211,80 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeSlider();
     setupGlobalEnterHandler();
 });
+
+document.addEventListener("DOMContentLoaded", function () {
+    const toggleBtn = document.getElementById("dark-mode-toggle");
+    const body = document.body;
+
+    if (!toggleBtn) {
+        //console.error("Dark mode toggle button not found.");
+        return;
+    }
+
+    function enableDarkMode() {
+        body.style.backgroundColor = "black"; 
+        
+        document.querySelectorAll(".text-blacknwhite").forEach(el => {
+            el.style.color = "white";
+        });
+
+        document.querySelectorAll(".bg-gray-900").forEach(el => {
+            el.style.backgroundColor = "white";
+        });
+
+        document.querySelectorAll("h1").forEach(el => {
+            el.style.color = "white";
+        });
+
+        document.querySelectorAll(".bg-blacked-900").forEach(el => {
+            el.style.backgroundColor = "black"; 
+            el.style.opacity = "1";
+        });
+
+        localStorage.setItem("dark-mode", "enabled");
+    }
+
+    function disableDarkMode() {
+        body.style.backgroundColor = "";
+
+        document.querySelectorAll(".text-blacknwhite").forEach(el => {
+            el.style.color = "rgb(17, 24, 39)"; 
+        });
+
+
+        document.querySelectorAll(".bg-gray-900").forEach(el => {
+            el.style.backgroundColor = "rgb(17, 24, 39)"; 
+        });
+
+        document.querySelectorAll("h1").forEach(el => {
+            el.style.color = "";
+        });
+
+        document.querySelectorAll(".bg-blacked-900").forEach(el => {
+            el.style.backgroundColor = "#FFFDF8"; 
+            el.style.opacity = "1";
+        });
+
+        localStorage.setItem("dark-mode", "disabled");
+    }
+
+    // Check localStorage for saved mode
+    if (localStorage.getItem("dark-mode") === "enabled") {
+        enableDarkMode();
+    } else {
+        disableDarkMode();
+    }
+
+    // Toggle dark mode on button click
+    toggleBtn.addEventListener("click", () => {
+        if (localStorage.getItem("dark-mode") === "enabled") {
+            disableDarkMode();
+        } else {
+            enableDarkMode();
+        }
+    });
+});
+
+
+
+
