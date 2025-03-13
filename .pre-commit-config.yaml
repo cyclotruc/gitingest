@@ -95,16 +95,16 @@ repos:
         files: ^src/
         additional_dependencies:
           [
-            chardet,
-            click,
-            fastapi-analytics,
+            click>=8.0.0,
+            "fastapi[standard]>=0.109.1",
+            pydantic,
             pytest-asyncio,
             python-dotenv,
             slowapi,
-            starlette,
+            starlette>=0.40.0,
             tiktoken,
             tomli,
-            uvicorn,
+            uvicorn>=0.11.7,
           ]
       - id: pylint
         name: pylint for tests
@@ -113,17 +113,16 @@ repos:
           - --rcfile=tests/.pylintrc
         additional_dependencies:
           [
-            chardet,
-            click,
-            fastapi-analytics,
-            pytest,
+            click>=8.0.0,
+            "fastapi[standard]>=0.109.1",
+            pydantic,
             pytest-asyncio,
             python-dotenv,
             slowapi,
-            starlette,
-            tomli,
+            starlette>=0.40.0,
             tiktoken,
-            uvicorn,
+            tomli,
+            uvicorn>=0.11.7,
           ]
 
   - repo: meta

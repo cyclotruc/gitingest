@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Set
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from gitingest.config import MAX_FILE_SIZE
 
@@ -58,10 +58,7 @@ class IngestionQuery(BaseModel):  # pylint: disable=too-many-instance-attributes
     ignore_patterns: Optional[Set[str]] = None
     include_patterns: Optional[Set[str]] = None
 
-    class Config:
-        """Pydantic model configuration."""
-
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def extract_clone_config(self) -> CloneConfig:
         """
