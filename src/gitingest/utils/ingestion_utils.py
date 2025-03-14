@@ -1,31 +1,8 @@
 """Utility functions for the ingestion process."""
 
-import locale
-import platform
 from fnmatch import fnmatch
 from pathlib import Path
-from typing import List, Set
-
-try:
-    locale.setlocale(locale.LC_ALL, "")
-except locale.Error:
-    locale.setlocale(locale.LC_ALL, "C")
-
-
-def _get_encoding_list() -> List[str]:
-    """
-    Get list of encodings to try, prioritized for the current platform.
-
-    Returns
-    -------
-    List[str]
-        List of encoding names to try in priority order, starting with the
-        platform's default encoding followed by common fallback encodings.
-    """
-    encodings = [locale.getpreferredencoding(), "utf-8", "utf-16", "utf-16le", "utf-8-sig", "latin"]
-    if platform.system() == "Windows":
-        encodings += ["cp1252", "iso-8859-1"]
-    return encodings
+from typing import Set
 
 
 def _should_include(path: Path, base_path: Path, include_patterns: Set[str]) -> bool:

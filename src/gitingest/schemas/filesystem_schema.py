@@ -7,9 +7,8 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from pathlib import Path
 
-from gitingest.utils.ingestion_utils import _get_encoding_list
+from gitingest.utils.file_utils import get_preferred_encodings, is_text_file
 from gitingest.utils.notebook_utils import process_notebook
-from gitingest.utils.textfile_checker_utils import is_textfile
 
 SEPARATOR = "=" * 48  # Tiktoken, the tokenizer openai uses, counts 2 tokens if we have more than 48
 
@@ -117,7 +116,7 @@ class FileSystemNode:  # pylint: disable=too-many-instance-attributes
         if self.type == FileSystemNodeType.DIRECTORY:
             raise ValueError("Cannot read content of a directory node")
 
-        if not is_textfile(self.path):
+        if not is_text_file(self.path):
             return "[Non-text file]"
 
         if self.path.suffix == ".ipynb":
@@ -127,7 +126,7 @@ class FileSystemNode:  # pylint: disable=too-many-instance-attributes
                 return f"Error processing notebook: {exc}"
 
         # Try multiple encodings
-        for encoding in _get_encoding_list():
+        for encoding in get_preferred_encodings():
             try:
                 with self.path.open(encoding=encoding) as f:
                     return f.read()
