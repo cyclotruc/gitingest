@@ -5,7 +5,7 @@ import inspect
 import shutil
 from typing import Optional, Set, Tuple, Union
 
-from gitingest.cloning import clone
+from gitingest.cloning import clone_repo
 from gitingest.config import TMP_BASE_PATH
 from gitingest.ingestion import ingest_query
 from gitingest.query_parsing import IngestionQuery, parse_query
@@ -53,7 +53,7 @@ async def ingest_async(
     Raises
     ------
     TypeError
-        If `clone` does not return a coroutine, or if the `source` is of an unsupported type.
+        If `clone_repo` does not return a coroutine, or if the `source` is of an unsupported type.
     """
     repo_cloned = False
 
@@ -71,7 +71,7 @@ async def ingest_async(
             query.branch = selected_branch
 
             clone_config = query.extract_clone_config()
-            clone_coroutine = clone(clone_config)
+            clone_coroutine = clone_repo(clone_config)
 
             if inspect.iscoroutine(clone_coroutine):
                 if asyncio.get_event_loop().is_running():
@@ -79,7 +79,7 @@ async def ingest_async(
                 else:
                     asyncio.run(clone_coroutine)
             else:
-                raise TypeError("clone did not return a coroutine as expected.")
+                raise TypeError("clone_repo did not return a coroutine as expected.")
 
             repo_cloned = True
 
