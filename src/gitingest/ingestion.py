@@ -5,9 +5,9 @@ from pathlib import Path
 from typing import Tuple
 
 from gitingest.config import MAX_DIRECTORY_DEPTH, MAX_FILES, MAX_TOTAL_SIZE_BYTES
-from gitingest.filesystem_schema import FileSystemNode, FileSystemNodeType, FileSystemStats
 from gitingest.output_formatters import format_node
 from gitingest.query_parsing import IngestionQuery
+from gitingest.schemas import FileSystemNode, FileSystemNodeType, FileSystemStats
 from gitingest.utils.ingestion_utils import _should_exclude, _should_include
 from gitingest.utils.path_utils import _is_safe_symlink
 

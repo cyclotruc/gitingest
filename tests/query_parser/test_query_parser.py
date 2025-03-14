@@ -153,9 +153,11 @@ async def test_parse_url_with_subpaths() -> None:
     Then user, repo, branch, and subpath should be identified correctly.
     """
     url = "https://github.com/user/repo/tree/main/subdir/file"
-    with patch("gitingest.cloning._run_command", new_callable=AsyncMock) as mock_run_command:
+    with patch("gitingest.utils.git_utils.run_command", new_callable=AsyncMock) as mock_run_command:
         mock_run_command.return_value = (b"refs/heads/main\nrefs/heads/dev\nrefs/heads/feature-branch\n", b"")
-        with patch("gitingest.cloning.fetch_remote_branch_list", new_callable=AsyncMock) as mock_fetch_branches:
+        with patch(
+            "gitingest.utils.git_utils.fetch_remote_branch_list", new_callable=AsyncMock
+        ) as mock_fetch_branches:
             mock_fetch_branches.return_value = ["main", "dev", "feature-branch"]
             query = await _parse_remote_repo(url)
 
@@ -330,10 +332,12 @@ async def test_parse_url_branch_and_commit_distinction(url: str, expected_branch
     When `_parse_remote_repo` is called with branch fetching,
     Then the function should correctly set `branch` or `commit` based on the URL content.
     """
-    with patch("gitingest.cloning._run_command", new_callable=AsyncMock) as mock_run_command:
+    with patch("gitingest.utils.git_utils.run_command", new_callable=AsyncMock) as mock_run_command:
         # Mocking the return value to include 'main' and some additional branches
         mock_run_command.return_value = (b"refs/heads/main\nrefs/heads/dev\nrefs/heads/feature-branch\n", b"")
-        with patch("gitingest.cloning.fetch_remote_branch_list", new_callable=AsyncMock) as mock_fetch_branches:
+        with patch(
+            "gitingest.utils.git_utils.fetch_remote_branch_list", new_callable=AsyncMock
+        ) as mock_fetch_branches:
             mock_fetch_branches.return_value = ["main", "dev", "feature-branch"]
 
             query = await _parse_remote_repo(url)
@@ -430,7 +434,7 @@ async def test_parse_repo_source_with_failed_git_command(url, expected_branch, e
     When `_parse_remote_repo` is called,
     Then it should fall back to path components for branch identification.
     """
-    with patch("gitingest.cloning.fetch_remote_branch_list", new_callable=AsyncMock) as mock_fetch_branches:
+    with patch("gitingest.utils.git_utils.fetch_remote_branch_list", new_callable=AsyncMock) as mock_fetch_branches:
         mock_fetch_branches.side_effect = Exception("Failed to fetch branch list")
 
         with pytest.warns(
@@ -465,8 +469,10 @@ async def test_parse_repo_source_with_various_url_patterns(url, expected_branch,
     When `_parse_remote_repo` is called with remote branch fetching,
     Then the correct branch/subpath should be set or None if unmatched.
     """
-    with patch("gitingest.cloning._run_command", new_callable=AsyncMock) as mock_run_command:
-        with patch("gitingest.cloning.fetch_remote_branch_list", new_callable=AsyncMock) as mock_fetch_branches:
+    with patch("gitingest.utils.git_utils.run_command", new_callable=AsyncMock) as mock_run_command:
+        with patch(
+            "gitingest.utils.git_utils.fetch_remote_branch_list", new_callable=AsyncMock
+        ) as mock_fetch_branches:
             mock_run_command.return_value = (
                 b"refs/heads/feature/fix1\nrefs/heads/main\nrefs/heads/feature-branch\nrefs/heads/fix\n",
                 b"",

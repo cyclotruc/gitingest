@@ -7,10 +7,10 @@ from pathlib import Path
 from typing import List, Optional, Set, Union
 from urllib.parse import unquote, urlparse
 
-from gitingest.cloning import _check_repo_exists, fetch_remote_branch_list
 from gitingest.config import TMP_BASE_PATH
-from gitingest.exceptions import InvalidPatternError
-from gitingest.ingestion_schema import IngestionQuery
+from gitingest.schemas import IngestionQuery
+from gitingest.utils.exceptions import InvalidPatternError
+from gitingest.utils.git_utils import check_repo_exists, fetch_remote_branch_list
 from gitingest.utils.ignore_patterns import DEFAULT_IGNORE_PATTERNS
 from gitingest.utils.query_parser_utils import (
     KNOWN_GIT_HOSTS,
@@ -308,6 +308,6 @@ async def try_domains_for_user_and_repo(user_name: str, repo_name: str) -> str:
     """
     for domain in KNOWN_GIT_HOSTS:
         candidate = f"https://{domain}/{user_name}/{repo_name}"
-        if await _check_repo_exists(candidate):
+        if await check_repo_exists(candidate):
             return domain
     raise ValueError(f"Could not find a valid repository host for '{user_name}/{repo_name}'.")
