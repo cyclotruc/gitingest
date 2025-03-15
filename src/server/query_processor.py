@@ -1,4 +1,4 @@
-""" Process a query by parsing input, cloning a repository, and generating a summary. """
+"""Process a query by parsing input, cloning a repository, and generating a summary."""
 
 from functools import partial
 
@@ -19,6 +19,7 @@ async def process_query(
     pattern_type: str = "exclude",
     pattern: str = "",
     is_index: bool = False,
+    is_file_size_manual: bool = False,
 ) -> _TemplateResponse:
     """
     Process a query by parsing input, cloning a repository, and generating a summary.
@@ -40,6 +41,8 @@ async def process_query(
         Pattern to include or exclude in the query, depending on the pattern type.
     is_index : bool
         Flag indicating whether the request is for the index page (default is False).
+    is_file_size_manual: bool
+        Flag indicating if the file size provided is via the manual input (default to False).
 
     Returns
     -------
@@ -62,7 +65,7 @@ async def process_query(
 
     template = "index.jinja" if is_index else "git.jinja"
     template_response = partial(templates.TemplateResponse, name=template)
-    max_file_size = log_slider_to_size(slider_position)
+    max_file_size = slider_position if is_file_size_manual else log_slider_to_size(slider_position)
 
     context = {
         "request": request,

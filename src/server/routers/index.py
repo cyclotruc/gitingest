@@ -1,4 +1,6 @@
-""" This module defines the FastAPI router for the home page of the application. """
+"""This module defines the FastAPI router for the home page of the application."""
+
+from typing import Optional
 
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse
@@ -45,6 +47,8 @@ async def index_post(
     request: Request,
     input_text: str = Form(...),
     max_file_size: int = Form(...),
+    max_file_size_manual: Optional[str] = Form(None),
+    use_manual_input: bool = Form(...),
     pattern_type: str = Form(...),
     pattern: str = Form(...),
 ) -> HTMLResponse:
@@ -67,6 +71,10 @@ async def index_post(
         The type of pattern used for the query, specified by the user.
     pattern : str
         The pattern string used in the query, specified by the user.
+    use_manual_input : bool
+        Whether to use the manual input instead of the slider, by default False.
+    max_file_size_manual : Optional[str], optional
+        The manually entered file size in KB, by default None.
 
     Returns
     -------
@@ -74,6 +82,11 @@ async def index_post(
         An HTML response containing the results of processing the form input and query logic,
         which will be rendered and returned to the user.
     """
+    # Determine the file size based on the input method
+    max_file_size = int(max_file_size_manual) * 1024 if use_manual_input else max_file_size
+    # Print debug information
+    print(f"Received value: {max_file_size_manual}")
+    print(f"Manual: {use_manual_input}")
     return await process_query(
         request,
         input_text,
@@ -81,4 +94,5 @@ async def index_post(
         pattern_type,
         pattern,
         is_index=True,
+        is_file_size_manual=use_manual_input,
     )

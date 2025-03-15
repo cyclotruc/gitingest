@@ -1,4 +1,14 @@
 <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkbox = document.getElementById('use_manual_input');
+        const hiddenInput = document.getElementById('file_size_manual');
+
+        if (hiddenInput.value === "true") {
+            checkbox.checked = true;
+            toggleSizeInputType(checkbox);
+        }
+    });
+
     function changePattern(element) {
         console.log("Pattern changed", element.value);
         let patternType = element.value;
@@ -8,7 +18,6 @@
             if (element.textContent.includes("Directory structure:")) {
                 return;
             }
-
             element.classList.toggle('line-through');
             element.classList.toggle('text-gray-500');
             element.classList.toggle('hover:text-inherit');
@@ -16,6 +25,41 @@
             element.classList.toggle('hover:line-through');
             element.classList.toggle('hover:text-gray-500');
         });
+    }
+
+    function toggleSizeInputType(element) {
+        const hiddenInput = document.getElementById('file_size_manual');
+        const sliderContainer = document.getElementById('slider_container');
+        const manualSizeInput = document.getElementById('manual_size_input_container');
+        const manualSizeValueInput = document.getElementById('max_file_size_manual_input');
+        const hiddenSizeInput = document.getElementById('max_file_size_manual');
+        hiddenSizeInput.value = manualSizeValueInput.value;
+        hiddenInput.value = element.checked ? "true" : "false";
+
+        if (element.checked) {
+            sliderContainer.classList.add('hidden');
+            manualSizeInput.classList.remove('hidden');
+
+            if (!manualSizeValueInput.value || manualSizeValueInput.value.trim() === '') {
+                manualSizeValueInput.value = "1024";
+            }
+            hiddenSizeInput.value = manualSizeValueInput.value || "1024";
+        } else {
+            sliderContainer.classList.remove('hidden');
+            manualSizeInput.classList.add('hidden');
+
+            const sliderValue = document.getElementById('file_size').value;
+            hiddenSizeInput.value = sliderValue;
+        }
+
+        console.log("Use manual input: " + hiddenInput.value);
+        console.log("Manual size value: " + hiddenSizeInput.value);
+    }
+
+    function updateManualSizeValue(element) {
+        const hiddenSizeInput = document.getElementById('max_file_size_manual');
+        hiddenSizeInput.value = element.value || "1024";
+        console.log("Manual size updated to: " + hiddenSizeInput.value + "KB");
     }
 </script>
 <div class="relative">
@@ -43,10 +87,18 @@
                     Ingest
                 </button>
             </div>
+            <input type="hidden"
+                   id="file_size_manual"
+                   name="use_manual_input"
+                   value="{{ use_manual_input }}">
+            <input type="hidden"
+                   id="max_file_size_manual"
+                   name="max_file_size_manual"
+                   value="{{ max_file_size_manual }}">
             <input type="hidden" name="pattern_type" value="exclude">
             <input type="hidden" name="pattern" value="">
         </form>
-        <div class="mt-4 relative z-20 flex flex-wrap gap-4 items-start">
+        <div class="mt-4 relative z-20 flex flex-wrap gap-4 items-center">
             <!-- Pattern selector -->
             <div class="w-[200px] sm:w-[250px] mr-9 mt-4">
                 <div class="relative">
@@ -83,18 +135,41 @@
                     </div>
                 </div>
             </div>
-            <div class="w-[200px] sm:w-[200px] mt-3">
-                <label for="file_size" class="block text-gray-700 mb-1">
-                    Include files under: <span id="size_value" class="font-bold">50kb</span>
-                </label>
-                <input type="range"
-                       id="file_size"
-                       name="max_file_size"
-                       min="0"
-                       max="500"
-                       required
-                       value="{{ default_file_size }}"
-                       class="w-full h-3 bg-[#FAFAFA] bg-no-repeat bg-[length:50%_100%] bg-[#ebdbb7] appearance-none border-[3px] border-gray-900 rounded-sm focus:outline-none bg-gradient-to-r from-[#FE4A60] to-[#FE4A60] [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-7 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-sm [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-solid [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-gray-900 [&::-webkit-slider-thumb]:shadow-[3px_3px_0_#000]  ">
+            <div class="flex items-center gap-4 h-[50px]">
+                <div class="mt-4">
+                    <label class="flex flex-col items-center cursor-pointer">
+                        <input type="checkbox" id="use_manual_input" name="use_manual_input" value="false" checked={false} class="sr-only peer w-12" onchange="toggleSizeInputType(this)">
+                        <div class="relative w-12 h-6 bg-[#ebdbb7] peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#FE4A60]/30 rounded-full peer border-[2px] border-gray-900 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-5 after:transition-all peer-checked:bg-[#FE4A60]">
+                        </div>
+                        <p class="ms-1 text-sm font-medium text-gray-900">Manual</p>
+                    </label>
+                </div>
+                <div id="slider_container" class="w-[200px] sm:w-[200px] mt-3">
+                    <label for="file_size" class="block text-gray-700 mb-1">
+                        Include files under: <span id="size_value" class="font-bold">50kb</span>
+                    </label>
+                    <input type="range"
+                           id="file_size"
+                           name="max_file_size"
+                           min="0"
+                           max="500"
+                           required
+                           value="{{ default_file_size }}"
+                           class="w-full h-3 bg-[#FAFAFA] bg-no-repeat bg-[length:50%_100%] bg-[#ebdbb7] appearance-none border-[3px] border-gray-900 rounded-sm focus:outline-none bg-gradient-to-r from-[#FE4A60] to-[#FE4A60] [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-7 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-sm [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-solid [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-gray-900 [&::-webkit-slider-thumb]:shadow-[3px_3px_0_#000]">
+                </div>
+                <div id="manual_size_input_container" class="hidden mt-3">
+                    <label for="max_file_size_manual_input" class="block text-gray-700 mb-1">Manual size (kb):</label>
+                    <input type="number"
+                           id="max_file_size_manual_input"
+                           name="max_file_size_manual"
+                           min="1"
+                           max="102400"
+                           value="1024"
+                           class="lg:w-[150px] sm:w-[100px] border-[3px] border-gray-900 rounded-sm focus:outline-none bg-[#ebdbb7] appearance-none indent-2"
+                           style="-webkit-appearance: none;
+                                  color: #333"
+                           onchange="updateManualSizeValue(this)">
+                </div>
             </div>
         </div>
         {% if show_examples %}
