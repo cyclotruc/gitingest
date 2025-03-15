@@ -24,7 +24,6 @@
     });
 
     function changePattern(element) {
-        console.log("Pattern changed", element.value);
         let patternType = element.value;
         const files = document.getElementsByName("tree-line");
 
@@ -60,9 +59,11 @@
         if (element.checked) {
             sliderContainer.classList.add('hidden');
             manualSizeInput.classList.remove('hidden');
-
-            if (!manualSizeValueInput.value || manualSizeValueInput.value.trim() === '') {
-                manualSizeValueInput.value = "1024";
+            const sizeUnit = sizeUnitInput.value;
+            const maxValue = sizeUnit === 'kb' ? 100 * 1024 : 100;
+            manualSizeValueInput.max = maxValue;
+            if (parseInt(manualSizeValueInput.value) > maxValue) {
+                manualSizeValueInput.value = maxValue;
             }
             hiddenSizeInput.value = manualSizeValueInput.value || "1024";
         } else {
@@ -72,15 +73,11 @@
             const sliderValue = document.getElementById('file_size').value;
             hiddenSizeInput.value = sliderValue;
         }
-
-        console.log("Use manual input: " + hiddenInput.value);
-        console.log("Manual size value: " + hiddenSizeInput.value);
     }
 
     function updateManualSizeValue(element) {
         const hiddenSizeInput = document.getElementById('max_file_size_manual');
         hiddenSizeInput.value = element.value || "1024";
-        console.log("Manual size updated to: " + hiddenSizeInput.value + "KB");
     }
 
     function updateSizeUnit(element) {
@@ -90,24 +87,19 @@
         const sizeUnit = element.value;
         const currentValue = parseInt(manualSizeValueInput.value);
 
-        // Update the hidden size unit input
         hiddenSizeUnitInput.value = sizeUnit;
 
-        // Update the max attribute of the manual size input
         const maxValue = sizeUnit === 'kb' ? 100 * 1024 : 100;
         manualSizeValueInput.max = maxValue;
 
-        // If switching to MB and current value is over 100, set it to 100
         if (sizeUnit === 'mb' && currentValue > 100) {
             manualSizeValueInput.value = 100;
-            // Also update the hidden input
             hiddenSizeInput.value = 100;
         }
 
         console.log("Size unit changed to: " + sizeUnit.toUpperCase());
     }
 
-    // Add input validation to prevent values over max
     document.getElementById('max_file_size_manual_input').addEventListener('input', function() {
         const maxValue = parseInt(this.max);
         const currentValue = parseInt(this.value);
