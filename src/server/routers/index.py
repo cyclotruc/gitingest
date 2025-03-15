@@ -49,6 +49,7 @@ async def index_post(
     max_file_size: int = Form(...),
     max_file_size_manual: Optional[str] = Form(None),
     use_manual_input: bool = Form(...),
+    size_unit: str = Form("kb"),
     pattern_type: str = Form(...),
     pattern: str = Form(...),
 ) -> HTMLResponse:
@@ -67,14 +68,16 @@ async def index_post(
         The input text provided by the user for processing, by default taken from the form.
     max_file_size : int
         The maximum allowed file size for the input, specified by the user.
+    max_file_size_manual : Optional[str], optional
+        The manually entered file size, by default None.
+    use_manual_input : bool
+        Whether to use the manual input instead of the slider, by default False.
+    size_unit : str
+        The unit for the manual file size input ('kb' or 'mb'), by default 'kb'.
     pattern_type : str
         The type of pattern used for the query, specified by the user.
     pattern : str
         The pattern string used in the query, specified by the user.
-    use_manual_input : bool
-        Whether to use the manual input instead of the slider, by default False.
-    max_file_size_manual : Optional[str], optional
-        The manually entered file size in KB, by default None.
 
     Returns
     -------
@@ -83,10 +86,14 @@ async def index_post(
         which will be rendered and returned to the user.
     """
     # Determine the file size based on the input method
-    max_file_size = int(max_file_size_manual) * 1024 if use_manual_input else max_file_size
-    # Print debug information
-    print(f"Received value: {max_file_size_manual}")
-    print(f"Manual: {use_manual_input}")
+    if use_manual_input and max_file_size_manual:
+        # Convert the manual input to bytes based on the size unit
+        size_value = int(max_file_size_manual)
+        if size_unit.lower() == "mb":
+            max_file_size = size_value * 1024 * 1024  # Convert MB to bytes
+        else:  # Default to KB
+            max_file_size = size_value * 1024  # Convert KB to bytes
+
     return await process_query(
         request,
         input_text,
@@ -95,4 +102,5 @@ async def index_post(
         pattern,
         is_index=True,
         is_file_size_manual=use_manual_input,
+        size_unit=size_unit,
     )
