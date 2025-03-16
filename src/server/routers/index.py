@@ -37,6 +37,9 @@ async def home(request: Request) -> HTMLResponse:
             "request": request,
             "examples": EXAMPLE_REPOS,
             "default_file_size": 243,
+            "default_file_size_manual": 50,
+            "use_manual_input": "false",
+            "size_unit": "kb",
         },
     )
 

@@ -15,12 +15,6 @@
         }
 
         changeFilesizeInputType(checkbox);
-
-        const slider = document.getElementById('file_size');
-        const sizeValueDisplay = document.getElementById('size_value');
-        if (slider && sizeValueDisplay) {
-            updateSliderDisplay(slider.value);
-        }
     });
 
     function changePattern(element) {
@@ -48,17 +42,11 @@
         const hiddenSizeInput = document.getElementById('max_file_size_manual');
         const sizeUnitInput = document.getElementById('size_unit_input');
 
-        if (sizeUnitInput.value === 'mb') {
-            document.getElementById('size-mb').checked = true;
-        } else {
-            document.getElementById('size-kb').checked = true;
-        }
-
         hiddenInput.value = element.checked ? "true" : "false";
 
         if (element.checked) {
-            sliderContainer.classList.add('hidden');
-            manualSizeInput.classList.remove('hidden');
+            sliderContainer.style.display = "none";
+            manualSizeInput.style.display = "flex";
             const sizeUnit = sizeUnitInput.value;
             const maxValue = sizeUnit === 'kb' ? 100 * 1024 : 100;
             manualSizeValueInput.max = maxValue;
@@ -67,8 +55,9 @@
             }
             hiddenSizeInput.value = manualSizeValueInput.value || "1024";
         } else {
-            sliderContainer.classList.remove('hidden');
-            manualSizeInput.classList.add('hidden');
+            manualSizeInput.style.display = "none";
+            sliderContainer.style.display = "flex";
+            sliderContainer.style.flexDirection = "column";
 
             const sliderValue = document.getElementById('file_size').value;
             hiddenSizeInput.value = sliderValue;
@@ -96,21 +85,10 @@
             manualSizeValueInput.value = 100;
             hiddenSizeInput.value = 100;
         }
-
-        console.log("Size unit changed to: " + sizeUnit.toUpperCase());
     }
-
-    document.getElementById('max_file_size_manual_input').addEventListener('input', function() {
-        const maxValue = parseInt(this.max);
-        const currentValue = parseInt(this.value);
-
-        if (currentValue > maxValue) {
-            this.value = maxValue;
-        }
-    });
 </script>
 <div class="relative">
-    <div class="w-full h-full absolute inset-0 bg-gray-900 rounded-xl translate-y-2 translate-x-2"></div>
+    <div class="w-full lg:h-[90%] sm:h-full absolute inset-0 bg-gray-900 rounded-xl translate-y-2 translate-x-2"></div>
     <div class="rounded-xl relative z-20 pl-8 sm:pl-10 pr-8 sm:pr-16 py-8 border-[3px] border-gray-900 bg-[#fff4da]">
         <img src="https://cdn.devdojo.com/images/january2023/shape-1.png"
              class="absolute md:block hidden left-0 h-[4.5rem] w-[4.5rem] bottom-0 -translate-x-full ml-3">
@@ -186,18 +164,17 @@
                     </div>
                 </div>
             </div>
-            <div class="flex items-center gap-4 h-[50px]">
+            <div class="flex items-center gap-4 h-[40px]">
                 <div class="mt-4">
                     <label class="flex flex-col items-center cursor-pointer">
                         <input type="checkbox"
                                id="use_manual_input"
                                name="use_manual_input"
-                               value="false"
                                class="sr-only peer w-12"
                                onchange="changeFilesizeInputType(this)">
                         <div class="relative w-12 h-6 bg-[#ebdbb7] peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#FE4A60]/30 rounded-full peer border-[2px] border-gray-900 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-5 after:transition-all peer-checked:bg-[#FE4A60]">
                         </div>
-                        <p class="ms-1 text-sm font-medium text-gray-900">Manual</p>
+                        <p class="ms-1 text-xs font-medium text-gray-900">Manual</p>
                     </label>
                 </div>
                 <div id="slider_container" class="w-[200px] sm:w-[200px] mt-3">
@@ -213,7 +190,7 @@
                            value="{{ default_file_size }}"
                            class="w-full h-3 bg-[#FAFAFA] bg-no-repeat bg-[length:50%_100%] bg-[#ebdbb7] appearance-none border-[3px] border-gray-900 rounded-sm focus:outline-none bg-gradient-to-r from-[#FE4A60] to-[#FE4A60] [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-7 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-sm [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-solid [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-gray-900 [&::-webkit-slider-thumb]:shadow-[3px_3px_0_#000]">
                 </div>
-                <div id="manual_size_input_container" class="hidden mt-3 flex gap-2">
+                <div id="manual_size_input_container" class="mt-3 flex gap-2">
                     <div>
                         <label for="max_file_size_manual_input" class="block text-gray-700 mb-1">Include files under:</label>
                         <input type="number"
@@ -221,7 +198,7 @@
                                name="max_file_size_manual"
                                min="1"
                                max="{{ '102400' if size_unit == 'kb' else '100' }}"
-                               value="{{ max_file_size_manual }}"
+                               value="{{ default_file_size_manual }}"
                                class="lg:w-[150px] sm:w-[100px] border-[3px] border-gray-900 rounded-sm focus:outline-none bg-[#ebdbb7] appearance-none indent-2"
                                style="-webkit-appearance: none;
                                       color: #333"
@@ -235,8 +212,7 @@
                                    name="size_unit"
                                    class="w-4 h-4"
                                    {% if size_unit == 'kb' %}checked{% endif %}
-                                   onchange="updateSizeUnit(this)"
-                                   style="background-color:red">
+                                   onchange="updateSizeUnit(this)">
                             <label for="size-kb" class="ms-2 text-sm font-medium text-gray-900">KB</label>
                         </div>
                         <div class="flex items-center mt-1">

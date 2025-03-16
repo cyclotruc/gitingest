@@ -69,6 +69,11 @@ function handleSubmit(event, showLoading = false) {
         formData.append('pattern', pattern.value);
     }
 
+    // Save the current state of the form for restoration after response
+    const useManualInput = document.getElementById('use_manual_input').checked;
+    const sizeUnit = document.getElementById('size_unit_input').value;
+    const manualSizeValue = document.getElementById('max_file_size_manual_input')?.value || '';
+
     const originalContent = submitButton.innerHTML;
     const currentStars = document.getElementById('github-stars')?.textContent;
 
@@ -104,6 +109,9 @@ function handleSubmit(event, showLoading = false) {
                 // Reinitialize slider functionality
                 initializeSlider();
 
+                // Restore form state
+                restoreFormState(useManualInput, sizeUnit, manualSizeValue);
+
                 const starsElement = document.getElementById('github-stars');
                 if (starsElement && starCount) {
                     starsElement.textContent = starCount;
@@ -120,6 +128,47 @@ function handleSubmit(event, showLoading = false) {
             submitButton.disabled = false;
             submitButton.innerHTML = originalContent;
         });
+}
+
+// Function to restore form state after receiving response
+function restoreFormState(useManualInput, sizeUnit, manualSizeValue) {
+    const checkbox = document.getElementById('use_manual_input');
+    const sizeUnitInput = document.getElementById('size_unit_input');
+    const manualSizeValueInput = document.getElementById('max_file_size_manual_input');
+    const hiddenInput = document.getElementById('file_size_manual');
+    const sliderContainer = document.getElementById('slider_container');
+    const manualSizeInput = document.getElementById('manual_size_input_container');
+
+    if (!checkbox || !sizeUnitInput) return;
+
+    // Set checkbox state
+    checkbox.checked = useManualInput;
+    hiddenInput.value = useManualInput ? "true" : "false";
+
+    // Set size unit
+    sizeUnitInput.value = sizeUnit;
+    if (sizeUnit === 'mb') {
+        document.getElementById('size-mb').checked = true;
+    } else {
+        document.getElementById('size-kb').checked = true;
+    }
+
+    // Set manual size value if applicable
+    if (manualSizeValueInput && manualSizeValue) {
+        manualSizeValueInput.value = manualSizeValue;
+    }
+
+    // Show/hide appropriate containers based on checkbox state
+    if (useManualInput) {
+        if (sliderContainer) sliderContainer.style.display = "none";
+        if (manualSizeInput) manualSizeInput.style.display = "flex";
+    } else {
+        if (manualSizeInput) manualSizeInput.style.display = "none";
+        if (sliderContainer) {
+            sliderContainer.style.display = "flex";
+            sliderContainer.style.flexDirection = "column";
+        }
+    }
 }
 
 function copyFullDigest() {
@@ -147,7 +196,6 @@ function copyFullDigest() {
 
 // Add the logSliderToSize helper function
 function logSliderToSize(position) {
-    const minp = 0;
     const maxp = 500;
     const minv = Math.log(1);
     const maxv = Math.log(102400);
@@ -193,6 +241,7 @@ window.copyText = copyText;
 window.handleSubmit = handleSubmit;
 window.initializeSlider = initializeSlider;
 window.formatSize = formatSize;
+window.restoreFormState = restoreFormState;
 
 // Add this new function
 function setupGlobalEnterHandler() {

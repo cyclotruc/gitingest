@@ -78,7 +78,7 @@ async def process_query(
         "pattern_type": pattern_type,
         "pattern": pattern,
         "use_manual_input": "true" if is_file_size_manual else "false",
-        "max_file_size_manual": str(slider_position) if is_file_size_manual else "",
+        "max_file_size_manual": slider_position if is_file_size_manual else None,
         "size_unit": size_unit,
     }
 
