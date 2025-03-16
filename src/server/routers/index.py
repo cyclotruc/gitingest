@@ -1,4 +1,6 @@
-""" This module defines the FastAPI router for the home page of the application. """
+"""This module defines the FastAPI router for the home page of the application."""
+
+from typing import Optional
 
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse
@@ -35,6 +37,9 @@ async def home(request: Request) -> HTMLResponse:
             "request": request,
             "examples": EXAMPLE_REPOS,
             "default_file_size": 243,
+            "default_file_size_manual": 50,
+            "use_manual_input": "false",
+            "size_unit": "kb",
         },
     )
 
@@ -45,6 +50,9 @@ async def index_post(
     request: Request,
     input_text: str = Form(...),
     max_file_size: int = Form(...),
+    max_file_size_manual: Optional[str] = Form(None),
+    use_manual_input: bool = Form(...),
+    size_unit: str = Form("kb"),
     pattern_type: str = Form(...),
     pattern: str = Form(...),
 ) -> HTMLResponse:
@@ -63,6 +71,12 @@ async def index_post(
         The input text provided by the user for processing, by default taken from the form.
     max_file_size : int
         The maximum allowed file size for the input, specified by the user.
+    max_file_size_manual : Optional[str], optional
+        The manually entered file size, by default None.
+    use_manual_input : bool
+        Whether to use the manual input instead of the slider, by default False.
+    size_unit : str
+        The unit for the manual file size input ('kb' or 'mb'), by default 'kb'.
     pattern_type : str
         The type of pattern used for the query, specified by the user.
     pattern : str
@@ -74,6 +88,15 @@ async def index_post(
         An HTML response containing the results of processing the form input and query logic,
         which will be rendered and returned to the user.
     """
+    # Determine the file size based on the input method
+    if use_manual_input and max_file_size_manual:
+        # Convert the manual input to bytes based on the size unit
+        size_value = int(max_file_size_manual)
+        if size_unit.lower() == "mb":
+            max_file_size = size_value * 1024 * 1024  # Convert MB to bytes
+        else:  # Default to KB
+            max_file_size = size_value * 1024  # Convert KB to bytes
+
     return await process_query(
         request,
         input_text,
@@ -81,4 +104,6 @@ async def index_post(
         pattern_type,
         pattern,
         is_index=True,
+        is_file_size_manual=use_manual_input,
+        size_unit=size_unit,
     )
