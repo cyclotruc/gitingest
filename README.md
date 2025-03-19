@@ -13,7 +13,7 @@ Turn any Git repository into a prompt-friendly text ingest for LLMs.
 
 You can also replace `hub` with `ingest` in any GitHub URL to access the corresponding digest.
 
-[gitingest.com](https://gitingest.com) · [Chrome Extension](https://chromewebstore.google.com/detail/adfjahbijlkjfoicpjkhjicpjpjfaood) · [Firefox Add-on](https://addons.mozilla.org/firefox/addon/gitingest)
+[gitingest.com](https://gitingest.com) · [Chrome Extension](https://chromewebstore.google.com/detail/adfjahbijlkjfoicpjkhjicpjpjfaood) · [Firefox Add-on](https://addons.mozilla.org/firefox/addon/gitingest) · [VS-Code Extension](https://marketplace.visualstudio.com/items?itemName=iamshreydxv.gitingest)
 
 ## 🚀 Features
 
@@ -25,6 +25,10 @@ You can also replace `hub` with `ingest` in any GitHub URL to access the corresp
   - Token count
 - **CLI tool**: Run it as a shell command
 - **Python package**: Import it in your code
+- **VS Code Extension**: Instantly analyze private and public repositories within your code editor with just a few clicks 
+   - Fully Secure 🔐
+   - Same website look ✨ 
+   - Many user friendly features
 
 ## 📚 Requirements
 
