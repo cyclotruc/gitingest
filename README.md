@@ -25,10 +25,10 @@ You can also replace `hub` with `ingest` in any GitHub URL to access the corresp
   - Token count
 - **CLI tool**: Run it as a shell command
 - **Python package**: Import it in your code
-- **VS Code Extension**: Instantly analyze private and public repositories within your code editor with just a few clicks 
-   - Fully Secure 🔐
-   - Same website look ✨ 
-   - Many user friendly features
+- **VS Code Extension**: Instantly analyze private and public repositories within your code editor with just a few clicks
+  - Fully Secure 🔐
+  - Same website look ✨
+  - User friendly UI and features
 
 ## 📚 Requirements
 
