@@ -1,4 +1,4 @@
-""" Utility functions for interacting with Git repositories. """
+"""Utility functions for interacting with Git repositories."""
 
 import asyncio
 from typing import List, Tuple

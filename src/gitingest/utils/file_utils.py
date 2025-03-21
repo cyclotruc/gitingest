@@ -1,4 +1,4 @@
-""" Utility functions for working with files and directories. """
+"""Utility functions for working with files and directories."""
 
 import locale
 import platform
