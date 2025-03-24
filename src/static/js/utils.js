@@ -2,49 +2,53 @@
 function copyText(className) {
     let textToCopy;
 
-    if (className === 'directory-structure') {
+    if (className === "directory-structure") {
         // For directory structure, get the hidden input value
-        const hiddenInput = document.getElementById('directory-structure-content');
+        const hiddenInput = document.getElementById(
+            "directory-structure-content"
+        );
         if (!hiddenInput) return;
         textToCopy = hiddenInput.value;
     } else {
         // For other elements, get the textarea value
-        const textarea = document.querySelector('.' + className);
+        const textarea = document.querySelector("." + className);
         if (!textarea) return;
         textToCopy = textarea.value;
     }
 
-    const button = document.querySelector(`button[onclick="copyText('${className}')"]`);
+    const button = document.querySelector(
+        `button[onclick="copyText('${className}')"]`
+    );
     if (!button) return;
 
     // Copy text
-    navigator.clipboard.writeText(textToCopy)
+    navigator.clipboard
+        .writeText(textToCopy)
         .then(() => {
             // Store original content
             const originalContent = button.innerHTML;
 
             // Change button content
-            button.innerHTML = 'Copied!';
+            button.innerHTML = "Copied!";
 
             // Reset after 1 second
             setTimeout(() => {
                 button.innerHTML = originalContent;
             }, 1000);
         })
-        .catch(err => {
+        .catch((err) => {
             // Show error in button
             const originalContent = button.innerHTML;
-            button.innerHTML = 'Failed to copy';
+            button.innerHTML = "Failed to copy";
             setTimeout(() => {
                 button.innerHTML = originalContent;
             }, 1000);
         });
 }
 
-
 function handleSubmit(event, showLoading = false) {
     event.preventDefault();
-    const form = event.target || document.getElementById('ingestForm');
+    const form = event.target || document.getElementById("ingestForm");
     if (!form) return;
 
     const submitButton = form.querySelector('button[type="submit"]');
@@ -53,24 +57,24 @@ function handleSubmit(event, showLoading = false) {
     const formData = new FormData(form);
 
     // Update file size
-    const slider = document.getElementById('file_size');
+    const slider = document.getElementById("file_size");
     if (slider) {
-        formData.delete('max_file_size');
-        formData.append('max_file_size', slider.value);
+        formData.delete("max_file_size");
+        formData.append("max_file_size", slider.value);
     }
 
     // Update pattern type and pattern
-    const patternType = document.getElementById('pattern_type');
-    const pattern = document.getElementById('pattern');
+    const patternType = document.getElementById("pattern_type");
+    const pattern = document.getElementById("pattern");
     if (patternType && pattern) {
-        formData.delete('pattern_type');
-        formData.delete('pattern');
-        formData.append('pattern_type', patternType.value);
-        formData.append('pattern', pattern.value);
+        formData.delete("pattern_type");
+        formData.delete("pattern");
+        formData.append("pattern_type", patternType.value);
+        formData.append("pattern", pattern.value);
     }
 
     const originalContent = submitButton.innerHTML;
-    const currentStars = document.getElementById('github-stars')?.textContent;
+    const currentStars = document.getElementById("github-stars")?.textContent;
 
     if (showLoading) {
         submitButton.disabled = true;
@@ -83,16 +87,16 @@ function handleSubmit(event, showLoading = false) {
                 <span class="ml-2">Processing...</span>
             </div>
         `;
-        submitButton.classList.add('bg-[#ffb14d]');
+        submitButton.classList.add("bg-[#ffb14d]");
     }
 
     // Submit the form
     fetch(form.action, {
-        method: 'POST',
-        body: formData
+        method: "POST",
+        body: formData,
     })
-        .then(response => response.text())
-        .then(html => {
+        .then((response) => response.text())
+        .then((html) => {
             // Store the star count before updating the DOM
             const starCount = currentStars;
 
@@ -104,45 +108,53 @@ function handleSubmit(event, showLoading = false) {
                 // Reinitialize slider functionality
                 initializeSlider();
 
-                const starsElement = document.getElementById('github-stars');
+                const starsElement = document.getElementById("github-stars");
                 if (starsElement && starCount) {
                     starsElement.textContent = starCount;
                 }
 
                 // Scroll to results if they exist
-                const resultsSection = document.querySelector('[data-results]');
+                const resultsSection = document.querySelector("[data-results]");
                 if (resultsSection) {
-                    resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    resultsSection.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                    });
                 }
             }, 0);
         })
-        .catch(error => {
+        .catch((error) => {
             submitButton.disabled = false;
             submitButton.innerHTML = originalContent;
         });
 }
 
 function copyFullDigest() {
-    const directoryStructure = document.getElementById('directory-structure-content').value;
-    const filesContent = document.querySelector('.result-text').value;
+    const directoryStructure = document.getElementById(
+        "directory-structure-content"
+    ).value;
+    const filesContent = document.querySelector(".result-text").value;
     const fullDigest = `${directoryStructure}\n\nFiles Content:\n\n${filesContent}`;
     const button = document.querySelector('[onclick="copyFullDigest()"]');
     const originalText = button.innerHTML;
 
-    navigator.clipboard.writeText(fullDigest).then(() => {
-        button.innerHTML = `
+    navigator.clipboard
+        .writeText(fullDigest)
+        .then(() => {
+            button.innerHTML = `
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
             </svg>
             Copied!
         `;
 
-        setTimeout(() => {
-            button.innerHTML = originalText;
-        }, 2000);
-    }).catch(err => {
-        console.error('Failed to copy text: ', err);
-    });
+            setTimeout(() => {
+                button.innerHTML = originalText;
+            }, 2000);
+        })
+        .catch((err) => {
+            console.error("Failed to copy text: ", err);
+        });
 }
 
 // Add the logSliderToSize helper function
@@ -152,25 +164,29 @@ function logSliderToSize(position) {
     const minv = Math.log(1);
     const maxv = Math.log(102400);
 
-    const value = Math.exp(minv + (maxv - minv) * Math.pow(position / maxp, 1.5));
+    const value = Math.exp(
+        minv + (maxv - minv) * Math.pow(position / maxp, 1.5)
+    );
     return Math.round(value);
 }
 
 // Move slider initialization to a separate function
 function initializeSlider() {
-    const slider = document.getElementById('file_size');
-    const sizeValue = document.getElementById('size_value');
+    const slider = document.getElementById("file_size");
+    const sizeValue = document.getElementById("size_value");
 
     if (!slider || !sizeValue) return;
 
     function updateSlider() {
         const value = logSliderToSize(slider.value);
         sizeValue.textContent = formatSize(value);
-        slider.style.backgroundSize = `${(slider.value / slider.max) * 100}% 100%`;
+        slider.style.backgroundSize = `${
+            (slider.value / slider.max) * 100
+        }% 100%`;
     }
 
     // Update on slider change
-    slider.addEventListener('input', updateSlider);
+    slider.addEventListener("input", updateSlider);
 
     // Initialize slider position
     updateSlider();
@@ -179,13 +195,13 @@ function initializeSlider() {
 // Add helper function for formatting size
 function formatSize(sizeInKB) {
     if (sizeInKB >= 1024) {
-        return Math.round(sizeInKB / 1024) + 'mb';
+        return Math.round(sizeInKB / 1024) + "mb";
     }
-    return Math.round(sizeInKB) + 'kb';
+    return Math.round(sizeInKB) + "kb";
 }
 
 // Initialize slider on page load
-document.addEventListener('DOMContentLoaded', initializeSlider);
+document.addEventListener("DOMContentLoaded", initializeSlider);
 
 // Make sure these are available globally
 window.copyText = copyText;
@@ -196,18 +212,71 @@ window.formatSize = formatSize;
 
 // Add this new function
 function setupGlobalEnterHandler() {
-    document.addEventListener('keydown', function (event) {
-        if (event.key === 'Enter' && !event.target.matches('textarea')) {
-            const form = document.getElementById('ingestForm');
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Enter" && !event.target.matches("textarea")) {
+            const form = document.getElementById("ingestForm");
             if (form) {
-                handleSubmit(new Event('submit'), true);
+                handleSubmit(new Event("submit"), true);
             }
         }
     });
 }
 
 // Add to the DOMContentLoaded event listener
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
     initializeSlider();
     setupGlobalEnterHandler();
+});
+
+// Dark mode functionality - added by @sarmadhamdani02
+document.addEventListener("DOMContentLoaded", () => {
+    console.log("Dark mode script loaded!"); // Debugging
+
+    const html = document.documentElement;
+    const toggleBtn = document.getElementById("darkModeToggle");
+    const themeIcon = document.getElementById("themeIcon");
+
+    if (!toggleBtn || !themeIcon) {
+        console.error("Dark mode button or icon not found!");
+        return;
+    }
+
+    // Function to load dark mode preference from localStorage
+    function loadDarkModePreference() {
+        const isDarkMode = localStorage.getItem("theme") === "dark";
+        if (isDarkMode) {
+            enableDarkMode();
+        } else {
+            disableDarkMode();
+        }
+    }
+
+    // Function to enable dark mode
+    function enableDarkMode() {
+        html.classList.add("dark");
+        themeIcon.textContent = "☀️"; // Change to sun icon
+        localStorage.setItem("theme", "dark");
+    }
+
+    // Function to disable dark mode
+    function disableDarkMode() {
+        html.classList.remove("dark");
+        themeIcon.textContent = "🌙"; // Change to moon icon
+        localStorage.setItem("theme", "light");
+    }
+
+    // Function to toggle dark mode
+    function toggleDarkMode() {
+        if (html.classList.contains("dark")) {
+            disableDarkMode();
+        } else {
+            enableDarkMode();
+        }
+    }
+
+    // Load theme preference on page load
+    loadDarkModePreference();
+
+    // Add event listener to the button
+    toggleBtn.addEventListener("click", toggleDarkMode);
 });
