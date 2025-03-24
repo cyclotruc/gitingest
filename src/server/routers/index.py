@@ -1,4 +1,4 @@
-""" This module defines the FastAPI router for the home page of the application. """
+"""This module defines the FastAPI router for the home page of the application."""
 
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse

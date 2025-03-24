@@ -1,4 +1,4 @@
-""" Configuration for the server. """
+"""Configuration for the server."""
 
 from typing import Dict, List
 

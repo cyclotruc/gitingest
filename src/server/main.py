@@ -1,4 +1,4 @@
-""" Main module for the FastAPI application. """
+"""Main module for the FastAPI application."""
 
 import os
 from pathlib import Path

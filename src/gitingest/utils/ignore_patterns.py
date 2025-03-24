@@ -1,4 +1,4 @@
-""" Default ignore patterns for Gitingest. """
+"""Default ignore patterns for Gitingest."""
 
 from typing import Set
 

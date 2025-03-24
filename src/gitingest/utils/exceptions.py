@@ -1,4 +1,4 @@
-""" Custom exceptions for the Gitingest package. """
+"""Custom exceptions for the Gitingest package."""
 
 
 class InvalidPatternError(ValueError):

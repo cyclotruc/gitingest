@@ -1,4 +1,4 @@
-""" Command-line interface for the Gitingest package. """
+"""Command-line interface for the Gitingest package."""
 
 # pylint: disable=no-value-for-parameter
 

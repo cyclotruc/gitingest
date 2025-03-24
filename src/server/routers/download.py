@@ -1,4 +1,4 @@
-""" This module contains the FastAPI router for downloading a digest file. """
+"""This module contains the FastAPI router for downloading a digest file."""
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response

@@ -1,4 +1,4 @@
-""" Utility functions for the server. """
+"""Utility functions for the server."""
 
 import asyncio
 import math

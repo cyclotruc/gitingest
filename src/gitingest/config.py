@@ -1,4 +1,4 @@
-""" Configuration file for the project. """
+"""Configuration file for the project."""
 
 import tempfile
 from pathlib import Path

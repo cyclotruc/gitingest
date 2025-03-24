@@ -1,4 +1,4 @@
-""" Tests for the gitingest cli """
+"""Tests for the gitingest cli."""
 
 import os
 

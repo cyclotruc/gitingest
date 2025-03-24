@@ -1,6 +1,6 @@
-chardet
 click>=8.0.0
 fastapi[standard]>=0.109.1  # Vulnerable to https://osv.dev/vulnerability/PYSEC-2024-38
+pydantic
 python-dotenv
 slowapi
 starlette>=0.40.0  # Vulnerable to https://osv.dev/vulnerability/GHSA-f96h-pmfr-66vw

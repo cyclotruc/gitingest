@@ -1,7 +1,4 @@
-"""
-Integration tests for GitIngest.
-These tests cover core functionalities, edge cases, and concurrency handling.
-"""
+"""Integration tests covering core functionalities, edge cases, and concurrency handling."""
 
 import shutil
 from concurrent.futures import ThreadPoolExecutor

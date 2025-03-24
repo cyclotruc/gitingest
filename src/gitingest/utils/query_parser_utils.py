@@ -1,4 +1,4 @@
-""" Utility functions for parsing and validating query parameters. """
+"""Utility functions for parsing and validating query parameters."""
 
 import os
 import string

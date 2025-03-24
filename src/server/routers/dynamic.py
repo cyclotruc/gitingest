@@ -1,4 +1,4 @@
-""" This module defines the dynamic router for handling dynamic path requests. """
+"""This module defines the dynamic router for handling dynamic path requests."""
 
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse

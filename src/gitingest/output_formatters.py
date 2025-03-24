@@ -4,8 +4,8 @@ from typing import Optional, Tuple
 
 import tiktoken
 
-from gitingest.filesystem_schema import FileSystemNode, FileSystemNodeType
 from gitingest.query_parsing import IngestionQuery
+from gitingest.schemas import FileSystemNode, FileSystemNodeType
 
 
 def format_node(node: FileSystemNode, query: IngestionQuery) -> Tuple[str, str, str]:

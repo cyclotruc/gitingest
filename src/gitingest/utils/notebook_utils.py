@@ -1,4 +1,4 @@
-""" Utilities for processing Jupyter notebooks. """
+"""Utilities for processing Jupyter notebooks."""
 
 import json
 import warnings
@@ -6,7 +6,7 @@ from itertools import chain
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from gitingest.exceptions import InvalidNotebookError
+from gitingest.utils.exceptions import InvalidNotebookError
 
 
 def process_notebook(file: Path, include_output: bool = True) -> str:

@@ -1,4 +1,4 @@
-""" Utility functions for working with file paths. """
+"""Utility functions for working with file paths."""
 
 import os
 import platform
