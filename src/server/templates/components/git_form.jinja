@@ -84,8 +84,14 @@
                 </div>
             </div>
             <div class="w-[200px] sm:w-[200px] mt-3">
-                <label for="file_size" class="block text-gray-700 mb-1">
-                    Include files under: <span id="size_value" class="font-bold">50kb</span>
+                <label for="file_size" class="flex gap-2 text-gray-700 mb-1 text-nowrap">
+                    Include files under:
+                    <div class="inline-block relative">
+                        <input type="text"
+                               id="size_value_input"
+                               class="w-16 font-bold bg-transparent border-b-2 border-gray-900 focus:outline-none text-center"
+                               value="50kb">
+                    </div>
                 </label>
                 <input type="range"
                        id="file_size"
