@@ -18,6 +18,7 @@ class FileSystemNodeType(Enum):
 
     DIRECTORY = auto()
     FILE = auto()
+    SYMLINK = auto()
 
 
 @dataclass
@@ -91,7 +92,8 @@ class FileSystemNode:  # pylint: disable=too-many-instance-attributes
         """
         parts = [
             SEPARATOR,
-            f"File: {str(self.path_str).replace(os.sep, '/')}",
+            f"{self.type.name}: {str(self.path_str).replace(os.sep, '/')}"
+            + (f" -> {self.path.readlink().name}" if self.type == FileSystemNodeType.SYMLINK else ""),
             SEPARATOR,
             f"{self.content}",
         ]
@@ -115,6 +117,9 @@ class FileSystemNode:  # pylint: disable=too-many-instance-attributes
         """
         if self.type == FileSystemNodeType.DIRECTORY:
             raise ValueError("Cannot read content of a directory node")
+
+        if self.type == FileSystemNodeType.SYMLINK:
+            return ""
 
         if not is_text_file(self.path):
             return "[Non-text file]"

@@ -9,7 +9,6 @@ from gitingest.output_formatters import format_node
 from gitingest.query_parsing import IngestionQuery
 from gitingest.schemas import FileSystemNode, FileSystemNodeType, FileSystemStats
 from gitingest.utils.ingestion_utils import _should_exclude, _should_include
-from gitingest.utils.path_utils import _is_safe_symlink
 
 try:
     import tomllib  # type: ignore[import]
@@ -171,11 +170,6 @@ def _process_node(
         The parsed query object containing information about the repository and query parameters.
     stats : FileSystemStats
         Statistics tracking object for the total file count and size.
-
-    Raises
-    ------
-    ValueError
-        If an unexpected error occurs during processing.
     """
 
     if limit_exceeded(stats, node.depth):
@@ -183,28 +177,15 @@ def _process_node(
 
     for sub_path in node.path.iterdir():
 
-        symlink_path = None
-        if sub_path.is_symlink():
-            if not _is_safe_symlink(sub_path, query.local_path):
-                print(f"Skipping unsafe symlink: {sub_path}")
-                continue
-
-            symlink_path = sub_path
-            sub_path = sub_path.resolve()
-
-        if sub_path in stats.visited:
-            print(f"Skipping already visited path: {sub_path}")
-            continue
-
-        stats.visited.add(sub_path)
-
         if query.ignore_patterns and _should_exclude(sub_path, query.local_path, query.ignore_patterns):
             continue
 
         if query.include_patterns and not _should_include(sub_path, query.local_path, query.include_patterns):
             continue
 
-        if sub_path.is_file():
+        if sub_path.is_symlink():
+            _process_symlink(path=sub_path, parent_node=node, stats=stats, local_path=query.local_path)
+        elif sub_path.is_file():
             _process_file(path=sub_path, parent_node=node, stats=stats, local_path=query.local_path)
         elif sub_path.is_dir():
 
@@ -216,11 +197,6 @@ def _process_node(
                 depth=node.depth + 1,
             )
 
-            # rename the subdir to reflect the symlink name
-            if symlink_path:
-                child_directory_node.name = symlink_path.name
-                child_directory_node.path_str = str(symlink_path)
-
             _process_node(
                 node=child_directory_node,
                 query=query,
@@ -230,11 +206,39 @@ def _process_node(
             node.size += child_directory_node.size
             node.file_count += child_directory_node.file_count
             node.dir_count += 1 + child_directory_node.dir_count
-
         else:
-            raise ValueError(f"Unexpected error: {sub_path} is neither a file nor a directory")
+            print(f"Warning: {sub_path} is an unknown file type, skipping")
 
     node.sort_children()
+
+
+def _process_symlink(path: Path, parent_node: FileSystemNode, stats: FileSystemStats, local_path: Path) -> None:
+    """
+    Process a symlink in the file system.
+
+    This function checks the symlink's target.
+
+    Parameters
+    ----------
+    path : Path
+        The full path of the symlink.
+    parent_node : FileSystemNode
+        The parent directory node.
+    stats : FileSystemStats
+        Statistics tracking object for the total file count and size.
+    local_path : Path
+        The base path of the repository or directory being processed.
+    """
+    child = FileSystemNode(
+        name=path.name,
+        type=FileSystemNodeType.SYMLINK,
+        path_str=str(path.relative_to(local_path)),
+        path=path,
+        depth=parent_node.depth + 1,
+    )
+    stats.total_files += 1
+    parent_node.children.append(child)
+    parent_node.file_count += 1
 
 
 def _process_file(path: Path, parent_node: FileSystemNode, stats: FileSystemStats, local_path: Path) -> None:
