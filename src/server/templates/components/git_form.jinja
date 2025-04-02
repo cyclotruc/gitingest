@@ -90,7 +90,8 @@
                         <input type="text"
                                id="size_value_input"
                                class="w-16 font-bold bg-transparent border-b-2 border-gray-900 focus:outline-none text-center"
-                               value="50kb">
+                               value="{{ exact_file_size ~ 'kb' if exact_file_size else '50kb' }}"
+                               data-exact-value="{{ exact_file_size if exact_file_size else '' }}">
                     </div>
                 </label>
                 <input type="range"

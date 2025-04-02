@@ -54,11 +54,46 @@ function handleSubmit(event, showLoading = false) {
 
   const formData = new FormData(form);
 
-  // Update file size
+  // Update file size - check if we're using direct input or slider
   const slider = document.getElementById("file_size");
-  if (slider) {
-    formData.delete("max_file_size");
-    formData.append("max_file_size", slider.value);
+  const sizeValueInput = document.getElementById("size_value_input");
+
+  if (slider && sizeValueInput) {
+    // Check if we have an exact value stored in the data attribute
+    if (sizeValueInput.dataset.exactValue) {
+      // Use the exact value that was directly entered by the user
+      formData.delete("max_file_size");
+      formData.delete("exact_file_size");
+      formData.append("max_file_size", slider.value); // Still send slider position for backward compatibility
+      formData.append("exact_file_size", sizeValueInput.dataset.exactValue); // Send the exact value in KB
+    } else {
+      // Get the direct input value if it exists
+      const directInputValue = sizeValueInput.value.trim();
+      const numericMatch = directInputValue.match(
+        /^(\d+(?:\.\d+)?)\s*(kb|mb|k|m|)$/i
+      );
+
+      if (numericMatch) {
+        // If we have a valid direct input, use that value directly
+        let value = parseFloat(numericMatch[1]);
+        const unit = numericMatch[2].toLowerCase();
+
+        // Convert to KB
+        if (unit === "m" || unit === "mb") {
+          value = value * 1024;
+        }
+
+        // Store the exact value in KB in a hidden field
+        formData.delete("max_file_size");
+        formData.delete("exact_file_size");
+        formData.append("max_file_size", slider.value); // Still send slider position for backward compatibility
+        formData.append("exact_file_size", value.toString()); // Send the exact value in KB
+      } else {
+        // If input is invalid, fall back to slider value
+        formData.delete("max_file_size");
+        formData.append("max_file_size", slider.value);
+      }
+    }
   }
 
   // Update pattern type and pattern
@@ -189,6 +224,9 @@ function initializeSlider() {
       value = value * 1024;
     }
 
+    // Store the exact value as a data attribute for form submission
+    sizeValueInput.dataset.exactValue = value.toString();
+
     // Find the slider position that corresponds to this KB value
     // Inverse of the logSliderToSize function
     const minv = Math.log(1);
@@ -208,15 +246,20 @@ function initializeSlider() {
     // Update slider value
     slider.value = Math.min(Math.max(Math.round(position), 0), maxp);
 
-    // Update slider UI
-    updateSliderUI();
+    // Update slider background without changing the input value
+    slider.style.backgroundSize = `${(slider.value / slider.max) * 100}% 100%`;
   }
 
   function updateSliderUI() {
     const value = logSliderToSize(slider.value);
+
+    // Always update the exact value when slider changes
+    sizeValueInput.dataset.exactValue = value.toString();
+
+    // Format the size for display
     const formattedSize = formatSize(value);
 
-    // Update the input value
+    // Always update the input value when the slider changes
     sizeValueInput.value = formattedSize;
 
     // Update slider background
@@ -224,10 +267,31 @@ function initializeSlider() {
   }
 
   // Update on slider change
-  slider.addEventListener("input", updateSliderUI);
+  slider.addEventListener("input", function () {
+    updateSliderUI();
+  });
 
   // Update on input field change
-  sizeValueInput.addEventListener("change", updateSliderFromInput);
+  sizeValueInput.addEventListener("change", function () {
+    // Parse the input value to extract the number and unit
+    const inputValue = sizeValueInput.value.trim();
+    const numericMatch = inputValue.match(/^(\d+(?:\.\d+)?)\s*(kb|mb|k|m|)$/i);
+
+    if (numericMatch) {
+      let value = parseFloat(numericMatch[1]);
+      const unit = numericMatch[2].toLowerCase();
+
+      // Convert to KB if necessary
+      if (unit === "m" || unit === "mb") {
+        value = value * 1024;
+      }
+
+      // Store the exact value for form submission
+      sizeValueInput.dataset.exactValue = value.toString();
+    }
+
+    updateSliderFromInput();
+  });
   sizeValueInput.addEventListener("blur", updateSliderFromInput);
   sizeValueInput.addEventListener("keydown", function (e) {
     if (e.key === "Enter") {
@@ -242,10 +306,32 @@ function initializeSlider() {
 
 // Add helper function for formatting size
 function formatSize(sizeInKB) {
+  // For slider-driven updates, always use the provided sizeInKB parameter
+  // and ignore the dataset.exactValue which is only for manual input tracking
+
+  // Format based on size
   if (sizeInKB >= 1024) {
-    return Math.round(sizeInKB / 1024) + "mb";
+    const mbValue = sizeInKB / 1024;
+    // If it's a whole number, display as integer
+    if (mbValue === Math.floor(mbValue)) {
+      return mbValue + "mb";
+    }
+    // Otherwise limit to 2 decimal places for display
+    // Convert to fixed 2 decimal places
+    let formattedValue = mbValue.toFixed(2);
+    // Remove trailing zeros (e.g., 1.50 -> 1.5, 2.00 -> 2)
+    formattedValue = formattedValue.replace(/\.?0+$/, "");
+    return formattedValue + "mb";
   }
-  return Math.round(sizeInKB) + "kb";
+
+  // For KB values, also limit to 2 decimal places if needed
+  if (sizeInKB === Math.floor(sizeInKB)) {
+    return sizeInKB + "kb";
+  } else {
+    let formattedValue = parseFloat(sizeInKB).toFixed(2);
+    formattedValue = formattedValue.replace(/\.?0+$/, "");
+    return formattedValue + "kb";
+  }
 }
 
 // Initialize slider on page load

@@ -13,7 +13,7 @@ from gitingest.query_parsing import IngestionQuery, parse_query
 
 async def ingest_async(
     source: str,
-    max_file_size: int = 10 * 1024 * 1024,  # 10 MB
+    max_file_size: float = 10 * 1024 * 1024,  # 10 MB
     include_patterns: Optional[Union[str, Set[str]]] = None,
     exclude_patterns: Optional[Union[str, Set[str]]] = None,
     branch: Optional[str] = None,
@@ -30,7 +30,7 @@ async def ingest_async(
     ----------
     source : str
         The source to analyze, which can be a URL (for a Git repository) or a local directory path.
-    max_file_size : int
+    max_file_size : float
         Maximum allowed file size for file ingestion. Files larger than this size are ignored, by default
         10*1024*1024 (10 MB).
     include_patterns : Union[str, Set[str]], optional
@@ -98,7 +98,7 @@ async def ingest_async(
 
 def ingest(
     source: str,
-    max_file_size: int = 10 * 1024 * 1024,  # 10 MB
+    max_file_size: float = 10 * 1024 * 1024,  # 10 MB
     include_patterns: Optional[Union[str, Set[str]]] = None,
     exclude_patterns: Optional[Union[str, Set[str]]] = None,
     branch: Optional[str] = None,
@@ -115,7 +115,7 @@ def ingest(
     ----------
     source : str
         The source to analyze, which can be a URL (for a Git repository) or a local directory path.
-    max_file_size : int
+    max_file_size : float
         Maximum allowed file size for file ingestion. Files larger than this size are ignored, by default
         10*1024*1024 (10 MB).
     include_patterns : Union[str, Set[str]], optional

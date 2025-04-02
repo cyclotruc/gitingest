@@ -44,9 +44,10 @@ async def home(request: Request) -> HTMLResponse:
 async def index_post(
     request: Request,
     input_text: str = Form(...),
-    max_file_size: int = Form(...),
+    max_file_size: float = Form(...),
     pattern_type: str = Form(...),
     pattern: str = Form(...),
+    exact_file_size: str = Form(None),
 ) -> HTMLResponse:
     """
     Process the form submission with user input for query parameters.
@@ -61,13 +62,14 @@ async def index_post(
         The incoming request object, which provides context for rendering the response.
     input_text : str
         The input text provided by the user for processing, by default taken from the form.
-    max_file_size : int
+    max_file_size : float
         The maximum allowed file size for the input, specified by the user.
     pattern_type : str
         The type of pattern used for the query, specified by the user.
     pattern : str
         The pattern string used in the query, specified by the user.
-
+    exact_file_size : str
+        The exact file size value in KB, which preserves decimal precision.
     Returns
     -------
     HTMLResponse
@@ -81,4 +83,5 @@ async def index_post(
         pattern_type,
         pattern,
         is_index=True,
+        exact_file_size=exact_file_size,
     )
