@@ -48,12 +48,12 @@ Thanks for your interest in contributing to Gitingest! 🚀 Gitingest aims to be
    pytest
    ```
 
-8. Navigate to src folder
+8. Run the local web server
 
-   1. Build the Docker image
+   1. Navigate to src folder
 
         ``` bash
-        cd src
+       cd src
         ```
 
    2. Run the local web server:
