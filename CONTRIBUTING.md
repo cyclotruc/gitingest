@@ -53,7 +53,7 @@ Thanks for your interest in contributing to Gitingest! 🚀 Gitingest aims to be
    1. Navigate to src folder
 
         ``` bash
-       cd src
+        cd src
         ```
 
    2. Run the local web server:
