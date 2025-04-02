@@ -137,6 +137,8 @@ class FileSystemNode:  # pylint: disable=too-many-instance-attributes
                     return f.read()
             except UnicodeDecodeError:
                 continue
+            except UnicodeError:
+                continue
             except OSError as exc:
                 return f"Error reading file: {exc}"
 

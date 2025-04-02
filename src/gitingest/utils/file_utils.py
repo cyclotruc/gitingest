@@ -66,6 +66,8 @@ def is_text_file(path: Path) -> bool:
                 return True
         except UnicodeDecodeError:
             continue
+        except UnicodeError:
+            continue
         except OSError:
             return False
 
