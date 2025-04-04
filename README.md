@@ -50,6 +50,31 @@ Issues and feature requests are welcome to the repo.
 
 ## 💡 Command line usage
 
+### Installation: Non mac
+
+```bash
+pip install gitingest
+```
+
+### Installation: Mac
+
+99% of mac users use `brew` as a local package manger.
+If Python and pip have been installed with `brew`, it is recommended to stay in this ecosystem with `pipx`.
+**If `pipx` does not exist and you are using `brew`, first install the following:**
+
+```bash
+brew install pipx
+pipx ensurepath
+```
+
+Finally, install `gitingest`:
+
+```bash
+pipx install gitingest
+```
+
+### Usage
+
 The `gitingest` command line tool allows you to analyze codebases and create a text dump of their contents.
 
 ```bash
