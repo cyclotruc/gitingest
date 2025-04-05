@@ -59,6 +59,9 @@ gitingest /path/to/directory
 # From URL
 gitingest https://github.com/cyclotruc/gitingest
 
+# From a specific subdirectory
+gitingest https://github.com/cyclotruc/gitingest/tree/main/src/gitingest/utils
+
 # See more options
 gitingest --help
 ```
@@ -75,6 +78,9 @@ summary, tree, content = ingest("path/to/directory")
 
 # or from URL
 summary, tree, content = ingest("https://github.com/cyclotruc/gitingest")
+
+# or from a specific subdirectory
+summary, tree, content = ingest("https://github.com/cyclotruc/gitingest/tree/main/src/gitingest/utils")
 ```
 
 By default, this won't write a file but can be enabled with the `output` argument.
