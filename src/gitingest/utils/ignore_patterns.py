@@ -1,5 +1,7 @@
 """Default ignore patterns for Gitingest."""
 
+import os
+from pathlib import Path
 from typing import Set
 
 DEFAULT_IGNORE_PATTERNS: Set[str] = {
@@ -160,3 +162,39 @@ DEFAULT_IGNORE_PATTERNS: Set[str] = {
     # Gitingest
     "digest.txt",
 }
+
+
+def load_gitignore_patterns(root: Path) -> Set[str]:
+    """
+    Recursively load ignore patterns from all .gitignore files under the given root directory.
+
+    Parameters
+    ----------
+    root : Path
+        The root directory to search for .gitignore files.
+
+    Returns
+    -------
+    Set[str]
+        A set of ignore patterns extracted from all .gitignore files found under the root directory.
+    """
+    patterns = set()
+    for dirpath, _, filenames in os.walk(root):
+        if ".gitignore" in filenames:
+            gitignore_path = Path(dirpath) / ".gitignore"
+            with gitignore_path.open("r", encoding="utf-8") as f:
+                for line in f:
+                    stripped = line.strip()
+                    # Skip empty lines and comments
+                    if stripped and not stripped.startswith("#"):
+                        # Skip the global wildcard pattern if you don't intend to ignore everything
+                        if stripped == "*":
+                            continue
+                        if stripped.startswith("/"):
+                            rel_dir = os.path.relpath(dirpath, root)
+                            pattern = os.path.join(rel_dir, stripped.lstrip("/"))
+                            pattern = pattern.replace("\\", "/")
+                        else:
+                            pattern = stripped
+                        patterns.add(pattern)
+    return patterns
