@@ -70,16 +70,18 @@ This will write the digest in a text file (default `digest.txt`) in your current
 You can provide a Personal Access Token (PAT) to clone private repositories from supported platforms (GitHub, GitLab, Codeberg, Bitbucket).
 **Important:** This token is used **only** for the clone operation and is **never stored or logged** by Gitingest.
 
-1.  **Generate a Token:** Go to your Git provider's settings (e.g., GitHub Developer settings) and generate a Personal Access Token. Grant it the minimum required scope, which is typically read access to repositories (e.g., `repo` scope on GitHub, `read_repository` on GitLab).
-2.  **Use the Token (CLI):** Pass the token using the `--access-token` option:
-    ```bash
-    gitingest https://github.com/your-user/your-private-repo --access-token YOUR_TOKEN
-    gitingest https://gitlab.com/your-group/your-private-repo --access-token YOUR_TOKEN
-    ```
-    *Security Note:* Be mindful of your shell history when passing tokens directly on the command line.
-3.  **Use the Token (Web UI):** Paste the token into the "Access Token (Optional, for private repos)" field on [gitingest.com](https://gitingest.com) or your self-hosted instance.
+1. **Generate a Token:** Go to your Git provider's settings (e.g., GitHub Developer settings) and generate a Personal Access Token. Grant it the minimum required scope, which is typically read access to repositories (e.g., `repo` scope on GitHub, `read_repository` on GitLab).
+2. **Use the Token (CLI):** Pass the token using the `--access-token` option:
 
-*Note: If using a token with an unsupported Git host, the token will be ignored.* 
+   ```bash
+   gitingest https://github.com/your-user/your-private-repo --access-token YOUR_TOKEN
+   gitingest https://gitlab.com/your-group/your-private-repo --access-token YOUR_TOKEN
+   ```
+
+   *Security Note:* Be mindful of your shell history when passing tokens directly on the command line.
+3. **Use the Token (Web UI):** Paste the token into the "Access Token (Optional, for private repos)" field on [gitingest.com](https://gitingest.com) or your self-hosted instance.
+
+*Note: If using a token with an unsupported Git host, the token will be ignored.*
 
 ## 🐍 Python package usage
 
@@ -93,7 +95,7 @@ summary, tree, content = ingest(\"https://github.com/cyclotruc/gitingest\")
 
 # Private repo with token
 summary, tree, content = ingest(
-    \"https://github.com/your-user/your-private-repo\", 
+    \"https://github.com/your-user/your-private-repo\",
     access_token=\"YOUR_TOKEN\"
 )
 ```
@@ -124,7 +126,7 @@ summary, tree, content = await ingest_async(\"path/to/directory\")
 
 # Private repo with token (use await directly in Jupyter)
 summary, tree, content = await ingest_async(
-    \"https://github.com/your-user/your-private-repo\", 
+    \"https://github.com/your-user/your-private-repo\",
     access_token=\"YOUR_TOKEN\"
 )
 ```

@@ -1,8 +1,9 @@
 """This module defines the dynamic router for handling dynamic path requests."""
 
+from typing import Optional
+
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse
-from typing import Optional
 
 from server.query_processor import process_query
 from server.server_config import templates
@@ -71,6 +72,8 @@ async def process_catch_all(
         The type of pattern used for the query, specified by the user.
     pattern : str
         The pattern string used in the query, specified by the user.
+    access_token : Optional[str]
+        Access token for private repositories (optional).
 
     Returns
     -------

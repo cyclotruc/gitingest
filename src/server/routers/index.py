@@ -1,8 +1,9 @@
 """This module defines the FastAPI router for the home page of the application."""
 
+from typing import Optional
+
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse
-from typing import Optional
 
 from server.query_processor import process_query
 from server.server_config import EXAMPLE_REPOS, templates
@@ -69,6 +70,8 @@ async def index_post(
         The type of pattern used for the query, specified by the user.
     pattern : str
         The pattern string used in the query, specified by the user.
+    access_token : Optional[str]
+        Access token for private repositories (optional).
 
     Returns
     -------

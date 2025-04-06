@@ -13,6 +13,7 @@ from server.server_config import EXAMPLE_REPOS, MAX_DISPLAY_SIZE, templates
 from server.server_utils import Colors, log_slider_to_size
 
 
+# pylint: disable=too-many-branches
 async def process_query(
     request: Request,
     input_text: str,
@@ -102,17 +103,17 @@ async def process_query(
             print(f"{Colors.RED}{exc}{Colors.END}")
 
         error_message = str(exc)
-        user_facing_error = f"An unexpected error occurred: {error_message}" # Default
+        user_facing_error = f"An unexpected error occurred: {error_message}"  # Default
 
         # Check for specific, common errors to provide better messages
         if isinstance(exc, ValueError) and "Repository not found or inaccessible" in error_message:
-            user_facing_error = error_message # Use the specific message from cloning.py
+            user_facing_error = error_message  # Use the specific message from cloning.py
         elif isinstance(exc, RuntimeError) and "Authentication failed" in error_message:
             user_facing_error = "Authentication failed. Please check your token and repository permissions."
         elif isinstance(exc, RuntimeError) and "could not read Username" in error_message:
-             user_facing_error = "Authentication failed. Please check your token and repository permissions."
+            user_facing_error = "Authentication failed. Please check your token and repository permissions."
         elif isinstance(exc, TimeoutError) or "timed out" in error_message:
-             user_facing_error = "Cloning timed out. The repository might be too large or the network slow."
+            user_facing_error = "Cloning timed out. The repository might be too large or the network slow."
         elif isinstance(exc, ValueError) and "Invalid repository URL" in error_message:
             user_facing_error = "Invalid repository URL format."
         elif isinstance(exc, FileNotFoundError):
@@ -149,7 +150,9 @@ async def process_query(
     return template_response(context=context)
 
 
-def _print_query(url: str, max_file_size: int, pattern_type: str, pattern: str, access_token: Optional[str] = None) -> None:
+def _print_query(
+    url: str, max_file_size: int, pattern_type: str, pattern: str, access_token: Optional[str] = None
+) -> None:
     """
     Print a formatted summary of the query details, including the URL, file size,
     and pattern information, for easier debugging or logging.
@@ -179,7 +182,9 @@ def _print_query(url: str, max_file_size: int, pattern_type: str, pattern: str, 
         print(f" | {Colors.YELLOW}Token: [REDACTED]{Colors.END}", end="")
 
 
-def _print_error(url: str, e: Exception, max_file_size: int, pattern_type: str, pattern: str, access_token: Optional[str] = None) -> None:
+def _print_error(
+    url: str, e: Exception, max_file_size: int, pattern_type: str, pattern: str, access_token: Optional[str] = None
+) -> None:
     """
     Print a formatted error message including the URL, file size, pattern details, and the exception encountered,
     for debugging or logging purposes.
@@ -204,7 +209,9 @@ def _print_error(url: str, e: Exception, max_file_size: int, pattern_type: str, 
     print(f" | {Colors.RED}{e}{Colors.END}")
 
 
-def _print_success(url: str, max_file_size: int, pattern_type: str, pattern: str, summary: str, access_token: Optional[str] = None) -> None:
+def _print_success(
+    url: str, max_file_size: int, pattern_type: str, pattern: str, summary: str, access_token: Optional[str] = None
+) -> None:
     """
     Print a formatted success message, including the URL, file size, pattern details, and a summary with estimated
     tokens, for debugging or logging purposes.

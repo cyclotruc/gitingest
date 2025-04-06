@@ -12,16 +12,19 @@ from gitingest.utils.timeout_wrapper import async_timeout
 TIMEOUT: int = 60
 
 # Known hosts and their token authentication methods (add more as needed)
-# Method: 'prefix' (https://<token>@host/...), 'oauth2' (https://oauth2:<token>@host/...), 'user' (<user>:<token>@host - requires username, not implemented)
+# Method: 'prefix' (https://<token>@host/...),
+#         'oauth2' (https://oauth2:<token>@host/...),
+#         'user' (<user>:<token>@host - requires username, not implemented)
 KNOWN_HOST_AUTH = {
     "github.com": {"method": "prefix"},
     "gitlab.com": {"method": "oauth2"},
-    "codeberg.org": {"method": "prefix"}, # Gitea instances often use prefix
-    "bitbucket.org": {"method": "prefix", "user": "x-token-auth"}, # Bitbucket uses x-token-auth:<token>
+    "codeberg.org": {"method": "prefix"},  # Gitea instances often use prefix
+    "bitbucket.org": {"method": "prefix", "user": "x-token-auth"},  # Bitbucket uses x-token-auth:<token>
 }
 
 
 @async_timeout(TIMEOUT)
+# pylint: disable=too-many-branches, too-many-statements
 async def clone_repo(config: CloneConfig, access_token: Optional[str] = None) -> None:
     """
     Clone a repository to a local path based on the provided configuration.
@@ -79,7 +82,7 @@ async def clone_repo(config: CloneConfig, access_token: Optional[str] = None) ->
                     auth_url = url.replace("https://", f"https://oauth2:{access_token}@")
                 # Add other methods if needed
 
-                should_skip_check = True # Skip check if token is provided for a known host
+                should_skip_check = True  # Skip check if token is provided for a known host
 
         except Exception as e:
             # Ignore parsing errors, proceed with original URL

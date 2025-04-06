@@ -507,7 +507,7 @@ async def test_clone_private_repo_with_invalid_token(mocker, capsys) -> None:
     # Mock run_command to simulate auth failure
     mock_exec = mocker.patch(
         "gitingest.cloning.run_command",
-        side_effect=RuntimeError(f"Command failed: git clone ... {auth_url} ...\\nError: {error_message}")
+        side_effect=RuntimeError(f"Command failed: git clone ... {auth_url} ...\\nError: {error_message}"),
     )
 
     with pytest.raises(RuntimeError, match=error_message):
@@ -555,17 +555,17 @@ async def test_clone_non_github_repo_with_token(mocker) -> None:
     """
     token = "gitlab_TokenValue12345"
     url = "https://gitlab.com/public/repo"
-    auth_url = f"https://oauth2:{token}@gitlab.com/public/repo" # GitLab format
+    auth_url = f"https://oauth2:{token}@gitlab.com/public/repo"  # GitLab format
     clone_config = CloneConfig(url=url, local_path="/tmp/gitlab-repo")
 
     mock_check = mocker.patch("gitingest.cloning.check_repo_exists")
     mock_exec = mocker.patch("gitingest.cloning.run_command", new_callable=AsyncMock)
 
-    await clone_repo(clone_config, access_token=token) # Use access_token
+    await clone_repo(clone_config, access_token=token)  # Use access_token
 
-    mock_check.assert_not_called() # check_repo_exists should be skipped for known host w/ token
+    mock_check.assert_not_called()  # check_repo_exists should be skipped for known host w/ token
     mock_exec.assert_called_once_with(
-        "git", "clone", "--single-branch", "--depth=1", auth_url, clone_config.local_path # Use GitLab auth URL
+        "git", "clone", "--single-branch", "--depth=1", auth_url, clone_config.local_path  # Use GitLab auth URL
     )
 
 
@@ -622,7 +622,7 @@ async def test_clone_unknown_host_with_token(mocker) -> None:
 
     await clone_repo(clone_config, access_token=token)
 
-    mock_check.assert_called_once_with(url) # Existence check should be called
+    mock_check.assert_called_once_with(url)  # Existence check should be called
     mock_exec.assert_called_once_with(
-        "git", "clone", "--single-branch", "--depth=1", url, clone_config.local_path # URL unchanged
+        "git", "clone", "--single-branch", "--depth=1", url, clone_config.local_path  # URL unchanged
     )
