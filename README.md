@@ -50,6 +50,7 @@ scoop install pipx
 ```
 
 If you are using pipx for the first time, run:
+
 ```bash
 pipx ensurepath
 ```
