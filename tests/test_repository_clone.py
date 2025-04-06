@@ -18,7 +18,7 @@ from gitingest.utils.exceptions import AsyncTimeoutError
 
 
 @pytest.mark.asyncio
-async def test_clone_with_commit() -> None:
+async def test_clone_with_commit(mocker) -> None:
     """
     Test cloning a repository with a specific commit hash.
 
@@ -33,20 +33,20 @@ async def test_clone_with_commit() -> None:
         branch="main",
     )
 
-    with patch("gitingest.cloning.check_repo_exists", return_value=True) as mock_check:
-        with patch("gitingest.cloning.run_command", new_callable=AsyncMock) as mock_exec:
-            mock_process = AsyncMock()
-            mock_process.communicate.return_value = (b"output", b"error")
-            mock_exec.return_value = mock_process
+    mock_check = mocker.patch("gitingest.cloning.check_repo_exists", return_value=True)
+    mock_exec = mocker.patch("gitingest.cloning.run_command", new_callable=AsyncMock)
+    mock_process = AsyncMock()
+    mock_process.communicate.return_value = (b"output", b"error")
+    mock_exec.return_value = mock_process
 
-            await clone_repo(clone_config)
+    await clone_repo(clone_config)
 
-            mock_check.assert_called_once_with(clone_config.url)
-            assert mock_exec.call_count == 2  # Clone and checkout calls
+    mock_check.assert_called_once_with(clone_config.url)
+    assert mock_exec.call_count == 2  # Clone and checkout calls
 
 
 @pytest.mark.asyncio
-async def test_clone_without_commit() -> None:
+async def test_clone_without_commit(mocker) -> None:
     """
     Test cloning a repository when no commit hash is provided.
 
@@ -61,20 +61,20 @@ async def test_clone_without_commit() -> None:
         branch="main",
     )
 
-    with patch("gitingest.cloning.check_repo_exists", return_value=True) as mock_check:
-        with patch("gitingest.cloning.run_command", new_callable=AsyncMock) as mock_exec:
-            mock_process = AsyncMock()
-            mock_process.communicate.return_value = (b"output", b"error")
-            mock_exec.return_value = mock_process
+    mock_check = mocker.patch("gitingest.cloning.check_repo_exists", return_value=True)
+    mock_exec = mocker.patch("gitingest.cloning.run_command", new_callable=AsyncMock)
+    mock_process = AsyncMock()
+    mock_process.communicate.return_value = (b"output", b"error")
+    mock_exec.return_value = mock_process
 
-            await clone_repo(query)
+    await clone_repo(query)
 
-            mock_check.assert_called_once_with(query.url)
-            assert mock_exec.call_count == 1  # Only clone call
+    mock_check.assert_called_once_with(query.url)
+    assert mock_exec.call_count == 1  # Only clone call
 
 
 @pytest.mark.asyncio
-async def test_clone_nonexistent_repository() -> None:
+async def test_clone_nonexistent_repository(mocker) -> None:
     """
     Test cloning a nonexistent repository URL.
 
@@ -88,11 +88,11 @@ async def test_clone_nonexistent_repository() -> None:
         commit=None,
         branch="main",
     )
-    with patch("gitingest.cloning.check_repo_exists", return_value=False) as mock_check:
-        with pytest.raises(ValueError, match="Repository not found"):
-            await clone_repo(clone_config)
+    mock_check = mocker.patch("gitingest.cloning.check_repo_exists", return_value=False)
+    with pytest.raises(ValueError, match="Repository not found or inaccessible"):
+        await clone_repo(clone_config)
 
-            mock_check.assert_called_once_with(clone_config.url)
+        mock_check.assert_called_once_with(clone_config.url)
 
 
 @pytest.mark.asyncio
@@ -127,7 +127,7 @@ async def test_check_repo_exists(mock_stdout: bytes, return_code: int, expected:
 
 
 @pytest.mark.asyncio
-async def test_clone_with_custom_branch() -> None:
+async def test_clone_with_custom_branch(mocker) -> None:
     """
     Test cloning a repository with a specified custom branch.
 
@@ -136,24 +136,24 @@ async def test_clone_with_custom_branch() -> None:
     Then the repository should be cloned shallowly to that branch.
     """
     clone_config = CloneConfig(url="https://github.com/user/repo", local_path="/tmp/repo", branch="feature-branch")
-    with patch("gitingest.cloning.check_repo_exists", return_value=True):
-        with patch("gitingest.cloning.run_command", new_callable=AsyncMock) as mock_exec:
-            await clone_repo(clone_config)
+    mocker.patch("gitingest.cloning.check_repo_exists", return_value=True)
+    mock_exec = mocker.patch("gitingest.cloning.run_command", new_callable=AsyncMock)
+    await clone_repo(clone_config)
 
-            mock_exec.assert_called_once_with(
-                "git",
-                "clone",
-                "--single-branch",
-                "--depth=1",
-                "--branch",
-                "feature-branch",
-                clone_config.url,
-                clone_config.local_path,
-            )
+    mock_exec.assert_called_once_with(
+        "git",
+        "clone",
+        "--single-branch",
+        "--depth=1",
+        "--branch",
+        "feature-branch",
+        clone_config.url,
+        clone_config.local_path,
+    )
 
 
 @pytest.mark.asyncio
-async def test_git_command_failure() -> None:
+async def test_git_command_failure(mocker) -> None:
     """
     Test cloning when the Git command fails during execution.
 
@@ -165,14 +165,14 @@ async def test_git_command_failure() -> None:
         url="https://github.com/user/repo",
         local_path="/tmp/repo",
     )
-    with patch("gitingest.cloning.check_repo_exists", return_value=True):
-        with patch("gitingest.cloning.run_command", side_effect=RuntimeError("Git command failed")):
-            with pytest.raises(RuntimeError, match="Git command failed"):
-                await clone_repo(clone_config)
+    mocker.patch("gitingest.cloning.check_repo_exists", return_value=True)
+    mocker.patch("gitingest.cloning.run_command", side_effect=RuntimeError("Git command failed"))
+    with pytest.raises(RuntimeError, match="Git command failed"):
+        await clone_repo(clone_config)
 
 
 @pytest.mark.asyncio
-async def test_clone_default_shallow_clone() -> None:
+async def test_clone_default_shallow_clone(mocker) -> None:
     """
     Test cloning a repository with the default shallow clone options.
 
@@ -185,22 +185,22 @@ async def test_clone_default_shallow_clone() -> None:
         local_path="/tmp/repo",
     )
 
-    with patch("gitingest.cloning.check_repo_exists", return_value=True):
-        with patch("gitingest.cloning.run_command", new_callable=AsyncMock) as mock_exec:
-            await clone_repo(clone_config)
+    mocker.patch("gitingest.cloning.check_repo_exists", return_value=True)
+    mock_exec = mocker.patch("gitingest.cloning.run_command", new_callable=AsyncMock)
+    await clone_repo(clone_config)
 
-            mock_exec.assert_called_once_with(
-                "git",
-                "clone",
-                "--single-branch",
-                "--depth=1",
-                clone_config.url,
-                clone_config.local_path,
-            )
+    mock_exec.assert_called_once_with(
+        "git",
+        "clone",
+        "--single-branch",
+        "--depth=1",
+        clone_config.url,
+        clone_config.local_path,
+    )
 
 
 @pytest.mark.asyncio
-async def test_clone_commit_without_branch() -> None:
+async def test_clone_commit_without_branch(mocker) -> None:
     """
     Test cloning when a commit hash is provided but no branch is specified.
 
@@ -213,13 +213,13 @@ async def test_clone_commit_without_branch() -> None:
         local_path="/tmp/repo",
         commit="a" * 40,  # Simulating a valid commit hash
     )
-    with patch("gitingest.cloning.check_repo_exists", return_value=True):
-        with patch("gitingest.cloning.run_command", new_callable=AsyncMock) as mock_exec:
-            await clone_repo(clone_config)
+    mocker.patch("gitingest.cloning.check_repo_exists", return_value=True)
+    mock_exec = mocker.patch("gitingest.cloning.run_command", new_callable=AsyncMock)
+    await clone_repo(clone_config)
 
-            assert mock_exec.call_count == 2  # Clone and checkout calls
-            mock_exec.assert_any_call("git", "clone", "--single-branch", clone_config.url, clone_config.local_path)
-            mock_exec.assert_any_call("git", "-C", clone_config.local_path, "checkout", clone_config.commit)
+    assert mock_exec.call_count == 2  # Clone and checkout calls
+    mock_exec.assert_any_call("git", "clone", "--single-branch", clone_config.url, clone_config.local_path)
+    mock_exec.assert_any_call("git", "-C", clone_config.local_path, "checkout", clone_config.commit)
 
 
 @pytest.mark.asyncio
@@ -448,3 +448,181 @@ async def test_clone_with_commit_and_subpath() -> None:
             )
 
             assert mock_exec.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_clone_public_repo_with_token(mocker) -> None:
+    """
+    Test cloning a public repo with a token. check_repo_exists should be skipped.
+    """
+    token = "ghp_TestTokenValue12345"
+    url = "https://github.com/public/repo"
+    auth_url = f"https://{token}@github.com/public/repo"
+    clone_config = CloneConfig(url=url, local_path="/tmp/repo")
+
+    mock_check = mocker.patch("gitingest.cloning.check_repo_exists")
+    mock_exec = mocker.patch("gitingest.cloning.run_command", new_callable=AsyncMock)
+
+    await clone_repo(clone_config, access_token=token)
+
+    mock_check.assert_not_called()
+    mock_exec.assert_called_once_with(
+        "git", "clone", "--single-branch", "--depth=1", auth_url, clone_config.local_path
+    )
+
+
+@pytest.mark.asyncio
+async def test_clone_private_repo_with_valid_token(mocker) -> None:
+    """
+    Test cloning a private repo with a valid token.
+    """
+    token = "ghp_ValidPrivateToken123"
+    url = "https://github.com/private/repo"
+    auth_url = f"https://{token}@github.com/private/repo"
+    clone_config = CloneConfig(url=url, local_path="/tmp/private-repo")
+
+    mock_check = mocker.patch("gitingest.cloning.check_repo_exists")
+    mock_exec = mocker.patch("gitingest.cloning.run_command", new_callable=AsyncMock)
+
+    await clone_repo(clone_config, access_token=token)
+
+    mock_check.assert_not_called()
+    mock_exec.assert_called_once_with(
+        "git", "clone", "--single-branch", "--depth=1", auth_url, clone_config.local_path
+    )
+
+
+@pytest.mark.asyncio
+async def test_clone_private_repo_with_invalid_token(mocker, capsys) -> None:
+    """
+    Test cloning a private repo with an invalid token raises RuntimeError and doesn't log token.
+    """
+    token = "ghp_InvalidToken987"
+    url = "https://github.com/private/repo"
+    auth_url = f"https://{token}@github.com/private/repo"
+    clone_config = CloneConfig(url=url, local_path="/tmp/private-repo-fail")
+    error_message = "Authentication failed"
+
+    mock_check = mocker.patch("gitingest.cloning.check_repo_exists")
+    # Mock run_command to simulate auth failure
+    mock_exec = mocker.patch(
+        "gitingest.cloning.run_command",
+        side_effect=RuntimeError(f"Command failed: git clone ... {auth_url} ...\\nError: {error_message}")
+    )
+
+    with pytest.raises(RuntimeError, match=error_message):
+        await clone_repo(clone_config, access_token=token)
+
+    mock_check.assert_not_called()
+    mock_exec.assert_called_once_with(
+        "git", "clone", "--single-branch", "--depth=1", auth_url, clone_config.local_path
+    )
+
+    # Check that the token is not in the captured output (from the RuntimeError)
+    captured = capsys.readouterr()
+    assert token not in captured.out
+    assert token not in captured.err
+    # Ensure the auth_url itself isn't printed verbatim in the error
+    assert auth_url not in captured.out
+    assert auth_url not in captured.err
+
+
+@pytest.mark.asyncio
+async def test_clone_private_repo_without_token(mocker) -> None:
+    """
+    Test cloning a private repo without a token raises ValueError.
+    """
+    url = "https://github.com/private/repo-no-token"
+    clone_config = CloneConfig(url=url, local_path="/tmp/private-repo-no-token")
+
+    # Mock check_repo_exists to return False, as it would for a private repo
+    mock_check = mocker.patch("gitingest.cloning.check_repo_exists", return_value=False)
+    mock_exec = mocker.patch("gitingest.cloning.run_command", new_callable=AsyncMock)
+
+    with pytest.raises(ValueError, match="Repository not found or inaccessible. If private, provide a token."):
+        await clone_repo(clone_config, access_token=None)
+
+    mock_check.assert_called_once_with(url)
+    mock_exec.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_clone_non_github_repo_with_token(mocker) -> None:
+    """
+    Test cloning a non-GitHub repo with a token.
+    The URL should be modified for known hosts (GitLab, Bitbucket, Codeberg).
+    The existence check should be skipped.
+    """
+    token = "gitlab_TokenValue12345"
+    url = "https://gitlab.com/public/repo"
+    auth_url = f"https://oauth2:{token}@gitlab.com/public/repo" # GitLab format
+    clone_config = CloneConfig(url=url, local_path="/tmp/gitlab-repo")
+
+    mock_check = mocker.patch("gitingest.cloning.check_repo_exists")
+    mock_exec = mocker.patch("gitingest.cloning.run_command", new_callable=AsyncMock)
+
+    await clone_repo(clone_config, access_token=token) # Use access_token
+
+    mock_check.assert_not_called() # check_repo_exists should be skipped for known host w/ token
+    mock_exec.assert_called_once_with(
+        "git", "clone", "--single-branch", "--depth=1", auth_url, clone_config.local_path # Use GitLab auth URL
+    )
+
+
+@pytest.mark.asyncio
+async def test_clone_bitbucket_repo_with_token(mocker) -> None:
+    """Test cloning a Bitbucket repo with a token."""
+    token = "bitbucket_token_xyz"
+    url = "https://bitbucket.org/team/repo"
+    auth_url = f"https://x-token-auth:{token}@bitbucket.org/team/repo"
+    clone_config = CloneConfig(url=url, local_path="/tmp/bitbucket-repo")
+
+    mock_check = mocker.patch("gitingest.cloning.check_repo_exists")
+    mock_exec = mocker.patch("gitingest.cloning.run_command", new_callable=AsyncMock)
+
+    await clone_repo(clone_config, access_token=token)
+
+    mock_check.assert_not_called()
+    mock_exec.assert_called_once_with(
+        "git", "clone", "--single-branch", "--depth=1", auth_url, clone_config.local_path
+    )
+
+
+@pytest.mark.asyncio
+async def test_clone_codeberg_repo_with_token(mocker) -> None:
+    """Test cloning a Codeberg repo with a token."""
+    token = "codeberg_token_abc"
+    url = "https://codeberg.org/user/repo"
+    auth_url = f"https://{token}@codeberg.org/user/repo"
+    clone_config = CloneConfig(url=url, local_path="/tmp/codeberg-repo")
+
+    mock_check = mocker.patch("gitingest.cloning.check_repo_exists")
+    mock_exec = mocker.patch("gitingest.cloning.run_command", new_callable=AsyncMock)
+
+    await clone_repo(clone_config, access_token=token)
+
+    mock_check.assert_not_called()
+    mock_exec.assert_called_once_with(
+        "git", "clone", "--single-branch", "--depth=1", auth_url, clone_config.local_path
+    )
+
+
+@pytest.mark.asyncio
+async def test_clone_unknown_host_with_token(mocker) -> None:
+    """
+    Test cloning an unknown host with a token.
+    The URL should NOT be modified, and existence check should NOT be skipped.
+    """
+    token = "some_token"
+    url = "https://mygitserver.com/user/repo"
+    clone_config = CloneConfig(url=url, local_path="/tmp/unknown-repo")
+
+    mock_check = mocker.patch("gitingest.cloning.check_repo_exists", return_value=True)
+    mock_exec = mocker.patch("gitingest.cloning.run_command", new_callable=AsyncMock)
+
+    await clone_repo(clone_config, access_token=token)
+
+    mock_check.assert_called_once_with(url) # Existence check should be called
+    mock_exec.assert_called_once_with(
+        "git", "clone", "--single-branch", "--depth=1", url, clone_config.local_path # URL unchanged
+    )

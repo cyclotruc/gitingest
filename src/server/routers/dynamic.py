@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse
+from typing import Optional
 
 from server.query_processor import process_query
 from server.server_config import templates
@@ -50,6 +51,7 @@ async def process_catch_all(
     max_file_size: int = Form(...),
     pattern_type: str = Form(...),
     pattern: str = Form(...),
+    access_token: Optional[str] = Form(None),
 ) -> HTMLResponse:
     """
     Process the form submission with user input for query parameters.
@@ -83,4 +85,5 @@ async def process_catch_all(
         pattern_type,
         pattern,
         is_index=False,
+        access_token=access_token,
     )

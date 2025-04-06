@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse
+from typing import Optional
 
 from server.query_processor import process_query
 from server.server_config import EXAMPLE_REPOS, templates
@@ -47,6 +48,7 @@ async def index_post(
     max_file_size: int = Form(...),
     pattern_type: str = Form(...),
     pattern: str = Form(...),
+    access_token: Optional[str] = Form(None),
 ) -> HTMLResponse:
     """
     Process the form submission with user input for query parameters.
@@ -81,4 +83,5 @@ async def index_post(
         pattern_type,
         pattern,
         is_index=True,
+        access_token=access_token,
     )

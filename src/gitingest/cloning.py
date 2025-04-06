@@ -3,6 +3,7 @@
 import os
 from pathlib import Path
 from typing import Optional
+from urllib.parse import urlparse
 
 from gitingest.schemas import CloneConfig
 from gitingest.utils.git_utils import check_repo_exists, ensure_git_installed, run_command
@@ -10,9 +11,18 @@ from gitingest.utils.timeout_wrapper import async_timeout
 
 TIMEOUT: int = 60
 
+# Known hosts and their token authentication methods (add more as needed)
+# Method: 'prefix' (https://<token>@host/...), 'oauth2' (https://oauth2:<token>@host/...), 'user' (<user>:<token>@host - requires username, not implemented)
+KNOWN_HOST_AUTH = {
+    "github.com": {"method": "prefix"},
+    "gitlab.com": {"method": "oauth2"},
+    "codeberg.org": {"method": "prefix"}, # Gitea instances often use prefix
+    "bitbucket.org": {"method": "prefix", "user": "x-token-auth"}, # Bitbucket uses x-token-auth:<token>
+}
+
 
 @async_timeout(TIMEOUT)
-async def clone_repo(config: CloneConfig) -> None:
+async def clone_repo(config: CloneConfig, access_token: Optional[str] = None) -> None:
     """
     Clone a repository to a local path based on the provided configuration.
 
@@ -24,6 +34,8 @@ async def clone_repo(config: CloneConfig) -> None:
     ----------
     config : CloneConfig
         The configuration for cloning the repository.
+    access_token : str, optional
+        Access token for private repositories (optional).
 
     Raises
     ------
@@ -46,9 +58,37 @@ async def clone_repo(config: CloneConfig) -> None:
     except OSError as exc:
         raise OSError(f"Failed to create parent directory {parent_dir}: {exc}") from exc
 
-    # Check if the repository exists
-    if not await check_repo_exists(url):
-        raise ValueError("Repository not found, make sure it is public")
+    # Construct authenticated URL based on host if token is provided
+    auth_url = url
+    should_skip_check = False
+    if access_token:
+        try:
+            parsed_url = urlparse(url)
+            hostname = parsed_url.netloc.lower()
+            host_info = KNOWN_HOST_AUTH.get(hostname)
+
+            if host_info:
+                method = host_info["method"]
+                if method == "prefix":
+                    user = host_info.get("user")
+                    if user:
+                        auth_url = url.replace("https://", f"https://{user}:{access_token}@")
+                    else:
+                        auth_url = url.replace("https://", f"https://{access_token}@")
+                elif method == "oauth2":
+                    auth_url = url.replace("https://", f"https://oauth2:{access_token}@")
+                # Add other methods if needed
+
+                should_skip_check = True # Skip check if token is provided for a known host
+
+        except Exception as e:
+            # Ignore parsing errors, proceed with original URL
+            print(f"Warning: Could not parse URL '{url}' for token auth: {e}")
+
+    # Skip existence check only if token is provided for a known host type
+    if not should_skip_check:
+        if not await check_repo_exists(url):
+            raise ValueError("Repository not found or inaccessible. If private, provide a token.")
 
     clone_cmd = ["git", "clone", "--single-branch"]
     # TODO re-enable --recurse-submodules
@@ -61,7 +101,7 @@ async def clone_repo(config: CloneConfig) -> None:
         if branch and branch.lower() not in ("main", "master"):
             clone_cmd += ["--branch", branch]
 
-    clone_cmd += [url, local_path]
+    clone_cmd += [auth_url, local_path]
 
     # Clone the repository
     await ensure_git_installed()

@@ -1,6 +1,7 @@
 """Process a query by parsing input, cloning a repository, and generating a summary."""
 
 from functools import partial
+from typing import Optional
 
 from fastapi import Request
 from starlette.templating import _TemplateResponse
@@ -19,6 +20,7 @@ async def process_query(
     pattern_type: str = "exclude",
     pattern: str = "",
     is_index: bool = False,
+    access_token: Optional[str] = None,
 ) -> _TemplateResponse:
     """
     Process a query by parsing input, cloning a repository, and generating a summary.
@@ -40,6 +42,8 @@ async def process_query(
         Pattern to include or exclude in the query, depending on the pattern type.
     is_index : bool
         Flag indicating whether the request is for the index page (default is False).
+    access_token : str, optional
+        Access token for private repositories (optional).
 
     Returns
     -------
@@ -85,23 +89,36 @@ async def process_query(
             raise ValueError("The 'url' parameter is required.")
 
         clone_config = query.extract_clone_config()
-        await clone_repo(clone_config)
+        await clone_repo(clone_config, access_token=access_token)
         summary, tree, content = ingest_query(query)
         with open(f"{clone_config.local_path}.txt", "w", encoding="utf-8") as f:
             f.write(tree + "\n" + content)
     except Exception as exc:
         # hack to print error message when query is not defined
         if "query" in locals() and query is not None and isinstance(query, dict):
-            _print_error(query["url"], exc, max_file_size, pattern_type, pattern)
+            _print_error(query["url"], exc, max_file_size, pattern_type, pattern, access_token)
         else:
             print(f"{Colors.BROWN}WARN{Colors.END}: {Colors.RED}<-  {Colors.END}", end="")
             print(f"{Colors.RED}{exc}{Colors.END}")
 
-        context["error_message"] = f"Error: {exc}"
-        if "405" in str(exc):
-            context["error_message"] = (
-                "Repository not found. Please make sure it is public (private repositories will be supported soon)"
-            )
+        error_message = str(exc)
+        user_facing_error = f"An unexpected error occurred: {error_message}" # Default
+
+        # Check for specific, common errors to provide better messages
+        if isinstance(exc, ValueError) and "Repository not found or inaccessible" in error_message:
+            user_facing_error = error_message # Use the specific message from cloning.py
+        elif isinstance(exc, RuntimeError) and "Authentication failed" in error_message:
+            user_facing_error = "Authentication failed. Please check your token and repository permissions."
+        elif isinstance(exc, RuntimeError) and "could not read Username" in error_message:
+             user_facing_error = "Authentication failed. Please check your token and repository permissions."
+        elif isinstance(exc, TimeoutError) or "timed out" in error_message:
+             user_facing_error = "Cloning timed out. The repository might be too large or the network slow."
+        elif isinstance(exc, ValueError) and "Invalid repository URL" in error_message:
+            user_facing_error = "Invalid repository URL format."
+        elif isinstance(exc, FileNotFoundError):
+            user_facing_error = "Ingestion failed: Cloned repository directory not found."
+
+        context["error_message"] = user_facing_error
         return template_response(context=context)
 
     if len(content) > MAX_DISPLAY_SIZE:
@@ -116,6 +133,7 @@ async def process_query(
         pattern_type=pattern_type,
         pattern=pattern,
         summary=summary,
+        access_token=access_token,
     )
 
     context.update(
@@ -131,7 +149,7 @@ async def process_query(
     return template_response(context=context)
 
 
-def _print_query(url: str, max_file_size: int, pattern_type: str, pattern: str) -> None:
+def _print_query(url: str, max_file_size: int, pattern_type: str, pattern: str, access_token: Optional[str] = None) -> None:
     """
     Print a formatted summary of the query details, including the URL, file size,
     and pattern information, for easier debugging or logging.
@@ -146,6 +164,8 @@ def _print_query(url: str, max_file_size: int, pattern_type: str, pattern: str) 
         Specifies the type of pattern to use, either "include" or "exclude".
     pattern : str
         The actual pattern string to include or exclude in the query.
+    access_token : str, optional
+        Access token (NOT logged for security).
     """
     print(f"{Colors.WHITE}{url:<20}{Colors.END}", end="")
     if int(max_file_size / 1024) != 50:
@@ -154,9 +174,12 @@ def _print_query(url: str, max_file_size: int, pattern_type: str, pattern: str) 
         print(f" | {Colors.YELLOW}Include {pattern}{Colors.END}", end="")
     elif pattern_type == "exclude" and pattern != "":
         print(f" | {Colors.YELLOW}Exclude {pattern}{Colors.END}", end="")
+    # Ensure token is never printed
+    if access_token:
+        print(f" | {Colors.YELLOW}Token: [REDACTED]{Colors.END}", end="")
 
 
-def _print_error(url: str, e: Exception, max_file_size: int, pattern_type: str, pattern: str) -> None:
+def _print_error(url: str, e: Exception, max_file_size: int, pattern_type: str, pattern: str, access_token: Optional[str] = None) -> None:
     """
     Print a formatted error message including the URL, file size, pattern details, and the exception encountered,
     for debugging or logging purposes.
@@ -173,13 +196,15 @@ def _print_error(url: str, e: Exception, max_file_size: int, pattern_type: str, 
         Specifies the type of pattern to use, either "include" or "exclude".
     pattern : str
         The actual pattern string to include or exclude in the query.
+    access_token : str, optional
+        Access token (NOT logged for security).
     """
     print(f"{Colors.BROWN}WARN{Colors.END}: {Colors.RED}<-  {Colors.END}", end="")
-    _print_query(url, max_file_size, pattern_type, pattern)
+    _print_query(url, max_file_size, pattern_type, pattern, access_token)
     print(f" | {Colors.RED}{e}{Colors.END}")
 
 
-def _print_success(url: str, max_file_size: int, pattern_type: str, pattern: str, summary: str) -> None:
+def _print_success(url: str, max_file_size: int, pattern_type: str, pattern: str, summary: str, access_token: Optional[str] = None) -> None:
     """
     Print a formatted success message, including the URL, file size, pattern details, and a summary with estimated
     tokens, for debugging or logging purposes.
@@ -196,8 +221,10 @@ def _print_success(url: str, max_file_size: int, pattern_type: str, pattern: str
         The actual pattern string to include or exclude in the query.
     summary : str
         A summary of the query result, including details like estimated tokens.
+    access_token : str, optional
+        Access token (NOT logged for security).
     """
     estimated_tokens = summary[summary.index("Estimated tokens:") + len("Estimated ") :]
     print(f"{Colors.GREEN}INFO{Colors.END}: {Colors.GREEN}<-  {Colors.END}", end="")
-    _print_query(url, max_file_size, pattern_type, pattern)
+    _print_query(url, max_file_size, pattern_type, pattern, access_token)
     print(f" | {Colors.PURPLE}{estimated_tokens}{Colors.END}")
