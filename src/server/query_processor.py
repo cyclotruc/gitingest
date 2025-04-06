@@ -1,6 +1,7 @@
 """Process a query by parsing input, cloning a repository, and generating a summary."""
 
 from functools import partial
+from typing import Optional
 
 from fastapi import Request
 from starlette.templating import _TemplateResponse
@@ -15,11 +16,11 @@ from server.server_utils import Colors, log_slider_to_size
 async def process_query(
     request: Request,
     input_text: str,
-    slider_position: int,
+    slider_position: float,
     pattern_type: str = "exclude",
     pattern: str = "",
     is_index: bool = False,
-    exact_file_size: str = None,
+    exact_file_size: Optional[str] = None,
 ) -> _TemplateResponse:
     """
     Process a query by parsing input, cloning a repository, and generating a summary.
@@ -33,7 +34,7 @@ async def process_query(
         The HTTP request object.
     input_text : str
         Input text provided by the user, typically a Git repository URL or slug.
-    slider_position : int
+    slider_position : float
         Position of the slider, representing the maximum file size in the query.
     pattern_type : str
         Type of pattern to use, either "include" or "exclude" (default is "exclude").
@@ -72,9 +73,9 @@ async def process_query(
             max_file_size = float(exact_file_size) * 1024
         except ValueError:
             # If conversion fails, fall back to slider position
-            max_file_size = log_slider_to_size(slider_position)
+            max_file_size = log_slider_to_size(int(slider_position))
     else:
-        max_file_size = log_slider_to_size(slider_position)
+        max_file_size = log_slider_to_size(int(slider_position))
 
     context = {
         "request": request,
@@ -137,7 +138,9 @@ async def process_query(
             "tree": tree,
             "content": content,
             "ingest_id": query.id,
-            "exact_file_size": exact_file_size,  # Pass the exact file size back to the template
+            "exact_file_size": (
+                exact_file_size if max_file_size < 1024 else max_file_size / 1024
+            ),  # Pass the exact file size back to the template
         }
     )
 
@@ -161,7 +164,7 @@ def _print_query(url: str, max_file_size: float, pattern_type: str, pattern: str
         The actual pattern string to include or exclude in the query.
     """
     print(f"{Colors.WHITE}{url:<20}{Colors.END}", end="")
-    if int(max_file_size / 1024) != 50:
+    if max_file_size / 1024 != 50.00:
         # Format with up to 2 decimal places for KB values
         kb_value = max_file_size / 1024
         # If it's a whole number, display as integer

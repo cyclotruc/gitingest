@@ -89,14 +89,15 @@
                     <div class="inline-block relative">
                         <input type="text"
                                id="size_value_input"
-                               class="w-16 font-bold bg-transparent border-b-2 border-gray-900 focus:outline-none text-center"
-                               value="{{ exact_file_size ~ 'kb' if exact_file_size else '50kb' }}"
-                               data-exact-value="{{ exact_file_size if exact_file_size else '' }}">
+                               class="w-24 font-bold bg-transparent border-b-2 border-gray-900 focus:outline-none text-center"
+                               value="{{ exact_file_size ~ 'kb' }}"
+                               data-exact-value="{{ exact_file_size }}">
                     </div>
                 </label>
                 <input type="range"
                        id="file_size"
                        name="max_file_size"
+                       step="any"
                        min="0"
                        max="500"
                        required

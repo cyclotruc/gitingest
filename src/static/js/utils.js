@@ -1,3 +1,7 @@
+const MAXP = 500;
+const MINV = Math.log(1);
+const MAXV = Math.log(102400);
+
 // Copy functionality
 function copyText(className) {
   let textToCopy;
@@ -57,6 +61,9 @@ function handleSubmit(event, showLoading = false) {
   // Update file size - check if we're using direct input or slider
   const slider = document.getElementById("file_size");
   const sizeValueInput = document.getElementById("size_value_input");
+
+  // Check if slider is being used
+  let isSliding = false;
 
   if (slider && sizeValueInput) {
     // Check if we have an exact value stored in the data attribute
@@ -189,13 +196,8 @@ function copyFullDigest() {
 
 // Add the logSliderToSize helper function
 function logSliderToSize(position) {
-  const minp = 0;
-  const maxp = 500;
-  const minv = Math.log(1);
-  const maxv = Math.log(102400);
-
-  const value = Math.exp(minv + (maxv - minv) * Math.pow(position / maxp, 1.5));
-  return Math.round(value);
+  const value = Math.exp(MINV + (MAXV - MINV) * Math.pow(position / MAXP, 1.5));
+  return value.toFixed(2);
 }
 
 // Move slider initialization to a separate function
@@ -203,101 +205,90 @@ function initializeSlider() {
   const slider = document.getElementById("file_size");
   const sizeValueInput = document.getElementById("size_value_input");
 
+  // Set initial value using the `default_file_size` from server passed to the slider
+  sizeValueInput.value = logSliderToSize(slider.value) + "kb";
+
   if (!slider || !sizeValueInput) return;
 
-  function updateSliderFromInput() {
-    // Parse the input value to extract the number and unit
-    const inputValue = sizeValueInput.value.trim();
-    const numericMatch = inputValue.match(/^(\d+(?:\.\d+)?)\s*(kb|mb|k|m|)$/i);
-
-    if (!numericMatch) {
-      // Reset to current slider value if invalid input
-      updateSliderUI();
-      return;
-    }
-
-    let value = parseFloat(numericMatch[1]);
-    const unit = numericMatch[2].toLowerCase();
-
-    // Convert to KB if necessary
-    if (unit === "m" || unit === "mb") {
-      value = value * 1024;
-    }
-
-    // Store the exact value as a data attribute for form submission
-    sizeValueInput.dataset.exactValue = value.toString();
-
-    // Find the slider position that corresponds to this KB value
-    // Inverse of the logSliderToSize function
-    const minv = Math.log(1);
-    const maxv = Math.log(102400);
-    const maxp = 500;
-
-    // Solve for position: value = exp(minv + (maxv - minv) * (position/maxp)^1.5)
-    // Taking log of both sides: log(value) = minv + (maxv - minv) * (position/maxp)^1.5
-    // Rearranging: (log(value) - minv) / (maxv - minv) = (position/maxp)^1.5
-    // Taking the 1/1.5 power of both sides: ((log(value) - minv) / (maxv - minv))^(1/1.5) = position/maxp
-    // Solving for position: position = maxp * ((log(value) - minv) / (maxv - minv))^(1/1.5)
-
-    const logValue = Math.log(value);
-    const position =
-      maxp * Math.pow((logValue - minv) / (maxv - minv), 1 / 1.5);
-
-    // Update slider value
-    slider.value = Math.min(Math.max(Math.round(position), 0), maxp);
-
-    // Update slider background without changing the input value
-    slider.style.backgroundSize = `${(slider.value / slider.max) * 100}% 100%`;
+  // Check if we have an exact value from server response
+  if (sizeValueInput.dataset.exactValue) {
+    const exactValue = parseFloat(sizeValueInput.dataset.exactValue);
+    setSliderPosition(exactValue);
   }
 
-  function updateSliderUI() {
-    const value = logSliderToSize(slider.value);
-
-    // Always update the exact value when slider changes
-    sizeValueInput.dataset.exactValue = value.toString();
-
-    // Format the size for display
-    const formattedSize = formatSize(value);
-
-    // Always update the input value when the slider changes
-    sizeValueInput.value = formattedSize;
-
-    // Update slider background
-    slider.style.backgroundSize = `${(slider.value / slider.max) * 100}% 100%`;
-  }
-
-  // Update on slider change
-  slider.addEventListener("input", function () {
-    updateSliderUI();
-  });
-
-  // Update on input field change
-  sizeValueInput.addEventListener("change", function () {
-    // Parse the input value to extract the number and unit
-    const inputValue = sizeValueInput.value.trim();
-    const numericMatch = inputValue.match(/^(\d+(?:\.\d+)?)\s*(kb|mb|k|m|)$/i);
+  // Extract numeric value from input
+  function extractNumericValue() {
+    const numericMatch = sizeValueInput.value
+      .trim()
+      .match(/^(\d+(?:\.\d+)?)\s*(kb|mb|k|m|)$/i);
 
     if (numericMatch) {
       let value = parseFloat(numericMatch[1]);
       const unit = numericMatch[2].toLowerCase();
 
-      // Convert to KB if necessary
+      // Convert to KB
       if (unit === "m" || unit === "mb") {
         value = value * 1024;
       }
-
-      // Store the exact value for form submission
-      sizeValueInput.dataset.exactValue = value.toString();
+      return value;
     }
+  }
+  // Add input change handler for direct edits
+  sizeValueInput.addEventListener("input", function () {
+    isSliding = false;
+    const value = extractNumericValue();
 
-    updateSliderFromInput();
+    // Update the exact value data attribute
+    this.dataset.exactValue = value;
   });
-  sizeValueInput.addEventListener("blur", updateSliderFromInput);
-  sizeValueInput.addEventListener("keydown", function (e) {
-    if (e.key === "Enter") {
-      updateSliderFromInput();
-      e.preventDefault();
+
+  // Helper function to set slider position
+  function setSliderPosition(value) {
+    const position =
+      MAXP * Math.pow((Math.log(value) - MINV) / (MAXV - MINV), 1 / 1.5);
+    slider.value = position;
+  }
+
+  // Listen for keydown with "Enter" key
+  sizeValueInput.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      const value = extractNumericValue();
+      setSliderPosition(value);
+      updateSliderUI();
     }
+  });
+  sizeValueInput.addEventListener("focusout", function (event) {
+    event.preventDefault();
+
+    const value = extractNumericValue();
+    setSliderPosition(value);
+    updateSliderUI();
+  });
+
+  function updateSliderUI() {
+    // Get the dataset value if it is set
+    let exactValue;
+    if (!isSliding) {
+      exactValue = sizeValueInput.dataset.exactValue;
+    } else {
+      exactValue = logSliderToSize(slider.value);
+    }
+
+    // Update input value
+    sizeValueInput.value =
+      exactValue < 1024
+        ? `${exactValue}kb`
+        : `${(exactValue / 1024).toFixed(2)}mb`;
+    sizeValueInput.dataset.exactValue = exactValue;
+    // Update slider background
+    slider.style.backgroundSize = `${(slider.value / slider.max) * 100}% 100%`;
+  }
+
+  // Remove input change handler to prevent interference with server value
+  slider.addEventListener("input", function () {
+    isSliding = true;
+    updateSliderUI();
   });
 
   // Initialize slider position
@@ -306,32 +297,18 @@ function initializeSlider() {
 
 // Add helper function for formatting size
 function formatSize(sizeInKB) {
-  // For slider-driven updates, always use the provided sizeInKB parameter
-  // and ignore the dataset.exactValue which is only for manual input tracking
+  // Convert to float to handle both string and number inputs
+  const value = parseFloat(sizeInKB);
 
   // Format based on size
-  if (sizeInKB >= 1024) {
-    const mbValue = sizeInKB / 1024;
-    // If it's a whole number, display as integer
-    if (mbValue === Math.floor(mbValue)) {
-      return mbValue + "mb";
-    }
-    // Otherwise limit to 2 decimal places for display
-    // Convert to fixed 2 decimal places
-    let formattedValue = mbValue.toFixed(2);
-    // Remove trailing zeros (e.g., 1.50 -> 1.5, 2.00 -> 2)
-    formattedValue = formattedValue.replace(/\.?0+$/, "");
-    return formattedValue + "mb";
+  if (value >= 1024) {
+    const mbValue = value / 1024;
+    // Return with exactly 2 decimal places
+    return mbValue.toFixed(2).replace(/\.?0+$/, "") + "mb";
   }
 
-  // For KB values, also limit to 2 decimal places if needed
-  if (sizeInKB === Math.floor(sizeInKB)) {
-    return sizeInKB + "kb";
-  } else {
-    let formattedValue = parseFloat(sizeInKB).toFixed(2);
-    formattedValue = formattedValue.replace(/\.?0+$/, "");
-    return formattedValue + "kb";
-  }
+  // For KB values
+  return value.toFixed(2).replace(/\.?0+$/, "") + "kb";
 }
 
 // Initialize slider on page load
