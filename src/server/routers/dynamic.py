@@ -1,5 +1,7 @@
 """This module defines the dynamic router for handling dynamic path requests."""
 
+from typing import Optional
+
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse
 
@@ -50,6 +52,7 @@ async def process_catch_all(
     max_file_size: int = Form(...),
     pattern_type: str = Form(...),
     pattern: str = Form(...),
+    access_token: Optional[str] = Form(None),
 ) -> HTMLResponse:
     """
     Process the form submission with user input for query parameters.
@@ -69,6 +72,8 @@ async def process_catch_all(
         The type of pattern used for the query, specified by the user.
     pattern : str
         The pattern string used in the query, specified by the user.
+    access_token : Optional[str]
+        Access token for private repositories (optional).
 
     Returns
     -------
@@ -83,4 +88,5 @@ async def process_catch_all(
         pattern_type,
         pattern,
         is_index=False,
+        access_token=access_token,
     )
