@@ -19,8 +19,8 @@
     }
 </script>
 <div class="relative">
-    <div class="w-full h-full absolute inset-0 bg-gray-900 rounded-xl translate-y-2 translate-x-2"></div>
-    <div class="rounded-xl relative z-20 pl-8 sm:pl-10 pr-8 sm:pr-16 py-8 border-[3px] border-gray-900 bg-[#fff4da]">
+    <div class="w-full h-full absolute inset-0 bg-gray-900 dark:bg-gray-950 rounded-xl translate-y-2 translate-x-2"></div>
+    <div class="rounded-xl relative z-20 pl-8 sm:pl-10 pr-8 sm:pr-16 py-8 border-[3px] border-gray-900 bg-[#fff4da] dark:bg-indigo-600 ">
         <img src="https://cdn.devdojo.com/images/january2023/shape-1.png"
              class="absolute md:block hidden left-0 h-[4.5rem] w-[4.5rem] bottom-0 -translate-x-full ml-3">
         <form class="flex md:flex-row flex-col w-full h-full justify-center items-stretch space-y-5 md:space-y-0 md:space-x-5"
@@ -56,7 +56,7 @@
                             <select id="pattern_type"
                                     onchange="changePattern(this)"
                                     name="pattern_type"
-                                    class="w-21 py-2 pl-2 pr-6 appearance-none bg-[#e6e8eb] focus:outline-none border-r-[3px] border-gray-900">
+                                    class="w-21 py-2 pl-2 pr-6 appearance-none bg-[#e6e8eb] focus:outline-none border-r-[3px] border-gray-900 dark:bg-[#fe4a60]">
                                 <option value="exclude"
                                         {% if pattern_type == 'exclude' or not pattern_type %}selected{% endif %}>
                                     Exclude
