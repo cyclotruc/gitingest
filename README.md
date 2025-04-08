@@ -30,10 +30,34 @@ You can also replace `hub` with `ingest` in any GitHub URL to access the corresp
 
 - Python 3.7+
 
-## 📦 Installation
+### 📦 Installation
 
-``` bash
+Gitingest is available on [PyPI](https://pypi.org/project/gitingest/).
+You can install it using `pip`:
+
+```bash
 pip install gitingest
+```
+
+However, it might be a good idea to use `pipx` to install it.
+You can install `pipx` using your preferred package manager.
+
+```bash
+brew install pipx
+apt install pipx
+scoop install pipx
+...
+```
+
+If you are using pipx for the first time, run:
+
+```bash
+pipx ensurepath
+```
+
+```bash
+# install gitingest
+pipx install gitingest
 ```
 
 ## 🧩 Browser Extension Usage
@@ -49,31 +73,6 @@ The extension is open source at [lcandy2/gitingest-extension](https://github.com
 Issues and feature requests are welcome to the repo.
 
 ## 💡 Command line usage
-
-### Installation: Non mac
-
-```bash
-pip install gitingest
-```
-
-### Installation: Mac
-
-99% of mac users use `brew` as a local package manger.
-If Python and pip have been installed with `brew`, it is recommended to stay in this ecosystem with `pipx`.
-**If `pipx` does not exist and you are using `brew`, first install the following:**
-
-```bash
-brew install pipx
-pipx ensurepath
-```
-
-Finally, install `gitingest`:
-
-```bash
-pipx install gitingest
-```
-
-### Usage
 
 The `gitingest` command line tool allows you to analyze codebases and create a text dump of their contents.
 
