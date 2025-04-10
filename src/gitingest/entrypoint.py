@@ -9,6 +9,7 @@ from gitingest.cloning import clone_repo
 from gitingest.config import TMP_BASE_PATH
 from gitingest.ingestion import ingest_query
 from gitingest.query_parsing import IngestionQuery, parse_query
+from gitingest.utils.ignore_patterns import load_gitignore_patterns
 
 
 async def ingest_async(
@@ -17,6 +18,7 @@ async def ingest_async(
     include_patterns: Optional[Union[str, Set[str]]] = None,
     exclude_patterns: Optional[Union[str, Set[str]]] = None,
     branch: Optional[str] = None,
+    use_gitignore: bool = False,
     output: Optional[str] = None,
 ) -> Tuple[str, str, str]:
     """
@@ -39,6 +41,8 @@ async def ingest_async(
         Pattern or set of patterns specifying which files to exclude. If `None`, no files are excluded.
     branch : str, optional
         The branch to clone and ingest. If `None`, the default branch is used.
+    use_gitignore : bool
+        A flag to automatically exclude files and directories listed in .gitignore files. Disabled by default.
     output : str, optional
         File path where the summary and content should be written. If `None`, the results are not written to a file.
 
@@ -65,6 +69,10 @@ async def ingest_async(
             include_patterns=include_patterns,
             ignore_patterns=exclude_patterns,
         )
+
+        if use_gitignore:
+            gitignore_patterns = load_gitignore_patterns(query.local_path)
+            query.ignore_patterns.update(gitignore_patterns)
 
         if query.url:
             selected_branch = branch if branch else query.branch  # prioritize branch argument
