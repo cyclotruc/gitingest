@@ -90,13 +90,13 @@ You can provide a Personal Access Token (PAT) to clone private repositories from
 from gitingest import ingest
 
 # Public repo or local path
-summary, tree, content = ingest(\"path/to/directory\")
-summary, tree, content = ingest(\"https://github.com/cyclotruc/gitingest\")
+summary, tree, content = ingest("path/to/directory")
+summary, tree, content = ingest("https://github.com/cyclotruc/gitingest")
 
 # Private repo with token
 summary, tree, content = ingest(
-    \"https://github.com/your-user/your-private-repo\",
-    access_token=\"YOUR_TOKEN\"
+    "https://github.com/your-user/your-private-repo",
+    access_token="YOUR_TOKEN"
 )
 ```
 
@@ -108,11 +108,11 @@ from gitingest import ingest_async
 import asyncio
 
 # Public repo or local path
-result = asyncio.run(ingest_async(\"path/to/directory\"))
+result = asyncio.run(ingest_async("path/to/directory"))
 
 # Private repo with token
 summary, tree, content = asyncio.run(
-    ingest_async(\"https://gitlab.com/your-group/your-private-repo\", access_token=\"YOUR_TOKEN\")
+    ingest_async("https://gitlab.com/your-group/your-private-repo", access_token="YOUR_TOKEN")
 )
 ```
 
@@ -121,13 +121,13 @@ summary, tree, content = asyncio.run(
 ```python
 from gitingest import ingest_async
 
-# Public repo or local path
-summary, tree, content = await ingest_async(\"path/to/directory\")
+# Use await directly in Jupyter
+summary, tree, content = await ingest_async("path/to/directory")
 
 # Private repo with token (use await directly in Jupyter)
 summary, tree, content = await ingest_async(
-    \"https://github.com/your-user/your-private-repo\",
-    access_token=\"YOUR_TOKEN\"
+    "https://github.com/your-user/your-private-repo",
+    access_token="YOUR_TOKEN"
 )
 ```
 
