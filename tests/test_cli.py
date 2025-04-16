@@ -1,5 +1,6 @@
 """Tests for the gitingest cli."""
 
+import os
 from unittest.mock import AsyncMock
 
 # import os # Unused import
@@ -10,21 +11,21 @@ from gitingest.cli import main
 from gitingest.config import MAX_FILE_SIZE, OUTPUT_FILE_NAME
 
 
-@pytest.fixture(autouse=True)
-def mock_ingest_async(mocker):
+@pytest.fixture(autouse=True, name="ingest_async_mock")
+def _ingest_async_mock(mocker):
     """Mock the ingest_async function to avoid actual processing."""
     mock = mocker.patch("gitingest.cli.ingest_async", new_callable=AsyncMock)
     mock.return_value = ("summary", "tree", "content")
     return mock
 
 
-def test_cli_with_default_options(mock_ingest_async_fixture):
+def test_cli_with_default_options(ingest_async_mock):
     """Test CLI runs with default options and calls ingest_async correctly."""
     runner = CliRunner()
     result = runner.invoke(main, ["./"])
     assert result.exit_code == 0
     # Use keyword args only, check source explicitly
-    call_args, call_kwargs = mock_ingest_async_fixture.await_args
+    call_args, call_kwargs = ingest_async_mock.await_args
     assert call_args == ()
     assert call_kwargs.get("source") in (".", "./")
     assert call_kwargs == {
@@ -39,14 +40,13 @@ def test_cli_with_default_options(mock_ingest_async_fixture):
 
     output_lines = result.output.strip().split("\n")
     assert f"Analysis complete! Output written to: {OUTPUT_FILE_NAME}" in output_lines
-    # assert os.path.exists(OUTPUT_FILE_NAME), f"Output file was not created at {OUTPUT_FILE_NAME}" # Remove check
 
     # Clean up: Remove the default output file if created by the mocked logic (or original if mock fails)
-    # if os.path.exists(OUTPUT_FILE_NAME): # Remove cleanup
-    #     os.remove(OUTPUT_FILE_NAME)
+    if os.path.exists(OUTPUT_FILE_NAME):  # Remove cleanup
+        os.remove(OUTPUT_FILE_NAME)
 
 
-def test_cli_with_options(mock_ingest_async_fixture):
+def test_cli_with_options(ingest_async_mock):
     """Test CLI runs with various options and calls ingest_async correctly."""
     runner = CliRunner()
     output_file = "test_output.txt"
@@ -74,7 +74,7 @@ def test_cli_with_options(mock_ingest_async_fixture):
     )
     assert result.exit_code == 0
     # Use keyword args only, check source explicitly
-    call_args, call_kwargs = mock_ingest_async_fixture.await_args
+    call_args, call_kwargs = ingest_async_mock.await_args
     assert call_args == ()
     assert call_kwargs.get("source") in (".", "./")
     assert call_kwargs == {
@@ -89,8 +89,7 @@ def test_cli_with_options(mock_ingest_async_fixture):
 
     output_lines = result.output.strip().split("\n")
     assert f"Analysis complete! Output written to: {output_file}" in output_lines
-    # assert os.path.exists(output_file), f"Output file was not created at {output_file}" # Remove check
 
     # Clean up
-    # if os.path.exists(output_file): # Remove cleanup
-    #     os.remove(output_file)
+    if os.path.exists(output_file):  # Remove cleanup
+        os.remove(output_file)

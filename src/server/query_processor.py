@@ -13,7 +13,6 @@ from server.server_config import EXAMPLE_REPOS, MAX_DISPLAY_SIZE, templates
 from server.server_utils import Colors, log_slider_to_size
 
 
-# pylint: disable=too-many-branches
 async def process_query(
     request: Request,
     input_text: str,
@@ -102,24 +101,16 @@ async def process_query(
             print(f"{Colors.BROWN}WARN{Colors.END}: {Colors.RED}<-  {Colors.END}", end="")
             print(f"{Colors.RED}{exc}{Colors.END}")
 
-        error_message = str(exc)
-        user_facing_error = f"An unexpected error occurred: {error_message}"  # Default
+            context["error_message"] = f"Error: {exc}"
+        if "405" in str(exc):
+            context["error_message"] = (
+                "Repository not found. Please make sure it is public (private repositories will be supported soon)"
+            )
+        if "404" in str(exc):
+            context["error_message"] = (
+                "Repository not found. Ensure it exists, is public or you have correct access token."
+            )
 
-        # Check for specific, common errors to provide better messages
-        if isinstance(exc, ValueError) and "Repository not found or inaccessible" in error_message:
-            user_facing_error = error_message  # Use the specific message from cloning.py
-        elif isinstance(exc, RuntimeError) and "Authentication failed" in error_message:
-            user_facing_error = "Authentication failed. Please check your token and repository permissions."
-        elif isinstance(exc, RuntimeError) and "could not read Username" in error_message:
-            user_facing_error = "Authentication failed. Please check your token and repository permissions."
-        elif isinstance(exc, TimeoutError) or "timed out" in error_message:
-            user_facing_error = "Cloning timed out. The repository might be too large or the network slow."
-        elif isinstance(exc, ValueError) and "Invalid repository URL" in error_message:
-            user_facing_error = "Invalid repository URL format."
-        elif isinstance(exc, FileNotFoundError):
-            user_facing_error = "Ingestion failed: Cloned repository directory not found."
-
-        context["error_message"] = user_facing_error
         return template_response(context=context)
 
     if len(content) > MAX_DISPLAY_SIZE:
