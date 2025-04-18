@@ -1,6 +1,6 @@
 """Functions to ingest and analyze a codebase directory or single file."""
 
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import tiktoken
 
@@ -35,8 +35,8 @@ def format_node(node: FileSystemNode, query: IngestionQuery) -> Tuple[str, str, 
         summary += f"File: {node.name}\n"
         summary += f"Lines: {len(node.content.splitlines()):,}\n"
 
-    tree = "Directory structure:\n" + _create_tree_structure(query, node)
-    _create_tree_structure(query, node)
+    tree_patterns = [("Directory structure:\n", "")] + create_tree_structure(query, node)
+    tree = "".join([x[0] for x in tree_patterns])
 
     content = _gather_file_contents(node)
 
@@ -108,7 +108,9 @@ def _gather_file_contents(node: FileSystemNode) -> str:
     return "\n".join(_gather_file_contents(child) for child in node.children)
 
 
-def _create_tree_structure(query: IngestionQuery, node: FileSystemNode, prefix: str = "", is_last: bool = True) -> str:
+def create_tree_structure(
+    query: IngestionQuery, node: FileSystemNode, prefix: str = "", is_last: bool = True
+) -> List[Tuple[str, str]]:
     """
     Generate a tree-like string representation of the file structure.
 
@@ -128,14 +130,15 @@ def _create_tree_structure(query: IngestionQuery, node: FileSystemNode, prefix: 
 
     Returns
     -------
-    str
-        A string representing the directory structure formatted as a tree.
+    List[Tuple[str, str]]
+        A list pairs of strings, the first a line representing the directory structure formatted as a tree
+        and the second is the corresponding filename with path.
     """
     if not node.name:
         # If no name is present, use the slug as the top-level directory name
         node.name = query.slug
 
-    tree_str = ""
+    tree_items: List[Tuple[str, str]] = []
     current_prefix = "└── " if is_last else "├── "
 
     # Indicate directories with a trailing slash
@@ -145,13 +148,13 @@ def _create_tree_structure(query: IngestionQuery, node: FileSystemNode, prefix: 
     elif node.type == FileSystemNodeType.SYMLINK:
         display_name += " -> " + node.path.readlink().name
 
-    tree_str += f"{prefix}{current_prefix}{display_name}\n"
+    tree_items.append((f"{prefix}{current_prefix}{display_name}\n", node.path_str))
 
     if node.type == FileSystemNodeType.DIRECTORY and node.children:
         prefix += "    " if is_last else "│   "
         for i, child in enumerate(node.children):
-            tree_str += _create_tree_structure(query, node=child, prefix=prefix, is_last=i == len(node.children) - 1)
-    return tree_str
+            tree_items += create_tree_structure(query, node=child, prefix=prefix, is_last=i == len(node.children) - 1)
+    return tree_items
 
 
 def _format_token_count(text: str) -> Optional[str]:

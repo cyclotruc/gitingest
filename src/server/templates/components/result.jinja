@@ -1,11 +1,5 @@
 <script>
-    function getFileName(line) {
-        // Skips "|", "└", "├" found in file tree
-        const index = line.search(/[a-zA-Z0-9]/);
-        return line.substring(index).trim();
-    }
-
-    function toggleFile(element) {
+    function toggleFile(element, filePath) {
         const patternInput = document.getElementById("pattern");
         const patternFiles = patternInput.value ? patternInput.value.split(",").map(item => item.trim()) : [];
 
@@ -16,13 +10,12 @@
         element.classList.toggle('line-through');
         element.classList.toggle('text-gray-500');
 
-        const fileName = getFileName(element.textContent);
-        const fileIndex = patternFiles.indexOf(fileName);
+        const fileIndex = patternFiles.indexOf(filePath);
 
         if (fileIndex !== -1) {
             patternFiles.splice(fileIndex, 1);
         } else {
-            patternFiles.push(fileName);
+            patternFiles.push(filePath);
         }
 
         patternInput.value = patternFiles.join(", ");
@@ -95,10 +88,10 @@
                                  id="directory-structure-container"
                                  readonly>
                                 <input type="hidden" id="directory-structure-content" value="{{ tree }}" />
-                                {% for line in tree.splitlines() %}
+                                {% for line, filepath in tree %}
                                     <pre name="tree-line"
                                          class="cursor-pointer hover:line-through hover:text-gray-500"
-                                         onclick="toggleFile(this)">{{ line }}</pre>
+                                         onclick="toggleFile(this, '{{ filepath }}')">{{ line }}</pre>
                                 {% endfor %}
                             </div>
                         </div>
