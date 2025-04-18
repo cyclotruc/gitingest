@@ -7,7 +7,7 @@ including filtering patterns and subpaths.
 
 import re
 from pathlib import Path
-from typing import TypedDict
+from typing import Set, TypedDict
 
 import pytest
 
@@ -50,12 +50,12 @@ def test_run_ingest_query(temp_directory: Path, sample_query: IngestionQuery) ->
 
 
 class PatternScenario(TypedDict):
-    include_patterns: set[str]
-    ignore_patterns: set[str]
+    include_patterns: Set[str]
+    ignore_patterns: Set[str]
     expected_num_files: int
-    expected_content: set[str]
-    expected_structure: set[str]
-    expected_not_structure: set[str]
+    expected_content: Set[str]
+    expected_structure: Set[str]
+    expected_not_structure: Set[str]
 
 
 @pytest.mark.parametrize(
