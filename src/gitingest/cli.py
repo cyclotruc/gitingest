@@ -37,7 +37,7 @@ from gitingest.entrypoint import ingest_async
     "--include-pattern",
     "-i",
     multiple=True,
-    help="""Patterns to include. Handles python's arbitrary subset of Unit
+    help="""Patterns to include. Handles python's arbitrary subset of Unix
     shell-style wildcards. See:
     https://docs.python.org/3/library/fnmatch.html""",
 )
