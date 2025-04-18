@@ -5,6 +5,7 @@ These tests validate directory scanning, file content extraction, notebook handl
 including filtering patterns and subpaths.
 """
 
+import re
 from pathlib import Path
 from typing import TypedDict
 
@@ -214,7 +215,9 @@ def test_include_ignore_patterns(
     summary, structure, content = ingest_query(sample_query)
 
     assert "Repository: test_user/test_repo" in summary
-    assert f"Files analyzed: {pattern_scenario["expected_num_files"]}" in summary
+    num_files_regex = re.compile(r"^Files analyzed: (\d+)$", re.MULTILINE)
+    assert (num_files_match := num_files_regex.search(summary)) is not None
+    assert int(num_files_match.group(1)) == pattern_scenario["expected_num_files"]
 
     # Check presence of key files in the content
     for expected_content_item in pattern_scenario["expected_content"]:
