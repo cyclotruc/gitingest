@@ -13,10 +13,34 @@ from gitingest.entrypoint import ingest_async
 
 @click.command()
 @click.argument("source", type=str, default=".")
-@click.option("--output", "-o", default=None, help="Output file path (default: <repo_name>.txt in current directory)")
-@click.option("--max-size", "-s", default=MAX_FILE_SIZE, help="Maximum file size to process in bytes")
-@click.option("--exclude-pattern", "-e", multiple=True, help="Patterns to exclude")
-@click.option("--include-pattern", "-i", multiple=True, help="Patterns to include")
+@click.option(
+    "--output",
+    "-o",
+    default=None,
+    help="Output file path (default: <repo_name>.txt in current directory)",
+)
+@click.option(
+    "--max-size",
+    "-s",
+    default=MAX_FILE_SIZE,
+    help="Maximum file size to process in bytes",
+)
+@click.option(
+    "--exclude-pattern",
+    "-e",
+    multiple=True,
+    help="""Patterns to exclude. Handles python's arbitrary subset of Unix
+    shell-style wildcards. See:
+    https://docs.python.org/3/library/fnmatch.html""",
+)
+@click.option(
+    "--include-pattern",
+    "-i",
+    multiple=True,
+    help="""Patterns to include. Handles python's arbitrary subset of Unit
+    shell-style wildcards. See:
+    https://docs.python.org/3/library/fnmatch.html""",
+)
 @click.option("--branch", "-b", default=None, help="Branch to clone and ingest")
 def main(
     source: str,
@@ -27,10 +51,11 @@ def main(
     branch: Optional[str],
 ):
     """
-     Main entry point for the CLI. This function is called when the CLI is run as a script.
+    Main entry point for the CLI. This function is called when the CLI is run as a script.
 
     It calls the async main function to run the command.
 
+    \b
     Parameters
     ----------
     source : str

@@ -202,6 +202,10 @@ def _process_node(
                 query=query,
                 stats=stats,
             )
+
+            if not child_directory_node.children:
+                continue
+
             node.children.append(child_directory_node)
             node.size += child_directory_node.size
             node.file_count += child_directory_node.file_count
