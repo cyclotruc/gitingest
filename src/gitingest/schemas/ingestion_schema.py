@@ -6,7 +6,7 @@ from typing import Optional, Set
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from gitingest.config import MAX_FILE_SIZE
+from gitingest.config import MAX_FILE_SIZE_BYTES
 
 
 @dataclass
@@ -54,7 +54,7 @@ class IngestionQuery(BaseModel):  # pylint: disable=too-many-instance-attributes
     type: Optional[str] = None
     branch: Optional[str] = None
     commit: Optional[str] = None
-    max_file_size: int = Field(default=MAX_FILE_SIZE)
+    max_file_size: int = Field(default=MAX_FILE_SIZE_BYTES)
     ignore_patterns: Optional[Set[str]] = None
     include_patterns: Optional[Set[str]] = None
 
