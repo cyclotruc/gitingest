@@ -25,6 +25,7 @@ You can also replace `hub` with `ingest` in any GitHub URL to access the corresp
   - Token count
 - **CLI tool**: Run it as a shell command
 - **Python package**: Import it in your code
+- **Cloud Storage**: Optional S3 integration for sharing digests
 
 ## 📚 Requirements
 
@@ -131,20 +132,41 @@ This is because Jupyter notebooks are asynchronous by default.
    docker build -t gitingest .
    ```
 
-2. Run the container:
+2. Configure environment variables:
+
+   Copy the example environment file and edit it with your values:
+   
+   ``` bash
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
+
+3. Run the container using docker-compose:
 
    ``` bash
-   docker run -d --name gitingest -p 8000:8000 gitingest
+   docker-compose up -d
+   ```
+
+   Or run with docker:
+
+   ``` bash
+   docker run -d --name gitingest -p 8000:8000 \
+     --env-file .env \
+     gitingest
    ```
 
 The application will be available at `http://localhost:8000`.
 
-If you are hosting it on a domain, you can specify the allowed hostnames via env variable `ALLOWED_HOSTS`.
+### Environment Variables
 
-   ```bash
-   # Default: "gitingest.com, *.gitingest.com, localhost, 127.0.0.1".
-   ALLOWED_HOSTS="example.com, localhost, 127.0.0.1"
-   ```
+- **AWS S3 Configuration (optional)**: 
+  - `GITINGEST_S3_BUCKET`: Your S3 bucket name for storing digests
+  - `AWS_ACCESS_KEY_ID`: AWS access key with S3 permissions
+  - `AWS_SECRET_ACCESS_KEY`: Corresponding AWS secret key
+  - `AWS_REGION`: AWS region where your bucket is located (e.g., `us-east-1`)
+
+- **Server Configuration**:
+  - `ALLOWED_HOSTS`: Comma-separated list of allowed hostnames (default: `"gitingest.com, *.gitingest.com, localhost, 127.0.0.1"`)
 
 ## 🤝 Contributing
 
