@@ -8,7 +8,7 @@ from gitingest.schemas import CloneConfig
 from gitingest.utils.git_utils import check_repo_exists, ensure_git_installed, run_command
 from gitingest.utils.timeout_wrapper import async_timeout
 
-TIMEOUT: int = 60
+TIMEOUT: int = 300
 
 
 @async_timeout(TIMEOUT)
