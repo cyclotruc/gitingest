@@ -7,8 +7,8 @@ including filtering patterns and subpaths.
 
 from pathlib import Path
 
-from gitingest.ingestion import ingest_query
-from gitingest.query_parsing import IngestionQuery
+from CodeIngest.ingestion import ingest_query
+from CodeIngest.query_parsing import IngestionQuery
 
 
 def test_run_ingest_query(temp_directory: Path, sample_query: IngestionQuery) -> None:

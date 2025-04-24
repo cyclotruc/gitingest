@@ -7,8 +7,8 @@ from typing import Optional, Tuple
 
 import click
 
-from gitingest.config import MAX_FILE_SIZE, OUTPUT_FILE_NAME
-from gitingest.entrypoint import ingest_async
+from CodeIngest.config import MAX_FILE_SIZE, OUTPUT_FILE_NAME
+from CodeIngest.entrypoint import ingest_async
 
 
 @click.command()

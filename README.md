@@ -28,7 +28,7 @@ You can also replace `hub` with `ingest` in any GitHub URL to access the corresp
 
 ## 📚 Requirements
 
-- Python 3.7+
+- Python 3.10+
 
 ### 📦 Installation
 
@@ -36,7 +36,7 @@ Gitingest is available on [PyPI](https://pypi.org/project/gitingest/).
 You can install it using `pip`:
 
 ```bash
-pip install gitingest
+pip install CodeIngest
 ```
 
 However, it might be a good idea to use `pipx` to install it.
@@ -56,8 +56,8 @@ pipx ensurepath
 ```
 
 ```bash
-# install gitingest
-pipx install gitingest
+# install CodeIngest
+pipx install CodeIngest
 ```
 
 ## 🧩 Browser Extension Usage
@@ -78,13 +78,13 @@ The `gitingest` command line tool allows you to analyze codebases and create a t
 
 ```bash
 # Basic usage
-gitingest /path/to/directory
+CodeIngest /path/to/directory
 
 # From URL
-gitingest https://github.com/cyclotruc/gitingest
+CodeIngest https://github.com/cyclotruc/gitingest
 
 # See more options
-gitingest --help
+CodeIngest --help
 ```
 
 This will write the digest in a text file (default `digest.txt`) in your current working directory.
@@ -93,7 +93,7 @@ This will write the digest in a text file (default `digest.txt`) in your current
 
 ```python
 # Synchronous usage
-from gitingest import ingest
+from CodeIngest import ingest
 
 summary, tree, content = ingest("path/to/directory")
 
@@ -105,7 +105,7 @@ By default, this won't write a file but can be enabled with the `output` argumen
 
 ```python
 # Asynchronous usage
-from gitingest import ingest_async
+from CodeIngest import ingest_async
 import asyncio
 
 result = asyncio.run(ingest_async("path/to/directory"))
@@ -114,7 +114,7 @@ result = asyncio.run(ingest_async("path/to/directory"))
 ### Jupyter notebook usage
 
 ```python
-from gitingest import ingest_async
+from CodeIngest import ingest_async
 
 # Use await directly in Jupyter
 summary, tree, content = await ingest_async("path/to/directory")
@@ -128,13 +128,19 @@ This is because Jupyter notebooks are asynchronous by default.
 1. Build the image:
 
    ``` bash
-   docker build -t gitingest .
+   docker build -t codeingest .
+   ```
+   
+   or via Docker Compose
+
+   ``` bash
+   docker compose up --build
    ```
 
 2. Run the container:
 
    ``` bash
-   docker run -d --name gitingest -p 8000:8000 gitingest
+   docker run -rm -d --name codeingest -p 8000:8000 codeingest:latest
    ```
 
 The application will be available at `http://localhost:8000`.
@@ -142,7 +148,7 @@ The application will be available at `http://localhost:8000`.
 If you are hosting it on a domain, you can specify the allowed hostnames via env variable `ALLOWED_HOSTS`.
 
    ```bash
-   # Default: "gitingest.com, *.gitingest.com, localhost, 127.0.0.1".
+   # Default: "CodeIngest.com, *.CodeIngest.com, localhost, 127.0.0.1".
    ALLOWED_HOSTS="example.com, localhost, 127.0.0.1"
    ```
 

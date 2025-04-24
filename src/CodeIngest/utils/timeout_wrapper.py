@@ -4,7 +4,7 @@ import asyncio
 import functools
 from typing import Any, Awaitable, Callable, TypeVar
 
-from gitingest.utils.exceptions import AsyncTimeoutError
+from CodeIngest.utils.exceptions import AsyncTimeoutError
 
 T = TypeVar("T")
 

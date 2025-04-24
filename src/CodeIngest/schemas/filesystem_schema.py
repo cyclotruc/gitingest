@@ -7,8 +7,8 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from pathlib import Path
 
-from gitingest.utils.file_utils import get_preferred_encodings, is_text_file
-from gitingest.utils.notebook_utils import process_notebook
+from CodeIngest.utils.file_utils import get_preferred_encodings, is_text_file
+from CodeIngest.utils.notebook_utils import process_notebook
 
 SEPARATOR = "=" * 48  # Tiktoken, the tokenizer openai uses, counts 2 tokens if we have more than 48
 

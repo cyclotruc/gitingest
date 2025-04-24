@@ -16,7 +16,7 @@ Thanks for your interest in contributing to Gitingest! 🚀 Gitingest aims to be
 
    ```bash
    git clone https://github.com/cyclotruc/gitingest.git
-   cd gitingest
+   cd CodeIngest
    ```
 
 3. Set up the development environment and install dependencies:

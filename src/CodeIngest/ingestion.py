@@ -4,11 +4,11 @@ import warnings
 from pathlib import Path
 from typing import Tuple
 
-from gitingest.config import MAX_DIRECTORY_DEPTH, MAX_FILES, MAX_TOTAL_SIZE_BYTES
-from gitingest.output_formatters import format_node
-from gitingest.query_parsing import IngestionQuery
-from gitingest.schemas import FileSystemNode, FileSystemNodeType, FileSystemStats
-from gitingest.utils.ingestion_utils import _should_exclude, _should_include
+from CodeIngest.config import MAX_DIRECTORY_DEPTH, MAX_FILES, MAX_TOTAL_SIZE_BYTES
+from CodeIngest.output_formatters import format_node
+from CodeIngest.query_parsing import IngestionQuery
+from CodeIngest.schemas import FileSystemNode, FileSystemNodeType, FileSystemStats
+from CodeIngest.utils.ingestion_utils import _should_exclude, _should_include
 
 try:
     import tomllib  # type: ignore[import]
@@ -88,9 +88,9 @@ def ingest_query(query: IngestionQuery) -> Tuple[str, str, str]:
 
 def apply_gitingest_file(path: Path, query: IngestionQuery) -> None:
     """
-    Apply the .gitingest file to the query object.
+    Apply the .CodeIngest file to the query object.
 
-    This function reads the .gitingest file in the specified path and updates the query object with the ignore
+    This function reads the .CodeIngest file in the specified path and updates the query object with the ignore
     patterns found in the file.
 
     Parameters
@@ -101,7 +101,7 @@ def apply_gitingest_file(path: Path, query: IngestionQuery) -> None:
         The parsed query object containing information about the repository and query parameters.
         It should have an attribute `ignore_patterns` which is either None or a set of strings.
     """
-    path_gitingest = path / ".gitingest"
+    path_gitingest = path / ".CodeIngest"
 
     if not path_gitingest.is_file():
         return

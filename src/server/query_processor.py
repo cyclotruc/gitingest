@@ -5,9 +5,9 @@ from functools import partial
 from fastapi import Request
 from starlette.templating import _TemplateResponse
 
-from gitingest.cloning import clone_repo
-from gitingest.ingestion import ingest_query
-from gitingest.query_parsing import IngestionQuery, parse_query
+from CodeIngest.cloning import clone_repo
+from CodeIngest.ingestion import ingest_query
+from CodeIngest.query_parsing import IngestionQuery, parse_query
 from server.server_config import EXAMPLE_REPOS, MAX_DISPLAY_SIZE, templates
 from server.server_utils import Colors, log_slider_to_size
 

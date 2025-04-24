@@ -7,12 +7,12 @@ from pathlib import Path
 from typing import List, Optional, Set, Union
 from urllib.parse import unquote, urlparse
 
-from gitingest.config import TMP_BASE_PATH
-from gitingest.schemas import IngestionQuery
-from gitingest.utils.exceptions import InvalidPatternError
-from gitingest.utils.git_utils import check_repo_exists, fetch_remote_branch_list
-from gitingest.utils.ignore_patterns import DEFAULT_IGNORE_PATTERNS
-from gitingest.utils.query_parser_utils import (
+from CodeIngest.config import TMP_BASE_PATH
+from CodeIngest.schemas import IngestionQuery
+from CodeIngest.utils.exceptions import InvalidPatternError
+from CodeIngest.utils.git_utils import check_repo_exists, fetch_remote_branch_list
+from CodeIngest.utils.ignore_patterns import DEFAULT_IGNORE_PATTERNS
+from CodeIngest.utils.query_parser_utils import (
     KNOWN_GIT_HOSTS,
     _get_user_and_repo_from_path,
     _is_valid_git_commit_hash,

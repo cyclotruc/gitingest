@@ -1,11 +1,11 @@
-"""Tests for the gitingest cli."""
+"""Tests for the CodeIngest cli."""
 
 import os
 
 from click.testing import CliRunner
 
-from gitingest.cli import main
-from gitingest.config import MAX_FILE_SIZE, OUTPUT_FILE_NAME
+from CodeIngest.cli import main
+from CodeIngest.config import MAX_FILE_SIZE, OUTPUT_FILE_NAME
 
 
 def test_cli_with_default_options():

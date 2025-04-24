@@ -1,0 +1,6 @@
+services:
+  codeingest:
+      build:
+        context: .
+        no_cache: true
+      image: codeingest:latest

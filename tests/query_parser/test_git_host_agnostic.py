@@ -9,7 +9,7 @@ from typing import List
 
 import pytest
 
-from gitingest.query_parsing import parse_query
+from CodeIngest.query_parsing import parse_query
 
 
 @pytest.mark.parametrize(

@@ -3,7 +3,7 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 
-from gitingest.config import TMP_BASE_PATH
+from CodeIngest.config import TMP_BASE_PATH
 
 router = APIRouter()
 

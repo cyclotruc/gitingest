@@ -11,7 +11,7 @@ from typing import Any, Callable, Dict
 
 import pytest
 
-from gitingest.query_parsing import IngestionQuery
+from CodeIngest.query_parsing import IngestionQuery
 
 WriteNotebookFunc = Callable[[str, Dict[str, Any]], Path]
 

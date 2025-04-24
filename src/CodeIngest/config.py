@@ -10,4 +10,4 @@ MAX_TOTAL_SIZE_BYTES = 500 * 1024 * 1024  # 500 MB
 
 OUTPUT_FILE_NAME = "digest.txt"
 
-TMP_BASE_PATH = Path(tempfile.gettempdir()) / "gitingest"
+TMP_BASE_PATH = Path(tempfile.gettempdir()) / "CodeIngest"

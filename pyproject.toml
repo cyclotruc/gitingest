@@ -33,6 +33,7 @@ fastapi = { version = ">=0.109.1", extras = ["standard"] }
 pydantic = "*"
 slowapi = "*"
 tiktoken = "*"
+uvicorn = "^0.34.2"
 tomli = { version = "*", python = "<3.11" } # Required for Python < 3.11 to parse TOML
 poetry-dynamic-versioning = "^1.7.1"
 typing-extensions = "^4.13.2"

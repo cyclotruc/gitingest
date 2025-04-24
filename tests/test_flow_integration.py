@@ -39,7 +39,7 @@ def mock_templates():
 
 
 def cleanup_temp_directories():
-    temp_dir = Path("/tmp/gitingest")
+    temp_dir = Path("/tmp/CodeIngest")
     if temp_dir.exists():
         try:
             shutil.rmtree(temp_dir)
