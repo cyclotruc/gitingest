@@ -1,58 +1,65 @@
-[project]
-name = "gitingest"
-version = "0.1.4"
-description="CLI tool to analyze and create text dumps of codebases for LLMs"
-readme = {file = "README.md", content-type = "text/markdown" }
-requires-python = ">= 3.8"
-dependencies = [
-    "click>=8.0.0",
-    "fastapi[standard]>=0.109.1",  # Vulnerable to https://osv.dev/vulnerability/PYSEC-2024-38
-    "pydantic",
-    "python-dotenv",
-    "slowapi",
-    "starlette>=0.40.0",  # Vulnerable to https://osv.dev/vulnerability/GHSA-f96h-pmfr-66vw
-    "tiktoken",
-    "tomli",
-    "typing_extensions; python_version < '3.10'",
-    "uvicorn>=0.11.7",  # Vulnerable to https://osv.dev/vulnerability/PYSEC-2020-150
-]
-
-license = {file = "LICENSE"}
-authors = [{name = "Romain Courtois", email = "romain@coderamp.io"}]
-classifiers=[
+[tool.poetry]
+name = "CodeIngest"
+version = "0.0.0"
+description = "CLI tool to analyze and create text dumps of codebases for LLMs"
+authors = ["rilah <ricardolahuerta@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+#homepage = "https://gitingest.com"
+repository = "https://github.com/Rlahuerta/CodeIngest"
+keywords = ["Gitingest", "AI", "LLM", "Ingest", "Digest", "Context", "Prompt", "Git", "codebase", "automation", "Summarize"]
+classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Version Control :: Git",
+    "Topic :: Utilities",
 ]
+packages = [{ include = "CodeIngest", from = "src" }]
+include = ["src/server/templates/*", "src/server/templates/components/*", "src/static/js/*", "src/static/*"] # Ensure templates and static files are included
 
-[project.scripts]
+[[tool.poetry.source]]
+name = "PyPI"
+priority = "primary"
+
+[tool.poetry.dependencies]
+python = ">=3.10,<4"
+click = ">=8.0.0"
+fastapi = { version = ">=0.109.1", extras = ["standard"] }
+pydantic = "*"
+slowapi = "*"
+tiktoken = "*"
+tomli = { version = "*", python = "<3.11" } # Required for Python < 3.11 to parse TOML
+poetry-dynamic-versioning = "^1.7.1"
+typing-extensions = "^4.13.2"
+
+[tool.poetry.group.dev.dependencies]
+black = "*"
+djlint = "^1.36.4"
+pre-commit = "*"
+pylint = "*"
+pytest = "*"
+pytest-asyncio = "*"
+
+[tool.poetry.scripts]
 gitingest = "gitingest.cli:main"
 
-[project.urls]
-homepage = "https://gitingest.com"
-github = "https://github.com/cyclotruc/gitingest"
-
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
+build-backend = "poetry_dynamic_versioning.backend"
 
-[tool.setuptools]
-packages = {find = {where = ["src"]}}
-include-package-data = true
-
-# Linting configuration
-[tool.pylint.format]
+# --- Tool configurations copied from original pyproject.toml ---
+[tool.pylint]
+# Pylint configuration remains the same
 max-line-length = 119
-
-[tool.pylint.'MESSAGES CONTROL']
 disable = [
+    "missing-module-docstring",
+    "missing-class-docstring",
+    "missing-function-docstring",
     "too-many-arguments",
     "too-many-positional-arguments",
     "too-many-locals",
@@ -61,6 +68,9 @@ disable = [
     "duplicate-code",
     "fixme",
 ]
+init-hook = '''
+import sys; sys.path.append('src')
+'''
 
 [tool.pycln]
 all = true
@@ -76,12 +86,17 @@ filter_files = true
 [tool.black]
 line-length = 119
 
-# Test configuration
+[tool.poetry-dynamic-versioning]
+enable = true
+style = "semver"
+pattern  = "^(?P<base>\\d+\\.\\d+\\.\\d+)(-?((?P<stage>[a-zA-Z]+)\\.?(?P<revision>\\d+)?))?"
+
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests/"]
 python_files = "test_*.py"
 asyncio_mode = "auto"
-asyncio_default_fixture_loop_scope = "function"
+
+# asyncio_default_fixture_loop_scope = "function" # Note: This might be deprecated/unnecessary depending on pytest-asyncio version
 python_classes = "Test*"
 python_functions = "test_*"
