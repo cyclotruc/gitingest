@@ -1,12 +1,14 @@
 """Process a query by parsing input, cloning a repository, and generating a summary."""
 
 from functools import partial
+from typing import Any, Dict
 
 from fastapi import Request
 from starlette.templating import _TemplateResponse
 
 from gitingest.cloning import clone_repo
 from gitingest.ingestion import ingest_query
+from gitingest.output_formatters import create_tree_structure
 from gitingest.query_parsing import IngestionQuery, parse_query
 from server.server_config import EXAMPLE_REPOS, MAX_DISPLAY_SIZE, templates
 from server.server_utils import Colors, log_slider_to_size
@@ -64,7 +66,7 @@ async def process_query(
     template_response = partial(templates.TemplateResponse, name=template)
     max_file_size = log_slider_to_size(slider_position)
 
-    context = {
+    context: Dict[str, Any] = {
         "request": request,
         "repo_url": input_text,
         "examples": EXAMPLE_REPOS if is_index else [],
@@ -87,6 +89,9 @@ async def process_query(
         clone_config = query.extract_clone_config()
         await clone_repo(clone_config)
         summary, tree, content = ingest_query(query)
+
+        tree_with_filenames = ((query.root_node is not None) and create_tree_structure(query, query.root_node)) or []
+
         with open(f"{clone_config.local_path}.txt", "w", encoding="utf-8") as f:
             f.write(tree + "\n" + content)
     except Exception as exc:
@@ -122,7 +127,7 @@ async def process_query(
         {
             "result": True,
             "summary": summary,
-            "tree": tree,
+            "tree": tree_with_filenames,
             "content": content,
             "ingest_id": query.id,
         }
