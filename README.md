@@ -77,17 +77,20 @@ Issues and feature requests are welcome to the repo.
 The `gitingest` command line tool allows you to analyze codebases and create a text dump of their contents.
 
 ```bash
-# Basic usage
+# Basic usage (writes to digest.txt by default)
 gitingest /path/to/directory
 
 # From URL
 gitingest https://github.com/cyclotruc/gitingest
 
+# Output to STDOUT instead of a file
+gitingest . -o -
+
 # See more options
 gitingest --help
 ```
 
-This will write the digest in a text file (default `digest.txt`) in your current working directory.
+By default, the digest is written to a text file (`digest.txt`) in your current working directory. Use `-o -` or `--output -` to print to standard output instead.
 
 ## 🐍 Python package usage
 

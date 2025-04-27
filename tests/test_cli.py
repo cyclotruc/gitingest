@@ -39,3 +39,17 @@ def test_cli_with_options():
     assert os.path.exists(OUTPUT_FILE_NAME), f"Output file was not created at {OUTPUT_FILE_NAME}"
 
     os.remove(OUTPUT_FILE_NAME)
+
+
+def test_cli_with_stdout_output():
+    """Test CLI invocation with output directed to STDOUT."""
+    runner = CliRunner(mix_stderr=False)
+    result = runner.invoke(main, ["./", "--output", "-", "--exclude-pattern", "tests/"])
+
+    assert result.exit_code == 0, f"CLI exited with code {result.exit_code}, stderr: {result.stderr}"
+    assert "---" in result.output, "Expected file separator '---' not found in STDOUT"
+    assert "src/gitingest/cli.py" in result.output, "Expected content (e.g., src/gitingest/cli.py) not found in STDOUT"
+    assert not os.path.exists(OUTPUT_FILE_NAME), f"Output file {OUTPUT_FILE_NAME} was unexpectedly created."
+    assert "Analysis complete!  Output sent to stdout." not in result.output
+    assert "Analysis complete!" in result.stderr, "Expected summary message 'Analysis complete!' not found in STDERR"
+    assert f"Output written to: {OUTPUT_FILE_NAME}" not in result.stderr
