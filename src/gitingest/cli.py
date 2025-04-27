@@ -73,7 +73,8 @@ def main(
     source : str
         A directory path or a Git repository URL.
     output : str, optional
-        Output file path. Defaults to `<repo_name>.txt`.
+        The path where the output file will be written. If not specified, the output will be written
+        to a file named `<repo_name>.txt` in the current directory. Use '-' to output to stdout.
     max_size : int
         Maximum file size (in bytes) to consider.
     exclude_pattern : Tuple[str, ...]
@@ -113,14 +114,16 @@ async def _async_main(
     Analyze a directory or repository and create a text dump of its contents.
 
     This command analyzes the contents of a specified source directory or repository, applies custom include and
-    exclude patterns, and generates a text summary of the analysis which is then written to an output file.
+    exclude patterns, and generates a text summary of the analysis which is then written to an output file
+    or printed to stdout.
 
     Parameters
     ----------
     source : str
         A directory path or a Git repository URL.
     output : str, optional
-        Output file path. Defaults to `<repo_name>.txt`.
+        The path where the output file will be written. If not specified, the output will be written
+        to a file named `<repo_name>.txt` in the current directory. Use '-' to output to stdout.
     max_size : int
         Maximum file size (in bytes) to consider.
     exclude_pattern : Tuple[str, ...]
@@ -143,9 +146,12 @@ async def _async_main(
         exclude_patterns = set(exclude_pattern)
         include_patterns = set(include_pattern)
 
-        # Choose a default output path if none provided
-        if output is None:
-            output = OUTPUT_FILE_NAME
+        output_target = output if output is not None else OUTPUT_FILE_NAME
+
+        if output_target == "-":
+            click.echo("Analyzing source, preparing output for stdout...", err=True)
+        else:
+            click.echo(f"Analyzing source, output will be written to '{output_target}'...", err=True)
 
         summary, _, _ = await ingest_async(
             source=source,
@@ -153,13 +159,19 @@ async def _async_main(
             include_patterns=include_patterns,
             exclude_patterns=exclude_patterns,
             branch=branch,
-            output=output,
+            output=output_target,
             token=token,
         )
 
-        click.echo(f"Analysis complete! Output written to: {output}")
-        click.echo("\nSummary:")
-        click.echo(summary)
+        if output != "-":
+            click.echo(f"Analysis complete! Output written to: {output_target}")
+            click.echo("\nSummary:")
+            click.echo(summary)
+        else:
+            click.echo("\n--- Summary ---", err=True)
+            click.echo(summary, err=True)
+            click.echo("--- End Summary ---", err=True)
+            click.echo("Analysis complete! Output sent to stdout.", err=True)
 
     except Exception as exc:
         # Convert any exception into Click.Abort so that exit status is non-zero

@@ -78,25 +78,34 @@ Issues and feature requests are welcome to the repo.
 The `gitingest` command line tool allows you to analyze codebases and create a text dump of their contents.
 
 ```bash
-# Basic usage
+# Basic usage (writes to digest.txt by default)
 gitingest /path/to/directory
 
 # From URL
 gitingest https://github.com/cyclotruc/gitingest
+```
 
-# For private repositories, use the --token option
+For private repositories, use the `--token/-t` option.
+
+```bash
 # Get your token from https://github.com/settings/personal-access-tokens
 gitingest https://github.com/username/private-repo --token github_pat_...
 
 # Or set it as an environment variable
 export GITHUB_TOKEN=github_pat_...
 gitingest https://github.com/username/private-repo
-
-# See more options
-gitingest --help
 ```
 
-This will write the digest in a text file (default `digest.txt`) in your current working directory.
+By default, the digest is written to a text file (`digest.txt`) in your current working directory. You can customize the output in two ways:
+
+- Use `--output/-o <filename>` to write to a specific file.
+- Use `--output/-o -` to output directly to `STDOUT` (useful for piping to other tools).
+
+See more options and usage details with:
+
+```bash
+gitingest --help
+```
 
 ## 🐍 Python package usage
 
@@ -108,6 +117,18 @@ summary, tree, content = ingest("path/to/directory")
 
 # or from URL
 summary, tree, content = ingest("https://github.com/cyclotruc/gitingest")
+```
+
+For private repositories, you can pass a token:
+
+```python
+# Using token parameter
+summary, tree, content = ingest("https://github.com/username/private-repo", token="github_pat_...")
+
+# Or set it as an environment variable
+import os
+os.environ["GITHUB_TOKEN"] = "github_pat_..."
+summary, tree, content = ingest("https://github.com/username/private-repo")
 ```
 
 By default, this won't write a file but can be enabled with the `output` argument.

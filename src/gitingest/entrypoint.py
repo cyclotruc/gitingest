@@ -4,6 +4,7 @@ import asyncio
 import inspect
 import os
 import shutil
+import sys
 from typing import Optional, Set, Tuple, Union
 
 from gitingest.cloning import clone_repo
@@ -93,7 +94,12 @@ async def ingest_async(
 
         summary, tree, content = ingest_query(query)
 
-        if output is not None:
+        if output == "-":
+            loop = asyncio.get_running_loop()
+            output_data = tree + "\n" + content
+            await loop.run_in_executor(None, sys.stdout.write, output_data)
+            await loop.run_in_executor(None, sys.stdout.flush)
+        elif output is not None:
             with open(output, "w", encoding="utf-8") as f:
                 f.write(tree + "\n" + content)
 
