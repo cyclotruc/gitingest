@@ -17,4 +17,6 @@ S3_BUCKET_NAME = os.environ.get("GITINGEST_S3_BUCKET", "your-gitingest-bucket-na
 
 OUTPUT_FILE_NAME = "digest.txt"
 
-TMP_BASE_PATH = Path(tempfile.gettempdir()) / "gitingest"
+# Use /tmp directory on Heroku as it's writable
+TMP_BASE_PATH = Path(os.environ.get("TEMP_DIR", "/tmp/gitingest"))
+os.makedirs(TMP_BASE_PATH, exist_ok=True)
