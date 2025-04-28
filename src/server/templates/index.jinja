@@ -21,9 +21,9 @@
                 </path>
             </svg>
             <h1 class="text-4xl sm:text-5xl sm:pt-20 lg:pt-5 md:text-6xl lg:text-7xl font-bold tracking-tighter w-full inline-block text-left md:text-center relative">
-                Prompt-friendly
+                Repository to
                 <br>
-                codebase&nbsp;
+                docs&nbsp;
             </h1>
             <svg class="w-16 lg:w-20 h-auto lg:absolute flex-shrink-0 right-0 bottom-0 md:block hidden translate-y-10 md:translate-y-20 lg:translate-y-4 lg:-translate-x-12 -translate-x-10"
                  viewBox="0 0 92 80"
@@ -36,10 +36,10 @@
             </svg>
         </div>
         <p class="text-gray-600 text-lg max-w-2xl mx-auto text-center mt-8">
-            Turn any Git repository into a simple text digest of its codebase.
+            Turn any Git repository into a documentation link.
         </p>
         <p class="text-gray-600 text-lg max-w-2xl mx-auto text-center mt-0">
-            This is useful for feeding a codebase into any LLM.
+            This is useful for fast indexing by AI coding tools like cursor.
         </p>
     </div>
     {% if error_message %}
@@ -50,8 +50,5 @@
     {% with is_index=true, show_examples=true %}
         {% include 'components/git_form.jinja' %}
     {% endwith %}
-    <p class="text-gray-600 text-sm max-w-2xl mx-auto text-center mt-4">
-        You can also replace 'hub' with 'ingest' in any GitHub URL.
-    </p>
     {% include 'components/result.jinja' %}
 {% endblock %}
