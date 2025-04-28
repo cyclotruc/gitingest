@@ -27,6 +27,30 @@
 
         patternInput.value = patternFiles.join(", ");
     }
+    
+    // Function to copy documentation link to clipboard
+    function copyDocumentationLink() {
+        const contentUrl = document.getElementById('documentation-url').value;
+        if (!contentUrl) {
+            alert('Documentation link not available');
+            return;
+        }
+        
+        navigator.clipboard.writeText(contentUrl)
+            .then(() => {
+                // Optional: Show success feedback
+                const button = document.getElementById('copy-doc-link-btn');
+                const originalText = button.innerHTML;
+                button.innerHTML = '<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Copied!';
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                }, 2000);
+            })
+            .catch(err => {
+                console.error('Failed to copy: ', err);
+                alert('Failed to copy documentation link');
+            });
+    }
 </script>
 {% if result %}
     <div class="mt-10" data-results>
@@ -48,6 +72,7 @@
                         
                         {# --- Cloud URL Link (Replaces Download) --- #}
                         {% if content_url %}
+                            <input type="hidden" id="documentation-url" value="{{ content_url }}" />
                             <div class="relative mt-4 inline-block group">
                                 <div class="w-full h-full rounded bg-gray-900 translate-y-1 translate-x-1 absolute inset-0"></div>
                                 <a href="{{ content_url }}" target="_blank" rel="noopener noreferrer"
@@ -55,23 +80,13 @@
                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                       </svg>
-                                    View Digest (Cloud)
+                                    View Documentation (Cloud)
                                 </a>
                             </div>
-                        {% elif upload_failed %}
-                             <p class="mt-4 text-red-600 font-semibold">{{ error_message | default('Cloud upload failed.') }}</p>
-                        {% elif content %}
-                             {# Optionally add a message if only local content is available #}
-                             <p class="mt-4 text-gray-600 text-sm">Digest generated locally (cloud upload disabled or not configured).</p>
-                        {% endif %}
-                        {# --- End Cloud URL Link --- #}
-
-                        {# Keep the 'Copy all' button if it refers to copying displayed content (summary + tree + files content text area) #}
-                        {# If it tried to fetch full content, it might need adjustment #}
-                        {% if content %}
+                            
                             <div class="relative mt-4 inline-block group ml-4">
                                 <div class="w-full h-full rounded bg-gray-900 translate-y-1 translate-x-1 absolute inset-0"></div>
-                                <button onclick="copyFullDigest()" {# Add disable logic if needed #}
+                                <button id="copy-doc-link-btn" onclick="copyDocumentationLink()"
                                         class="inline-flex items-center px-4 py-2 bg-[#ffc480] border-[3px] border-gray-900 text-gray-900 rounded group-hover:-translate-y-px group-hover:-translate-x-px transition-transform relative z-10">
                                     <svg class="w-4 h-4 mr-2"
                                          fill="none"
@@ -79,10 +94,16 @@
                                          viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                                     </svg>
-                                    Copy Displayed Digest
+                                    Copy Documentation Link
                                 </button>
                             </div>
+                        {% elif upload_failed %}
+                             <p class="mt-4 text-red-600 font-semibold">{{ error_message | default('Cloud upload failed.') }}</p>
+                        {% elif content %}
+                             {# Optionally add a message if only local content is available #}
+                             <p class="mt-4 text-gray-600 text-sm">Documentation generated locally (cloud upload disabled or not configured).</p>
                         {% endif %}
+                        {# --- End Cloud URL Link --- #}
                     </div>
                     <!-- Directory Structure Column -->
                     <div class="md:col-span-7">
@@ -114,38 +135,7 @@
                         </div>
                     </div>
                 </div>
-                <!-- Full Digest -->
-                <div>
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-bold text-gray-900">Files Content</h3>
-                         {# Conditionally disable copy button if showing URL message #}
-                        <div class="relative group">
-                             <div class="w-full h-full rounded bg-gray-900 translate-y-1 translate-x-1 absolute inset-0"></div>
-                             <button onclick="copyText('result-text')" 
-                                     {% if content_url or upload_failed %}disabled title="Content not available to copy here"{% endif %}
-                                     class="px-4 py-2 bg-[#ffc480] border-[3px] border-gray-900 text-gray-900 rounded group-hover:-translate-y-px group-hover:-translate-x-px transition-transform relative z-10 flex items-center gap-2 {% if content_url or upload_failed %}opacity-50 cursor-not-allowed{% endif %}">
-                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                                 </svg>
-                                 Copy
-                             </button>
-                         </div>
-                    </div>
-                    <div class="relative">
-                        <div class="w-full h-full rounded bg-gray-900 translate-y-1 translate-x-1 absolute inset-0"></div>
-                        <textarea id="result-text" class="result-text w-full p-4 bg-[#fff4da] border-[3px] border-gray-900 rounded font-mono text-sm resize-y focus:outline-none relative z-10"
-                                  style="min-height: {{ '200px' if content_url or upload_failed else ('600px' if content else '100px') }}" {# Adjust height #}
-                                  readonly>{% if content_url %}
-Digest successfully uploaded to cloud storage. Use the link above to view.
-{% elif upload_failed %}
-{{ error_message | default('Failed to upload digest content to cloud storage.') }}
-{% elif content %}
-{{ content }}{# Display truncated content #}
-{% else %}
-No content available.
-{% endif %}</textarea>
-                    </div>
-                </div>
+                <!-- Files Content section has been removed -->
             </div>
         </div>
     </div>
