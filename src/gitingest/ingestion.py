@@ -93,9 +93,11 @@ def ingest_query(query: IngestionQuery) -> Tuple[str, str, str | None]:
     # --- Upload to S3 if configured --- START
     content_url: str | None = None
     if gitingest_config.S3_BUCKET_NAME and gitingest_config.S3_BUCKET_NAME != "your-gitingest-bucket-name":
+        # Combine summary, tree, and content for a complete digest upload
+        full_content = f"{summary}\n\n{tree}\n\n{content}"
         object_name = f"digests/{query.slug or 'local'}/{uuid.uuid4()}.txt"
         content_url = upload_content_to_s3(
-            content=content,
+            content=full_content,
             bucket_name=gitingest_config.S3_BUCKET_NAME,
             object_name=object_name
         )

@@ -119,7 +119,9 @@ def _sync_main(
         
         output_path.parent.mkdir(parents=True, exist_ok=True)
         try:
-            output_path.write_text(content_or_url, encoding="utf-8")
+            # Combine all parts for the file output
+            full_content = f"{summary}\n\n{tree}\n\n{content_or_url}"
+            output_path.write_text(full_content, encoding="utf-8")
             click.echo(f"\nContent digest written to: {output_path.resolve()}")
         except Exception as e:
              click.echo(f"\nError writing content digest to {output_path.resolve()}: {e}", err=True)
