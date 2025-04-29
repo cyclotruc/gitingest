@@ -12,6 +12,9 @@ MAX_FILE_SIZE_MB = int(os.environ.get("GITINGEST_MAX_FILE_SIZE_MB", 1))
 MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 MAX_DIRECTORY_DEPTH = int(os.environ.get("GITINGEST_MAX_DIRECTORY_DEPTH", 10))
 
+# GitHub Configuration
+GITHUB_PAT = os.environ.get("GITHUB_PAT")
+
 # Cloud Upload Configuration (NEW)
 S3_BUCKET_NAME = os.environ.get("GITINGEST_S3_BUCKET", "your-gitingest-bucket-name") # Replace with your actual bucket or keep None
 

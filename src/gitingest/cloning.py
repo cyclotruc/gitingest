@@ -7,6 +7,7 @@ from typing import Optional
 from gitingest.schemas import CloneConfig
 from gitingest.utils.git_utils import check_repo_exists, ensure_git_installed, run_command
 from gitingest.utils.timeout_wrapper import async_timeout
+from gitingest.config import GITHUB_PAT
 
 TIMEOUT: int = 60
 
@@ -39,6 +40,10 @@ async def clone_repo(config: CloneConfig) -> None:
     branch: Optional[str] = config.branch
     partial_clone: bool = config.subpath != "/"
 
+    # Add GitHub PAT if available and URL is from GitHub
+    if GITHUB_PAT and "github.com" in url:
+        url = url.replace("https://", f"https://{GITHUB_PAT}@")
+
     # Create parent directory if it doesn't exist
     parent_dir = Path(local_path).parent
     try:
@@ -48,7 +53,7 @@ async def clone_repo(config: CloneConfig) -> None:
 
     # Check if the repository exists
     if not await check_repo_exists(url):
-        raise ValueError("Repository not found, make sure it is public")
+        raise ValueError("Repository not found, make sure it is public or you have access")
 
     clone_cmd = ["git", "clone", "--single-branch"]
     # TODO re-enable --recurse-submodules
