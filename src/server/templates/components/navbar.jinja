@@ -1,25 +1,5 @@
 <script>
-    function formatStarCount(count) {
-        if (count >= 1000) {
-            return (count / 1000).toFixed(1) + 'k';
-        }
-        return count.toString();
-    }
-
-    async function fetchGitHubStars() {
-        try {
-            const response = await fetch('https://api.github.com/repos/cyclotruc/gitingest');
-            const data = await response.json();
-            const starCount = data.stargazers_count;
-
-            document.getElementById('github-stars').textContent = formatStarCount(starCount);
-        } catch (error) {
-            console.error('Error fetching GitHub stars:', error);
-            document.getElementById('github-stars').parentElement.style.display = 'none';
-        }
-    }
-
-    fetchGitHubStars();
+    // No need for GitHub stars functionality anymore
 </script>
 <header class="sticky top-0 bg-[#FFFDF8] border-b-[3px] border-gray-900 z-50">
     <div class="max-w-4xl mx-auto px-4">
@@ -28,54 +8,19 @@
             <div class="flex items-center gap-4">
                 <h1 class="text-2xl font-bold tracking-tight">
                     <a href="/" class="hover:opacity-80 transition-opacity">
-                        <span class="text-gray-900">Git</span><span class="text-[#FE4A60]">ingest</span>
+                        <span class="text-gray-900">Git</span><span class="text-[#FE4A60]">docs</span>
                     </a>
                 </h1>
             </div>
             <!-- Navigation with updated styling -->
             <nav class="flex items-center space-x-6">
-                <!-- Simplified Chrome extension button -->
-                <a href="https://chromewebstore.google.com/detail/git-ingest-turn-any-git-r/adfjahbijlkjfoicpjkhjicpjpjfaood"
+                <!-- Inspired by gitingest link -->
+                <a href="https://github.com/cyclotruc/gitingest"
                    target="_blank"
                    rel="noopener noreferrer"
                    class="text-gray-900 hover:-translate-y-0.5 transition-transform flex items-center gap-1.5">
-                    <div class="flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg"
-                             width="24"
-                             height="24"
-                             viewBox="0 0 50 50"
-                             fill="none"
-                             stroke="currentColor"
-                             stroke-width="3"
-                             class="w-4 h-4 mx-1">
-                            <path d="M 25 2 C 12.309295 2 2 12.309295 2 25 C 2 37.690705 12.309295 48 25 48 C 37.690705 48 48 37.690705 48 25 C 48 12.309295 37.690705 2 25 2 z M 25 4 C 32.987976 4 39.925645 8.44503 43.476562 15 L 25 15 A 1.0001 1.0001 0 0 0 24.886719 15.005859 C 19.738868 15.064094 15.511666 19.035373 15.046875 24.078125 L 8.0351562 12.650391 C 11.851593 7.4136918 18.014806 4 25 4 z M 6.8242188 14.501953 L 16.476562 30.230469 A 1.0001 1.0001 0 0 0 16.591797 30.388672 A 1.0001 1.0001 0 0 0 16.59375 30.392578 C 18.3752 33.158533 21.474925 35 25 35 C 26.413063 35 27.756327 34.701734 28.976562 34.169922 L 22.320312 45.824219 C 11.979967 44.509804 4 35.701108 4 25 C 4 21.169738 5.0375742 17.591533 6.8242188 14.501953 z M 25 17 C 29.430123 17 33 20.569877 33 25 C 33 26.42117 32.629678 27.751591 31.984375 28.90625 A 1.0001 1.0001 0 0 0 31.982422 28.908203 A 1.0001 1.0001 0 0 0 31.947266 28.966797 C 30.57172 31.37734 27.983486 33 25 33 C 20.569877 33 17 29.430123 17 25 C 17 20.569877 20.569877 17 25 17 z M 30.972656 17 L 44.421875 17 C 45.43679 19.465341 46 22.165771 46 25 C 46 36.609824 36.609824 46 25 46 C 24.842174 46 24.686285 45.991734 24.529297 45.988281 L 33.683594 29.958984 A 1.0001 1.0001 0 0 0 33.742188 29.841797 C 34.541266 28.405674 35 26.755664 35 25 C 35 21.728612 33.411062 18.825934 30.972656 17 z" />
-                        </svg>
-                        Extension
-                    </div>
+                    Inspired by gitingest
                 </a>
-                <div class="flex items-center gap-2">
-                    <a href="https://github.com/cyclotruc/gitingest"
-                       target="_blank"
-                       rel="noopener noreferrer"
-                       class="text-gray-900 hover:-translate-y-0.5 transition-transform flex items-center gap-1.5">
-                        <svg class="w-4 h-4"
-                             fill="currentColor"
-                             viewBox="0 0 24 24"
-                             aria-hidden="true">
-                            <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd">
-                            </path>
-                        </svg>
-                        GitHub
-                    </a>
-                    <div class="flex items-center text-sm text-gray-600">
-                        <svg class="w-4 h-4 text-[#ffc480] mr-1"
-                             fill="currentColor"
-                             viewBox="0 0 20 20">
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                        <span id="github-stars">0</span>
-                    </div>
-                </div>
             </nav>
         </div>
     </div>

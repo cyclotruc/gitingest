@@ -3,12 +3,15 @@
 import warnings
 from pathlib import Path
 from typing import Tuple
+import uuid
 
+from gitingest import config as gitingest_config
 from gitingest.config import MAX_DIRECTORY_DEPTH, MAX_FILES, MAX_TOTAL_SIZE_BYTES
 from gitingest.output_formatters import format_node
 from gitingest.query_parsing import IngestionQuery
 from gitingest.schemas import FileSystemNode, FileSystemNodeType, FileSystemStats
 from gitingest.utils.ingestion_utils import _should_exclude, _should_include
+from gitingest.cloud_uploader import upload_content_to_s3
 
 try:
     import tomllib  # type: ignore[import]
@@ -16,7 +19,7 @@ except ImportError:
     import tomli as tomllib
 
 
-def ingest_query(query: IngestionQuery) -> Tuple[str, str, str]:
+def ingest_query(query: IngestionQuery) -> Tuple[str, str, str | None]:
     """
     Run the ingestion process for a parsed query.
 
@@ -31,8 +34,10 @@ def ingest_query(query: IngestionQuery) -> Tuple[str, str, str]:
 
     Returns
     -------
-    Tuple[str, str, str]
-        A tuple containing the summary, directory structure, and file contents.
+    Tuple[str, str, str | None]
+        A tuple containing the summary, directory structure, and EITHER the file contents
+        OR the URL to the uploaded content in cloud storage if configured and successful,
+        otherwise None if upload failed.
 
     Raises
     ------
@@ -66,24 +71,53 @@ def ingest_query(query: IngestionQuery) -> Tuple[str, str, str]:
         if not file_node.content:
             raise ValueError(f"File {file_node.name} has no content")
 
-        return format_node(file_node, query)
+        summary, tree, content = format_node(file_node, query)
+    else:
+        root_node = FileSystemNode(
+            name=path.name,
+            type=FileSystemNodeType.DIRECTORY,
+            path_str=str(path.relative_to(query.local_path)),
+            path=path,
+        )
 
-    root_node = FileSystemNode(
-        name=path.name,
-        type=FileSystemNodeType.DIRECTORY,
-        path_str=str(path.relative_to(query.local_path)),
-        path=path,
-    )
+        stats = FileSystemStats()
 
-    stats = FileSystemStats()
+        _process_node(
+            node=root_node,
+            query=query,
+            stats=stats,
+        )
 
-    _process_node(
-        node=root_node,
-        query=query,
-        stats=stats,
-    )
+        summary, tree, content = format_node(root_node, query)
 
-    return format_node(root_node, query)
+    # --- Upload to S3 if configured --- START
+    content_url: str | None = None
+    if gitingest_config.S3_BUCKET_NAME and gitingest_config.S3_BUCKET_NAME != "your-gitingest-bucket-name":
+        # Combine summary, tree, and content for a complete digest upload
+        full_content = f"{summary}\n\n{tree}\n\n{content}"
+        object_name = f"digests/{query.slug or 'local'}/{uuid.uuid4()}.txt"
+        content_url = upload_content_to_s3(
+            content=full_content,
+            bucket_name=gitingest_config.S3_BUCKET_NAME,
+            object_name=object_name
+        )
+        if not content_url:
+            warnings.warn(f"S3 upload configured but failed for {object_name}", UserWarning)
+            # Decide how to handle failure: return original content or None?
+            # Returning None for the third element to indicate failure/no URL
+            return summary, tree, None
+    else:
+        # If bucket not configured, return original content
+        # To enforce upload, you could raise an error here or return None
+        # For now, returning original content if S3 is not set up
+        # This means the return type MUST remain flexible
+        # Let's change strategy: return URL if successful, original content otherwise
+        pass # Keep original content
+
+    # --- Upload to S3 if configured --- END
+
+    # Return summary, tree, and either URL or original content
+    return summary, tree, content_url if content_url else content
 
 
 def apply_gitingest_file(path: Path, query: IngestionQuery) -> None:

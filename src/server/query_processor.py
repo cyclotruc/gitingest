@@ -71,6 +71,10 @@ async def process_query(
         "default_file_size": slider_position,
         "pattern_type": pattern_type,
         "pattern": pattern,
+        "content": None,
+        "content_url": None,
+        "error_message": None,
+        "upload_failed": False,
     }
 
     try:
@@ -86,45 +90,52 @@ async def process_query(
 
         clone_config = query.extract_clone_config()
         await clone_repo(clone_config)
-        summary, tree, content = ingest_query(query)
-        with open(f"{clone_config.local_path}.txt", "w", encoding="utf-8") as f:
-            f.write(tree + "\n" + content)
+        summary, tree, content_or_url = ingest_query(query)
+
+        is_url = isinstance(content_or_url, str) and content_or_url.startswith("http")
+
+        if is_url:
+            context["content_url"] = content_or_url
+            context["content"] = "Content uploaded to cloud storage."
+            _print_success(url=query.url, max_file_size=max_file_size, pattern_type=pattern_type, pattern=pattern, summary=summary, uploaded=True)
+
+        elif content_or_url is not None:
+            content = content_or_url
+            if len(content) > MAX_DISPLAY_SIZE:
+                content = (
+                    f"(Files content cropped to {int(MAX_DISPLAY_SIZE / 1_000)}k characters, "
+                    "full digest available via CLI or if S3 upload is enabled)\n" + content[:MAX_DISPLAY_SIZE]
+                )
+            context["content"] = content
+            _print_success(url=query.url, max_file_size=max_file_size, pattern_type=pattern_type, pattern=pattern, summary=summary, uploaded=False)
+
+        else:
+            context["error_message"] = "Content digest generated, but cloud upload failed."
+            context["upload_failed"] = True
+            print(f"{Colors.BROWN}WARN{Colors.END}: {Colors.RED}<-  {Colors.END}", end="")
+            _print_query(query.url, max_file_size, pattern_type, pattern)
+            print(f" | {Colors.RED}S3 Upload Failed{Colors.END}")
+
     except Exception as exc:
-        # hack to print error message when query is not defined
         if "query" in locals() and query is not None and isinstance(query, dict):
             _print_error(query["url"], exc, max_file_size, pattern_type, pattern)
         else:
             print(f"{Colors.BROWN}WARN{Colors.END}: {Colors.RED}<-  {Colors.END}", end="")
             print(f"{Colors.RED}{exc}{Colors.END}")
 
-        context["error_message"] = f"Error: {exc}"
+        context["error_message"] = f"Error processing request: {exc}"
         if "405" in str(exc):
             context["error_message"] = (
                 "Repository not found. Please make sure it is public (private repositories will be supported soon)"
             )
         return template_response(context=context)
 
-    if len(content) > MAX_DISPLAY_SIZE:
-        content = (
-            f"(Files content cropped to {int(MAX_DISPLAY_SIZE / 1_000)}k characters, "
-            "download full ingest to see more)\n" + content[:MAX_DISPLAY_SIZE]
-        )
-
-    _print_success(
-        url=query.url,
-        max_file_size=max_file_size,
-        pattern_type=pattern_type,
-        pattern=pattern,
-        summary=summary,
-    )
-
     context.update(
         {
             "result": True,
             "summary": summary,
             "tree": tree,
-            "content": content,
-            "ingest_id": query.id,
+            "ingest_id": query.id if 'query' in locals() and query else None,
         }
     )
 
@@ -179,7 +190,7 @@ def _print_error(url: str, e: Exception, max_file_size: int, pattern_type: str, 
     print(f" | {Colors.RED}{e}{Colors.END}")
 
 
-def _print_success(url: str, max_file_size: int, pattern_type: str, pattern: str, summary: str) -> None:
+def _print_success(url: str, max_file_size: int, pattern_type: str, pattern: str, summary: str, uploaded: bool) -> None:
     """
     Print a formatted success message, including the URL, file size, pattern details, and a summary with estimated
     tokens, for debugging or logging purposes.
@@ -196,8 +207,11 @@ def _print_success(url: str, max_file_size: int, pattern_type: str, pattern: str
         The actual pattern string to include or exclude in the query.
     summary : str
         A summary of the query result, including details like estimated tokens.
+    uploaded : bool
+        Whether the content was uploaded to cloud storage.
     """
     estimated_tokens = summary[summary.index("Estimated tokens:") + len("Estimated ") :]
+    upload_status = f"{Colors.CYAN}Uploaded{Colors.END}" if uploaded else f"{Colors.YELLOW}Local{Colors.END}"
     print(f"{Colors.GREEN}INFO{Colors.END}: {Colors.GREEN}<-  {Colors.END}", end="")
     _print_query(url, max_file_size, pattern_type, pattern)
-    print(f" | {Colors.PURPLE}{estimated_tokens}{Colors.END}")
+    print(f" | {Colors.PURPLE}{estimated_tokens}{Colors.END} | {upload_status}")

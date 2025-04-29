@@ -5,13 +5,14 @@ from pathlib import Path
 from typing import Dict
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from server.routers import download, dynamic, index
+from server.routers import index, dynamic
 from server.server_config import templates
 from server.server_utils import lifespan, limiter, rate_limit_exception_handler
 
@@ -37,7 +38,7 @@ if allowed_hosts:
     allowed_hosts = allowed_hosts.split(",")
 else:
     # Define the default allowed hosts for the application
-    default_allowed_hosts = ["gitingest.com", "*.gitingest.com", "localhost", "127.0.0.1"]
+    default_allowed_hosts = ["gitdocs.com", "*.gitdocs.com", "localhost", "127.0.0.1"]
     allowed_hosts = default_allowed_hosts
 
 # Add middleware to enforce allowed hosts
@@ -104,7 +105,6 @@ async def robots() -> FileResponse:
     return FileResponse("static/robots.txt")
 
 
-# Include routers for modular endpoints
+# Include routers for modular endpoints - use the imported router objects directly
 app.include_router(index)
-app.include_router(download)
 app.include_router(dynamic)
