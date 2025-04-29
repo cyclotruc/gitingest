@@ -72,14 +72,17 @@ async def check_repo_exists(url: str) -> bool:
     RuntimeError
         If the curl command returns an unexpected status code.
     """
+    curl_cmd = ["curl", "-I"]
+    
     # Add GitHub PAT if available and URL is from GitHub
     if GITHUB_PAT and "github.com" in url:
-        url = url.replace("https://", f"https://{GITHUB_PAT}@")
+        curl_cmd.extend(["-H", f"Authorization: token {GITHUB_PAT}"])
+        # Don't modify the URL itself, just add the token in the header
+    
+    curl_cmd.append(url)
 
     proc = await asyncio.create_subprocess_exec(
-        "curl",
-        "-I",
-        url,
+        *curl_cmd,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
