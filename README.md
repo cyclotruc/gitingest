@@ -144,7 +144,7 @@ import asyncio
 # Scenario: Ingest only files within the 'src/' directory of a specific branch,
 # but explicitly exclude any '.log' files found within 'src/'.
 
-repo_source = "https://github.com/some/repo"
+repo_source = "https://github.com/some/repo"   # or path/to/directory
 target_branch = "develop"
 include_only_src = {"src/*"}      # Glob pattern to match items directly inside src/
 exclude_src_logs = {"src/*.log"}  # Pattern to exclude log files specifically within src/
