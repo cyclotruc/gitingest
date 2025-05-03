@@ -89,6 +89,23 @@ gitingest --help
 
 This will write the digest in a text file (default `digest.txt`) in your current working directory.
 
+### Using Multiple Patterns (CLI)
+
+You can specify multiple patterns to include or exclude files and directories by repeating the respective flags (-e for exclude, -i for include). Patterns use standard shell wildcards.
+
+```bash
+# Example 1: Exclude all log files, temporary files, and the entire 'dist' directory
+gitingest /path/to/your/project -e "*.log" -e "*.tmp" -e "dist/"
+
+# Example 2: Include only Python files and Markdown files from the repository
+gitingest https://github.com/user/repo -i "*.py" -i "*.md"
+
+# Example 3: Exclude test directories and specific config files from the current directory (.)
+gitingest . -e "tests/" -e "**/config.dev.json" -e "node_modules/"
+```
+
+Remember that exclusion patterns take precedence. If specific include patterns are provided, only files matching those and not matching any exclude pattern will be processed.
+
 ## 🐍 Python package usage
 
 ```python
@@ -110,6 +127,60 @@ import asyncio
 
 result = asyncio.run(ingest_async("path/to/directory"))
 ```
+
+### Advanced Pattern Usage (Python API)
+
+The Python API allows for fine-grained control by combining include_patterns and exclude_patterns. When both are provided:
+
+Files/directories are first checked against all exclusion patterns (default built-in patterns + user-provided exclude_patterns). If a match occurs, the item is skipped.
+
+If include_patterns are specified, any remaining item must also match at least one of the include patterns to be kept. If include_patterns is None or empty, this step is skipped.
+
+```python
+# Advanced Python API Example
+from gitingest import ingest
+import asyncio
+
+# Scenario: Ingest only files within the 'src/' directory of a specific branch,
+# but explicitly exclude any '.log' files found within 'src/'.
+
+repo_source = "https://github.com/some/repo"
+target_branch = "develop"
+include_only_src = {"src/*"}      # Glob pattern to match items directly inside src/
+exclude_src_logs = {"src/*.log"}  # Pattern to exclude log files specifically within src/
+
+# --- Synchronous Usage ---
+print("Running synchronous ingest with patterns...")
+summary_sync, tree_sync, content_sync = ingest(
+    repo_source,
+    branch=target_branch,
+    include_patterns=include_only_src,
+    exclude_patterns=exclude_src_logs
+    # Note: Default ignores like .git/, .venv/ are still active automatically
+)
+
+print("\n--- Sync Summary ---")
+print(summary_sync)
+# The resulting tree and content will only contain non-log files
+# directly within the 'src/' directory of the 'develop' branch.
+
+# --- Asynchronous Usage ---
+async def run_async_ingest():
+    print("\nRunning asynchronous ingest with patterns...")
+    summary_async, tree_async, content_async = await ingest_async(
+        repo_source,
+        branch=target_branch,
+        include_patterns=include_only_src,
+        exclude_patterns=exclude_src_logs
+    )
+    print("\n--- Async Summary ---")
+    print(summary_async)
+
+# Run the async example
+# asyncio.run(run_async_ingest())
+```
+
+This setup ensures that even if src/ contains log files, they will be explicitly removed from the final digest, while only other files directly within src/ are included.
 
 ### Jupyter notebook usage
 
