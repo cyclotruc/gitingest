@@ -30,10 +30,34 @@ You can also replace `hub` with `ingest` in any GitHub URL to access the corresp
 
 - Python 3.7+
 
-## 📦 Installation
+### 📦 Installation
 
-``` bash
+Gitingest is available on [PyPI](https://pypi.org/project/gitingest/).
+You can install it using `pip`:
+
+```bash
 pip install gitingest
+```
+
+However, it might be a good idea to use `pipx` to install it.
+You can install `pipx` using your preferred package manager.
+
+```bash
+brew install pipx
+apt install pipx
+scoop install pipx
+...
+```
+
+If you are using pipx for the first time, run:
+
+```bash
+pipx ensurepath
+```
+
+```bash
+# install gitingest
+pipx install gitingest
 ```
 
 ## 🧩 Browser Extension Usage
