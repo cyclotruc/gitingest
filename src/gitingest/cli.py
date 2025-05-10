@@ -18,6 +18,7 @@ from gitingest.entrypoint import ingest_async
 @click.option("--exclude-pattern", "-e", multiple=True, help="Patterns to exclude")
 @click.option("--include-pattern", "-i", multiple=True, help="Patterns to include")
 @click.option("--branch", "-b", default=None, help="Branch to clone and ingest")
+@click.option("--access-token", default=None, help="Access token for private repositories (e.g., GitHub, GitLab)")
 def main(
     source: str,
     output: Optional[str],
@@ -25,6 +26,7 @@ def main(
     exclude_pattern: Tuple[str, ...],
     include_pattern: Tuple[str, ...],
     branch: Optional[str],
+    access_token: Optional[str],
 ):
     """
      Main entry point for the CLI. This function is called when the CLI is run as a script.
@@ -46,9 +48,11 @@ def main(
         A tuple of patterns to include during the analysis. Only files matching these patterns will be processed.
     branch : str, optional
         The branch to clone (optional).
+    access_token : str, optional
+        Access token for private repositories (optional).
     """
     # Main entry point for the CLI. This function is called when the CLI is run as a script.
-    asyncio.run(_async_main(source, output, max_size, exclude_pattern, include_pattern, branch))
+    asyncio.run(_async_main(source, output, max_size, exclude_pattern, include_pattern, branch, access_token))
 
 
 async def _async_main(
@@ -58,6 +62,7 @@ async def _async_main(
     exclude_pattern: Tuple[str, ...],
     include_pattern: Tuple[str, ...],
     branch: Optional[str],
+    access_token: Optional[str],
 ) -> None:
     """
     Analyze a directory or repository and create a text dump of its contents.
@@ -80,6 +85,8 @@ async def _async_main(
         A tuple of patterns to include during the analysis. Only files matching these patterns will be processed.
     branch : str, optional
         The branch to clone (optional).
+    access_token : str, optional
+        Access token for private repositories (optional).
 
     Raises
     ------
@@ -93,7 +100,15 @@ async def _async_main(
 
         if not output:
             output = OUTPUT_FILE_NAME
-        summary, _, _ = await ingest_async(source, max_size, include_patterns, exclude_patterns, branch, output=output)
+        summary, _, _ = await ingest_async(
+            source=source,
+            max_file_size=max_size,
+            include_patterns=include_patterns,
+            exclude_patterns=exclude_patterns,
+            branch=branch,
+            output=output,
+            access_token=access_token,
+        )
 
         click.echo(f"Analysis complete! Output written to: {output}")
         click.echo("\nSummary:")
