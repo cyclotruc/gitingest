@@ -86,7 +86,18 @@ function handleSubmit(event, showLoading = false) {
         submitButton.classList.add('bg-[#ffb14d]');
     }
 
-    // Submit the form
+    // Get the input repo URL for possible URL rewriting
+    const inputText = form.querySelector('input[name="input_text"]').value.trim();
+
+    // Helper to extract username/repo from a GitHub URL
+    function extractRepoPath(url) {
+        const match = url.match(/^https?:\/\/(www\.)?github\.com\/([^\/]+)\/([^\/]+)(\/.*)?$/);
+        if (match) {
+            return `/${match[2]}/${match[3]}`;
+        }
+        return null;
+    }
+
     fetch(form.action, {
         method: 'POST',
         body: formData
@@ -98,6 +109,12 @@ function handleSubmit(event, showLoading = false) {
 
             // Replace the entire body content with the new HTML
             document.body.innerHTML = html;
+
+            // If the input was a GitHub repo URL, update the browser URL
+            const repoPath = extractRepoPath(inputText);
+            if (repoPath) {
+                window.history.pushState({}, '', repoPath);
+            }
 
             // Wait for next tick to ensure DOM is updated
             setTimeout(() => {
