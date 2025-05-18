@@ -3,10 +3,12 @@
 import os
 from pathlib import Path
 from typing import Optional
+import asyncio
 
 from gitingest.schemas import CloneConfig
 from gitingest.utils.git_utils import check_repo_exists, ensure_git_installed, run_command
 from gitingest.utils.timeout_wrapper import async_timeout
+from gitingest.config import GITHUB_PAT
 
 TIMEOUT: int = 60
 
@@ -48,11 +50,18 @@ async def clone_repo(config: CloneConfig) -> None:
 
     # Check if the repository exists
     if not await check_repo_exists(url):
-        raise ValueError("Repository not found, make sure it is public")
+        raise ValueError("Repository not found, make sure it is public or you have access")
 
     clone_cmd = ["git", "clone", "--single-branch"]
-    # TODO re-enable --recurse-submodules
+    
+    # Add GitHub PAT if available and URL is from GitHub
+    env = os.environ.copy()
+    if GITHUB_PAT and "github.com" in url:
+        env["GIT_ASKPASS"] = "echo"
+        env["GIT_USERNAME"] = "git"
+        env["GIT_PASSWORD"] = GITHUB_PAT
 
+    # TODO re-enable --recurse-submodules
     if partial_clone:
         clone_cmd += ["--filter=blob:none", "--sparse"]
 
@@ -63,9 +72,18 @@ async def clone_repo(config: CloneConfig) -> None:
 
     clone_cmd += [url, local_path]
 
-    # Clone the repository
+    # Clone the repository with the environment variables set
     await ensure_git_installed()
-    await run_command(*clone_cmd)
+    proc = await asyncio.create_subprocess_exec(
+        *clone_cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+        env=env
+    )
+    stdout, stderr = await proc.communicate()
+    if proc.returncode != 0:
+        error_message = stderr.decode().strip()
+        raise RuntimeError(f"Command failed: {' '.join(clone_cmd)}\nError: {error_message}")
 
     if commit or partial_clone:
         checkout_cmd = ["git", "-C", local_path]
