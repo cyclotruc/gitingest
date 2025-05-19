@@ -57,85 +57,40 @@
         <div class="relative">
             <div class="w-full h-full absolute inset-0 bg-gray-900 rounded-xl translate-y-2 translate-x-2"></div>
             <div class="bg-[#fafafa] rounded-xl border-[3px] border-gray-900 p-6 relative z-20 space-y-6">
-                <!-- Summary and Directory Structure -->
-                <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
-                    <!-- Summary Column -->
-                    <div class="md:col-span-5">
-                        <div class="flex justify-between items-center mb-4 py-2">
-                            <h3 class="text-lg font-bold text-gray-900">Summary</h3>
-                        </div>
-                        <div class="relative">
+                <!-- Documentation Buttons Only -->
+                <div class="flex flex-wrap justify-center gap-4">
+                    {% if content_url %}
+                        <input type="hidden" id="documentation-url" value="{{ content_url }}" />
+                        <div class="relative inline-block group">
                             <div class="w-full h-full rounded bg-gray-900 translate-y-1 translate-x-1 absolute inset-0"></div>
-                            <textarea class="w-full h-[160px] p-4 bg-[#fff4da] border-[3px] border-gray-900 rounded font-mono text-sm resize-none focus:outline-none relative z-10"
-                                      readonly>{{ summary }}</textarea>
+                            <a href="{{ content_url }}" target="_blank" rel="noopener noreferrer"
+                               class="inline-flex items-center px-4 py-2 bg-[#a0e8a0] border-[3px] border-gray-900 text-gray-900 rounded group-hover:-translate-y-px group-hover:-translate-x-px transition-transform relative z-10">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                                View Documentation (Cloud)
+                            </a>
                         </div>
                         
-                        {# --- Cloud URL Link (Replaces Download) --- #}
-                        {% if content_url %}
-                            <input type="hidden" id="documentation-url" value="{{ content_url }}" />
-                            <div class="relative mt-4 inline-block group">
-                                <div class="w-full h-full rounded bg-gray-900 translate-y-1 translate-x-1 absolute inset-0"></div>
-                                <a href="{{ content_url }}" target="_blank" rel="noopener noreferrer"
-                                   class="inline-flex items-center px-4 py-2 bg-[#a0e8a0] border-[3px] border-gray-900 text-gray-900 rounded group-hover:-translate-y-px group-hover:-translate-x-px transition-transform relative z-10">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                      </svg>
-                                    View Documentation (Cloud)
-                                </a>
-                            </div>
-                            
-                            <div class="relative mt-4 inline-block group ml-4">
-                                <div class="w-full h-full rounded bg-gray-900 translate-y-1 translate-x-1 absolute inset-0"></div>
-                                <button id="copy-doc-link-btn" onclick="copyDocumentationLink()"
-                                        class="inline-flex items-center px-4 py-2 bg-[#ffc480] border-[3px] border-gray-900 text-gray-900 rounded group-hover:-translate-y-px group-hover:-translate-x-px transition-transform relative z-10">
-                                    <svg class="w-4 h-4 mr-2"
-                                         fill="none"
-                                         stroke="currentColor"
-                                         viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                                    </svg>
-                                    Copy Documentation Link
-                                </button>
-                            </div>
-                        {% elif upload_failed %}
-                             <p class="mt-4 text-red-600 font-semibold">{{ error_message | default('Cloud upload failed.') }}</p>
-                        {% elif content %}
-                             {# Optionally add a message if only local content is available #}
-                             <p class="mt-4 text-gray-600 text-sm">Documentation generated locally (cloud upload disabled or not configured).</p>
-                        {% endif %}
-                        {# --- End Cloud URL Link --- #}
-                    </div>
-                    <!-- Directory Structure Column -->
-                    <div class="md:col-span-7">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-bold text-gray-900">Directory Structure</h3>
-                            <div class="relative group">
-                                <div class="w-full h-full rounded bg-gray-900 translate-y-1 translate-x-1 absolute inset-0"></div>
-                                <button onclick="copyText('directory-structure')"
-                                        class="px-4 py-2 bg-[#ffc480] border-[3px] border-gray-900 text-gray-900 rounded group-hover:-translate-y-px group-hover:-translate-x-px transition-transform relative z-10 flex items-center gap-2">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                                    </svg>
-                                    Copy
-                                </button>
-                            </div>
-                        </div>
-                        <div class="relative">
+                        <div class="relative inline-block group">
                             <div class="w-full h-full rounded bg-gray-900 translate-y-1 translate-x-1 absolute inset-0"></div>
-                            <div class="directory-structure w-full p-4 bg-[#fff4da] border-[3px] border-gray-900 rounded font-mono text-sm resize-y focus:outline-none relative z-10 h-[215px] overflow-auto"
-                                 id="directory-structure-container"
-                                 readonly>
-                                <input type="hidden" id="directory-structure-content" value="{{ tree }}" />
-                                {% for line in tree.splitlines() %}
-                                    <pre name="tree-line"
-                                         class="cursor-pointer hover:line-through hover:text-gray-500"
-                                         onclick="toggleFile(this)">{{ line }}</pre>
-                                {% endfor %}
-                            </div>
+                            <button id="copy-doc-link-btn" onclick="copyDocumentationLink()"
+                                    class="inline-flex items-center px-4 py-2 bg-[#ffc480] border-[3px] border-gray-900 text-gray-900 rounded group-hover:-translate-y-px group-hover:-translate-x-px transition-transform relative z-10">
+                                <svg class="w-4 h-4 mr-2"
+                                     fill="none"
+                                     stroke="currentColor"
+                                     viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                                </svg>
+                                Copy Documentation Link
+                            </button>
                         </div>
-                    </div>
+                    {% elif upload_failed %}
+                         <p class="text-red-600 font-semibold">{{ error_message | default('Cloud upload failed.') }}</p>
+                    {% elif content %}
+                         <p class="text-gray-600 text-sm">Documentation generated locally (cloud upload disabled or not configured).</p>
+                    {% endif %}
                 </div>
-                <!-- Files Content section has been removed -->
             </div>
         </div>
     </div>

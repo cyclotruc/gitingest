@@ -51,6 +51,13 @@ async def process_query(
     ValueError
         If an invalid pattern type is provided.
     """
+    # Always use exclude with empty pattern as we removed the UI controls
+    pattern_type = "exclude"
+    pattern = ""
+    
+    # Use a fixed slider position (middle of the range) for consistency
+    slider_position = 243 if not slider_position else slider_position
+    
     if pattern_type == "include":
         include_patterns = pattern
         exclude_patterns = None
