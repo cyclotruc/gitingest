@@ -1,4 +1,3 @@
 User-agent: *
 Allow: /
 Allow: /api/
-Allow: /cyclotruc/gitdocs/

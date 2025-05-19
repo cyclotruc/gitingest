@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This script helps you set up your Heroku app for gitdocs deployment
+# This script helps you set up your Heroku app for gittodoc deployment
 
 # Check if logged in to Heroku
 echo "Checking Heroku login status..."
@@ -40,7 +40,7 @@ heroku config:set AWS_SECRET_ACCESS_KEY=$aws_secret_key -a $app_name
 heroku config:set AWS_REGION=$aws_region -a $app_name
 
 # Allowed hosts configuration
-read -p "Enter your custom domain (e.g., gitdocs.tech): " custom_domain
+read -p "Enter your custom domain (e.g., gittodoc.com): " custom_domain
 
 if [ -n "$custom_domain" ]; then
   echo "Setting allowed hosts for custom domain..."
