@@ -1,10 +1,14 @@
 """Utility functions for interacting with Git repositories."""
 
 import asyncio
+import logging
 from typing import List, Tuple
 
 from gitingest.config import GITHUB_PAT
 
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 async def run_command(*args: str) -> Tuple[bytes, bytes]:
     """
@@ -76,29 +80,57 @@ async def check_repo_exists(url: str) -> bool:
     
     # Add GitHub PAT if available and URL is from GitHub
     if GITHUB_PAT and "github.com" in url:
-        curl_cmd.extend(["-H", f"Authorization: token {GITHUB_PAT}"])
-        # Don't modify the URL itself, just add the token in the header
+        logger.info(f"GitHub PAT found: {'*' * 5}{GITHUB_PAT[-4:] if GITHUB_PAT else 'None'}")
+        
+        # For private repos, use the GitHub API instead of direct access
+        # Extract user and repo from URL
+        parts = url.replace("https://github.com/", "").split("/")
+        if len(parts) >= 2:
+            user = parts[0]
+            repo = parts[1]
+            # Use GitHub API to check repo access with PAT
+            api_url = f"https://api.github.com/repos/{user}/{repo}"
+            logger.info(f"Using GitHub API URL: {api_url}")
+            
+            curl_cmd = ["curl", "-I", "-H", f"Authorization: token {GITHUB_PAT}", api_url]
+            logger.info(f"Using GitHub PAT for authentication with API URL: {api_url}")
+        else:
+            logger.warning(f"Could not parse GitHub URL: {url}")
+            curl_cmd.extend(["-H", f"Authorization: token {GITHUB_PAT}"])
+            curl_cmd.append(url)
+    else:
+        logger.warning(f"No GitHub PAT found or not a GitHub URL: {url}")
+        if not GITHUB_PAT:
+            logger.warning("GITHUB_PAT environment variable is not set or empty")
+        curl_cmd.append(url)
     
-    curl_cmd.append(url)
-
+    logger.info(f"Checking repo with command: {' '.join(curl_cmd).replace(GITHUB_PAT, '*****') if GITHUB_PAT else ' '.join(curl_cmd)}")
+    
     proc = await asyncio.create_subprocess_exec(
         *curl_cmd,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
-    stdout, _ = await proc.communicate()
+    stdout, stderr = await proc.communicate()
 
     if proc.returncode != 0:
+        error_stderr = stderr.decode().strip()
+        logger.error(f"Curl command failed with code {proc.returncode}: {error_stderr}")
         return False  # likely unreachable or private
 
     response = stdout.decode()
     status_line = response.splitlines()[0].strip()
+    logger.info(f"GitHub API response status: {status_line}")
     parts = status_line.split(" ")
     if len(parts) >= 2:
         status_code_str = parts[1]
         if status_code_str in ("200", "301"):
             return True
         if status_code_str in ("302", "404"):
+            # Added for private repos - sometimes GitHub redirects or returns 404 for non-existent or unauthorized repos
+            if "github.com" in url and GITHUB_PAT:
+                logger.info("Got 302/404, trying to clone directly with PAT since we have credentials")
+                return True  # Let's try to clone anyway if we have PAT
             return False
     raise RuntimeError(f"Unexpected status line: {status_line}")
 
