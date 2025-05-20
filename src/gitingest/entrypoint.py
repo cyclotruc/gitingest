@@ -87,7 +87,7 @@ async def ingest_async(
 
         if output is not None:
             with open(output, "w", encoding="utf-8") as f:
-                f.write(tree + "\n" + content)
+                f.write(f"{summary}\n\n{tree}\n\n{content}")
 
         return summary, tree, content
     finally:

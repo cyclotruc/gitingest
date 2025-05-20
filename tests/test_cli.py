@@ -1,11 +1,15 @@
 """Tests for the gitingest cli."""
 
 import os
+import sys
+from pathlib import Path
+from unittest.mock import patch
 
 from click.testing import CliRunner
+import pytest
 
+from gitingest.config import MAX_FILE_SIZE_BYTES, OUTPUT_FILE_NAME
 from gitingest.cli import main
-from gitingest.config import MAX_FILE_SIZE, OUTPUT_FILE_NAME
 
 
 def test_cli_with_default_options():
@@ -27,7 +31,7 @@ def test_cli_with_options():
             "--output",
             str(OUTPUT_FILE_NAME),
             "--max-size",
-            str(MAX_FILE_SIZE),
+            str(MAX_FILE_SIZE_BYTES),
             "--exclude-pattern",
             "tests/",
             "--include-pattern",

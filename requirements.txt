@@ -7,3 +7,10 @@ starlette>=0.40.0  # Vulnerable to https://osv.dev/vulnerability/GHSA-f96h-pmfr-
 tiktoken
 tomli
 uvicorn>=0.11.7  # Vulnerable to https://osv.dev/vulnerability/PYSEC-2020-150
+fastapi[all]
+jinja2
+python-multipart
+requests
+toml
+gitpython
+boto3
