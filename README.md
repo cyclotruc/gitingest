@@ -56,14 +56,14 @@ corresponding digest (This uses the orginal app for now):
 * **Web UI** – paste any repo URL, tweak include/exclude patterns.
 * **Chrome / Firefox add‑ons** – swap *hub → ingest* automatically.
 * **Self‑host** – single `docker compose up -d` (this fork).
-- **Easy code context**: Get a text digest from a Git repository URL or a directory
-- **Smart Formatting**: Optimized output format for LLM prompts
-- **Statistics about**:
-  - File and directory structure
-  - Size of the extract
-  - Token count
-- **CLI tool**: Run it as a shell command
-- **Python package**: Import it in your code
+* **Easy code context**: Get a text digest from a Git repository URL or a directory
+* **Smart Formatting**: Optimized output format for LLM prompts
+* **Statistics about**:
+  * File and directory structure
+  * Size of the extract
+  * Token count
+* **CLI tool**: Run it as a shell command
+* **Python package**: Import it in your code
 
 ## 📚 Requirements
 
@@ -219,12 +219,14 @@ GITINGEST_DEBUG=false
 WSL 2 users **must clone on ext4** (e.g. `~/dev/...`).
 
 ### Semantic chunking
+
 By default Gitingest now splits Python/JS files into functions & classes using
 Tree-sitter (like Repomix). Unknown filetypes fall back to whole-file.
 
 ---
 
 ### 🚀 Performance flags
+
 * `--parallel` (default ON): scan files with 8 threads.
 * `--incremental`: skip unchanged files using SHA cache in `~/.gitingestcache`.
 * `--compress`: write `digest.txt.gz` (≈ 10× smaller on monorepos).
@@ -256,9 +258,9 @@ If you are hosting it on a domain, you can specify the allowed hostnames via env
 
 ### Non-technical ways to contribute
 
-- **Create an Issue**: If you find a bug or have an idea for a new feature, please [create an issue](https://github.com/cyclotruc/gitingest/issues/new) on GitHub. This will help us track and prioritize your request.
-- **Spread the Word**: If you like Gitingest, please share it with your friends, colleagues, and on social media. This will help us grow the community and make Gitingest even better.
-- **Use Gitingest**: The best feedback comes from real-world usage! If you encounter any issues or have ideas for improvement, please let us know by [creating an issue](https://github.com/cyclotruc/gitingest/issues/new) on GitHub or by reaching out to us on [Discord](https://discord.com/invite/zerRaGK9EC).
+* **Create an Issue**: If you find a bug or have an idea for a new feature, please [create an issue](https://github.com/cyclotruc/gitingest/issues/new) on GitHub. This will help us track and prioritize your request.
+* **Spread the Word**: If you like Gitingest, please share it with your friends, colleagues, and on social media. This will help us grow the community and make Gitingest even better.
+* **Use Gitingest**: The best feedback comes from real-world usage! If you encounter any issues or have ideas for improvement, please let us know by [creating an issue](https://github.com/cyclotruc/gitingest/issues/new) on GitHub or by reaching out to us on [Discord](https://discord.com/invite/zerRaGK9EC).
 
 ### Technical ways to contribute
 
@@ -270,11 +272,11 @@ Gitingest aims to be friendly for first time contributors, with a simple Python 
 
 ## 🛠️ Stack
 
-- [Tailwind CSS](https://tailwindcss.com) - Frontend
-- [FastAPI](https://github.com/fastapi/fastapi) - Backend framework
-- [Jinja2](https://jinja.palletsprojects.com) - HTML templating
-- [tiktoken](https://github.com/openai/tiktoken) - Token estimation
-- [posthog](https://github.com/PostHog/posthog) - Amazing analytics
+* [Tailwind CSS](https://tailwindcss.com) - Frontend
+* [FastAPI](https://github.com/fastapi/fastapi) - Backend framework
+* [Jinja2](https://jinja.palletsprojects.com) - HTML templating
+* [tiktoken](https://github.com/openai/tiktoken) - Token estimation
+* [posthog](https://github.com/PostHog/posthog) - Amazing analytics
 
 ### 📦 Looking for a JavaScript/FileSystemNode package?
 
@@ -290,6 +292,7 @@ Check out the NPM alternative 📦 **Repomix**:
 (Star history chart courtesy of [https://starchart.cc](https://starchart.cc).)
 
 ---
+
 ## 📄 License & credits
 
 This fork remains under the **MIT License**.

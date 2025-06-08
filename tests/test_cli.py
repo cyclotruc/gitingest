@@ -16,6 +16,9 @@ async def _stub_ingest_async(
     exclude_patterns=None,
     branch=None,
     output: str | None = None,
+    parallel: bool = False,
+    incremental: bool = False,
+    compress: bool = False,
 ):
     path = output or OUTPUT_FILE_NAME
     with open(path, "w", encoding="utf-8") as f:
@@ -29,12 +32,8 @@ def test_cli_with_default_options():
         with patch("gitingest.cli.ingest_async", new=_stub_ingest_async):
             result = runner.invoke(main, ["./"])
         output_lines = result.output.strip().split("\n")
-        assert (
-            f"Analysis complete! Output written to: {OUTPUT_FILE_NAME}" in output_lines
-        )
-        assert os.path.exists(
-            OUTPUT_FILE_NAME
-        ), f"Output file was not created at {OUTPUT_FILE_NAME}"
+        assert f"Analysis complete! Output written to: {OUTPUT_FILE_NAME}" in output_lines
+        assert os.path.exists(OUTPUT_FILE_NAME), f"Output file was not created at {OUTPUT_FILE_NAME}"
 
 
 def test_cli_with_options():
@@ -56,9 +55,5 @@ def test_cli_with_options():
                 ],
             )
         output_lines = result.output.strip().split("\n")
-        assert (
-            f"Analysis complete! Output written to: {OUTPUT_FILE_NAME}" in output_lines
-        )
-        assert os.path.exists(
-            OUTPUT_FILE_NAME
-        ), f"Output file was not created at {OUTPUT_FILE_NAME}"
+        assert f"Analysis complete! Output written to: {OUTPUT_FILE_NAME}" in output_lines
+        assert os.path.exists(OUTPUT_FILE_NAME), f"Output file was not created at {OUTPUT_FILE_NAME}"

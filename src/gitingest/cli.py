@@ -53,6 +53,18 @@ def main(
         A tuple of patterns to include during the analysis. Only files matching these patterns will be processed.
     branch : str, optional
         The branch to clone (optional).
+    parallel : bool
+        Enable multithreaded scanning.
+    incremental : bool
+        Use on-disk cache to skip unchanged files.
+    compress : bool
+        Write gzip compressed output.
+    parallel : bool
+        Enable multithreaded scanning.
+    incremental : bool
+        Use on-disk cache to skip unchanged files.
+    compress : bool
+        Write gzip compressed output.
     """
     # Main entry point for the CLI. This function is called when the CLI is run as a script.
     asyncio.run(

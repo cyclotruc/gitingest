@@ -45,6 +45,18 @@ async def ingest_async(
         The branch to clone and ingest. If `None`, the default branch is used.
     output : str, optional
         File path where the summary and content should be written. If `None`, the results are not written to a file.
+    parallel : bool
+        Enable multithreaded scanning.
+    incremental : bool
+        Use on-disk cache to skip unchanged files.
+    compress : bool
+        Write gzip compressed output.
+    parallel : bool
+        Enable multithreaded scanning.
+    incremental : bool
+        Use on-disk cache to skip unchanged files.
+    compress : bool
+        Write gzip compressed output.
 
     Returns
     -------

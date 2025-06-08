@@ -321,7 +321,22 @@ def _walk_serial(root: Path, fn):
 
 
 def ingest_directory_chunks(local_repo_root: Path, parallel: bool = False, incremental: bool = False):
-    """Yield file chunks for all files under a directory."""
+    """Yield file chunks for all files under a directory.
+
+    Parameters
+    ----------
+    local_repo_root : Path
+        Directory to scan.
+    parallel : bool, optional
+        Use multithreaded walking if ``True``.
+    incremental : bool, optional
+        Use a disk cache to skip unchanged files.
+
+    Yields
+    ------
+    dict
+        Serialized chunk dictionaries.
+    """
     cache = ChunkCache() if incremental else None
 
     def _ingest_single_path(path: Path):
