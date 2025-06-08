@@ -25,8 +25,11 @@ Thanks for your interest in contributing to Gitingest! 🚀 Gitingest aims to be
    python -m venv .venv
    source .venv/bin/activate
    pip install -r requirements-dev.txt
-   pre-commit install
+   pre-commit install  # mandatory
    ```
+
+   Running `pre-commit install` is required so that the git hooks are executed
+   every time you commit changes.
 
 4. Create a new branch for your changes:
 
