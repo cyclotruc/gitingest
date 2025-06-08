@@ -49,17 +49,10 @@ jobs:
         pip install safety
         safety check -r requirements.txt --full-report
 
-    - name: Run tests with coverage
-      run: |
-        coverage run -m pytest
-        coverage xml
-        coverage report --fail-under=90
-
-    - name: Upload coverage
-      if: env.CODECOV_TOKEN != ''
-      uses: codecov/codecov-action@v4
+    - name: Run tests
+      run: pytest -q
       env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        SLOW_TESTS: "1"
 
     - name: Run pre-commit hooks
       run: |

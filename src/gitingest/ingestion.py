@@ -6,6 +6,7 @@ from typing import Tuple
 
 from gitingest.config import MAX_DIRECTORY_DEPTH, MAX_FILES, MAX_TOTAL_SIZE_BYTES
 from gitingest.output_formatters import format_node
+from gitingest.chunking import chunk_file
 from gitingest.query_parsing import IngestionQuery
 from gitingest.schemas import (
     FileSystemNode,
@@ -308,3 +309,8 @@ def limit_exceeded(stats: FileSystemStats, depth: int) -> bool:
         return True  # TODO: end recursion
 
     return False
+
+
+def _ingest_single_path(path: Path):
+    """Return chunks for a single path."""
+    return chunk_file(path)
