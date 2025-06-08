@@ -6,6 +6,9 @@
 [![PyPI version](https://badge.fury.io/py/gitingest.svg)](https://badge.fury.io/py/gitingest)
 [![GitHub stars](https://img.shields.io/github/stars/cyclotruc/gitingest?style=social.svg)](https://github.com/cyclotruc/gitingest)
 [![Downloads](https://pepy.tech/badge/gitingest)](https://pepy.tech/project/gitingest)
+[![CI](https://github.com/cyclotruc/gitingest/actions/workflows/ci.yml/badge.svg)](https://github.com/cyclotruc/gitingest/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/cyclotruc/gitingest/branch/main/graph/badge.svg)](https://codecov.io/gh/cyclotruc/gitingest)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/cyclotruc/gitingest/badge)](https://scorecard.dev/viewer/?uri=github.com/cyclotruc/gitingest)
 
 [![Discord](https://dcbadge.limes.pink/api/server/https://discord.com/invite/zerRaGK9EC)](https://discord.com/invite/zerRaGK9EC)
 
