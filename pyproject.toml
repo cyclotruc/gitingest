@@ -3,7 +3,7 @@ name = "gitingest"
 version = "0.3.0"
 description="CLI tool to analyze and create text dumps of codebases for LLMs"
 readme = {file = "README.md", content-type = "text/markdown" }
-requires-python = ">= 3.8"
+requires-python = ">= 3.9"
 dependencies = [
     "click>=8.0.0",
     "fastapi[standard]>=0.110.0",  # security fix
@@ -46,6 +46,9 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools]
 packages = {find = {where = ["src"]}}
 include-package-data = true
+
+[tool.setuptools.package-data]
+"gitingest.chunking.languages" = ["*.scm"]
 
 # Linting configuration
 [tool.pylint.format]
