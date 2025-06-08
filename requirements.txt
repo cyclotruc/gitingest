@@ -960,3 +960,5 @@ wrapt==1.17.2 \
     --hash=sha256:fc78a84e2dfbc27afe4b2bd7c80c8db9bca75cc5b85df52bfe634596a1da846b \
     --hash=sha256:ff04ef6eec3eee8a5efef2401495967a916feaa353643defcc03fc74fe213b58
     # via deprecated
+tree_sitter==0.20.2
+tree_sitter_languages==1.10.0

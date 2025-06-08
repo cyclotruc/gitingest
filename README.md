@@ -218,6 +218,10 @@ GITINGEST_DEBUG=false
 
 WSL 2 users **must clone on ext4** (e.g. `~/dev/...`).
 
+### Semantic chunking
+By default Gitingest now splits Python/JS files into functions & classes using
+Tree-sitter (like Repomix). Unknown filetypes fall back to whole-file.
+
 ---
 
 Original method:

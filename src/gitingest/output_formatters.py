@@ -1,11 +1,14 @@
 """Functions to ingest and analyze a codebase directory or single file."""
 
 from typing import Optional, Tuple
+import os
 
 import tiktoken
 
 from gitingest.query_parsing import IngestionQuery
 from gitingest.schemas import FileSystemNode, FileSystemNodeType
+from gitingest.schemas.filesystem_schema import SEPARATOR
+from gitingest.chunking import chunk_file
 
 
 def format_node(node: FileSystemNode, query: IngestionQuery) -> Tuple[str, str, str]:
@@ -101,7 +104,18 @@ def _gather_file_contents(node: FileSystemNode) -> str:
         The concatenated content of all files under the given node.
     """
     if node.type != FileSystemNodeType.DIRECTORY:
-        return node.content_string
+        chunks = chunk_file(node.path)
+        total = len(chunks)
+        parts = []
+        for ch in chunks:
+            header = [
+                SEPARATOR,
+                f"{node.type.name}: {str(node.path_str).replace(os.sep, '/')} (chunk {ch.index + 1}/{total}, {ch.kind})",
+                SEPARATOR,
+                ch.text,
+            ]
+            parts.append("\n".join(header) + "\n\n")
+        return "".join(parts)
 
     # Recursively gather contents of all files under the current directory
     return "\n".join(_gather_file_contents(child) for child in node.children)
