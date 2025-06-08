@@ -18,10 +18,10 @@ from gitingest.schemas import (
 )
 from gitingest.utils.ingestion_utils import _should_exclude, _should_include
 
-try:
-    import tomllib  # type: ignore[import]
-except ImportError:
-    import tomli as tomllib
+try:  # Python 3.11+
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - fallback for older Pythons
+    import tomli as tomllib  # type: ignore
 
 
 def ingest_query(query: IngestionQuery) -> Tuple[str, str, str]:

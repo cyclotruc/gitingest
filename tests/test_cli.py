@@ -1,5 +1,7 @@
 """Tests for the gitingest CLI."""
 
+# pylint: disable=too-many-arguments,too-many-positional-arguments
+
 import os
 from unittest.mock import patch
 
@@ -20,6 +22,7 @@ async def _stub_ingest_async(
     incremental: bool = False,
     compress: bool = False,
 ):
+    # pylint: disable=unused-argument,too-many-arguments
     path = output or OUTPUT_FILE_NAME
     with open(path, "w", encoding="utf-8") as f:
         f.write("dummy")

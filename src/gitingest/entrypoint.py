@@ -23,6 +23,7 @@ async def ingest_async(
     incremental: bool = False,
     compress: bool = False,
 ) -> Tuple[str, str, str]:
+    # pylint: disable=unused-argument
     """
     Main entry point for ingesting a source and processing its contents.
 
@@ -102,7 +103,7 @@ async def ingest_async(
         summary, tree, content = ingest_query(query)
 
         if output is not None:
-            from gitingest.output_utils import write_digest
+            from gitingest.output_utils import write_digest  # pylint: disable=C0415
 
             write_digest(tree + "\n" + content, Path(output), compress)
 
