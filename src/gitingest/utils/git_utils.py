@@ -72,7 +72,7 @@ async def check_repo_exists(url: str) -> bool:
     """
     proc = await asyncio.create_subprocess_exec(
         "curl",
-        "-I",
+        "-IL",
         url,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
@@ -83,13 +83,14 @@ async def check_repo_exists(url: str) -> bool:
         return False  # likely unreachable or private
 
     response = stdout.decode()
-    status_line = response.splitlines()[0].strip()
+    status_lines = [line for line in response.splitlines() if line.startswith("HTTP")]
+    status_line = status_lines[-1] if status_lines else ""
     parts = status_line.split(" ")
     if len(parts) >= 2:
         status_code_str = parts[1]
         if status_code_str in ("200", "301"):
             return True
-        if status_code_str in ("302", "404"):
+        if status_code_str in ("302", "403", "404"):
             return False
     raise RuntimeError(f"Unexpected status line: {status_line}")
 
