@@ -38,11 +38,11 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-pip-
 
-    - name: Install dependencies
+    - name: Install deps
       run: |
         pip install --upgrade pip
+        pip install -r requirements.txt --require-hashes
         pip install -r requirements-dev.txt
-        pip install coverage
 
     - name: Run Safety scan
       run: |
@@ -55,8 +55,11 @@ jobs:
         coverage xml
         coverage report --fail-under=90
 
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@ab904c41d6ece82784817410c45d8b8c02684457
+    - name: Upload coverage
+      if: env.CODECOV_TOKEN != ''
+      uses: codecov/codecov-action@v4
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
     - name: Run pre-commit hooks
       run: |

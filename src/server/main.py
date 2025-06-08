@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.responses import Response
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
@@ -28,7 +29,16 @@ app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
 
 # Mount static files dynamically to serve CSS, JS, and other static assets
 static_dir = Path(__file__).parent.parent / "static"
-app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+
+class SafeStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope):
+        if ".." in Path(path).parts:
+            return Response(status_code=404)
+        return await super().get_response(path, scope)
+
+
+app.mount("/static", SafeStaticFiles(directory=static_dir), name="static")
 
 
 # Fetch allowed hosts from the environment or use the default values

@@ -7,7 +7,12 @@ from typing import Tuple
 from gitingest.config import MAX_DIRECTORY_DEPTH, MAX_FILES, MAX_TOTAL_SIZE_BYTES
 from gitingest.output_formatters import format_node
 from gitingest.query_parsing import IngestionQuery
-from gitingest.schemas import FileSystemNode, FileSystemNodeType, FileSystemStats
+from gitingest.schemas import (
+    FileSystemNode,
+    FileSystemNodeType,
+    FileSystemStats,
+    GitingestConfig,
+)
 from gitingest.utils.ingestion_utils import _should_exclude, _should_include
 
 try:
@@ -114,39 +119,18 @@ def apply_gitingest_file(path: Path, query: IngestionQuery) -> None:
         return
 
     config_section = data.get("config", {})
-    ignore_patterns = config_section.get("ignore_patterns")
 
-    if not ignore_patterns:
+    config = GitingestConfig(**config_section)
+
+    if not config.ignore_patterns:
         return
 
-    # If a single string is provided, make it a list of one element
-    if isinstance(ignore_patterns, str):
-        ignore_patterns = [ignore_patterns]
-
-    if not isinstance(ignore_patterns, (list, set)):
-        warnings.warn(
-            f"Expected a list/set for 'ignore_patterns', got {type(ignore_patterns)} in {path_gitingest}. Skipping.",
-            UserWarning,
-        )
-        return
-
-    # Filter out duplicated patterns
-    ignore_patterns = set(ignore_patterns)
-
-    # Filter out any non-string entries
-    valid_patterns = {pattern for pattern in ignore_patterns if isinstance(pattern, str)}
-    invalid_patterns = ignore_patterns - valid_patterns
-
-    if invalid_patterns:
-        warnings.warn(f"Ignore patterns {invalid_patterns} are not strings. Skipping.", UserWarning)
-
-    if not valid_patterns:
-        return
+    ignore_patterns = set(config.ignore_patterns)
 
     if query.ignore_patterns is None:
-        query.ignore_patterns = valid_patterns
+        query.ignore_patterns = ignore_patterns
     else:
-        query.ignore_patterns.update(valid_patterns)
+        query.ignore_patterns.update(ignore_patterns)
 
     return
 
@@ -155,7 +139,7 @@ def _process_node(
     node: FileSystemNode,
     query: IngestionQuery,
     stats: FileSystemStats,
-) -> None:
+) -> bool:
     """
     Process a file or directory item within a directory.
 
@@ -173,7 +157,7 @@ def _process_node(
     """
 
     if limit_exceeded(stats, node.depth):
-        return
+        return True
 
     for sub_path in node.path.iterdir():
 
@@ -185,8 +169,12 @@ def _process_node(
 
         if sub_path.is_symlink():
             _process_symlink(path=sub_path, parent_node=node, stats=stats, local_path=query.local_path)
+            if limit_exceeded(stats, node.depth):
+                return True
         elif sub_path.is_file():
             _process_file(path=sub_path, parent_node=node, stats=stats, local_path=query.local_path)
+            if limit_exceeded(stats, node.depth):
+                return True
         elif sub_path.is_dir():
 
             child_directory_node = FileSystemNode(
@@ -197,7 +185,7 @@ def _process_node(
                 depth=node.depth + 1,
             )
 
-            _process_node(
+            limit_hit = _process_node(
                 node=child_directory_node,
                 query=query,
                 stats=stats,
@@ -206,11 +194,13 @@ def _process_node(
             node.size += child_directory_node.size
             node.file_count += child_directory_node.file_count
             node.dir_count += 1 + child_directory_node.dir_count
+            if limit_hit:
+                return True
         else:
             print(f"Warning: {sub_path} is an unknown file type, skipping")
 
     node.sort_children()
-
+    return False
 
 def _process_symlink(path: Path, parent_node: FileSystemNode, stats: FileSystemStats, local_path: Path) -> None:
     """

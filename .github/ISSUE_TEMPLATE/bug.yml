@@ -1,0 +1,13 @@
+name: "🐞 Bug report"
+description: "Something isn't working"
+body:
+  - type: markdown
+    attributes:
+      value: "Thanks for taking the time!"
+  - type: input
+    id: repro
+    attributes:
+      label: "Reproduction steps"
+      placeholder: "1. run `gitingest …`"
+    validations:
+      required: true
