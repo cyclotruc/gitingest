@@ -44,6 +44,11 @@ jobs:
         pip install -r requirements-dev.txt
         pip install coverage
 
+    - name: Run Safety scan
+      run: |
+        pip install safety
+        safety check -r requirements.txt --full-report
+
     - name: Run tests with coverage
       run: |
         coverage run -m pytest
