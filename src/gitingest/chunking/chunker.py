@@ -21,7 +21,11 @@ def _split_long(text: str, max_lines: int):
 def chunk_file(path: Path, max_lines: int = 400) -> list[Chunk]:
     lang_name = get_lang_from_path(path)
     if not lang_name:
-        return [Chunk(str(path), 0, "file", path.read_text())]
+        try:
+            text = path.read_text()
+        except UnicodeDecodeError:
+            text = "[Non-text file]"
+        return [Chunk(str(path), 0, "file", text)]
 
     parser, query = build_parser(lang_name)
     source = path.read_bytes()
@@ -42,7 +46,11 @@ def chunk_file(path: Path, max_lines: int = 400) -> list[Chunk]:
             idx += 1
 
     if not chunks:
-        chunks.append(Chunk(str(path), 0, "file", source.decode()))
+        try:
+            text = source.decode()
+        except UnicodeDecodeError:
+            text = "[Non-text file]"
+        chunks.append(Chunk(str(path), 0, "file", text))
     return chunks
 
 

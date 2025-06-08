@@ -11,6 +11,11 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends gcc python3-dev \
     && pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir --timeout 1000 -r requirements.txt \
+    && python - <<'EOF'
+import tree_sitter_languages
+for lang in ["python", "javascript"]:
+    tree_sitter_languages.get_parser(lang)
+EOF
     && rm -rf /var/lib/apt/lists/*
 
 # Runtime stage
