@@ -314,7 +314,7 @@ def limit_exceeded(stats: FileSystemStats, depth: int) -> bool:
         return True  # TODO: end recursion
 
     if stats.total_size >= MAX_TOTAL_SIZE_BYTES:
-        print(f"Maxumum total size limit ({MAX_TOTAL_SIZE_BYTES/1024/1024:.1f}MB) reached")
+        print(f"Maximum total size limit ({MAX_TOTAL_SIZE_BYTES/1024/1024:.1f}MB) reached")
         return True  # TODO: end recursion
 
     return False
