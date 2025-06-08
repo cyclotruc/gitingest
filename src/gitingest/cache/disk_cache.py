@@ -1,27 +1,59 @@
+"""Simple on-disk cache for incremental ingestion."""
+
+import hashlib
 import json
-import tempfile
 from pathlib import Path
-from typing import Any
+
+CACHE_DIR = Path.home() / ".gitingestcache"
+CACHE_FILE = CACHE_DIR / "chunks.json"
+
+
+def _sha(path: Path) -> str:
+    """Return a SHA1 hash for a path incorporating mtime."""
+
+    h = hashlib.sha1()
+    h.update(str(path).encode())
+    h.update(str(path.stat().st_mtime_ns).encode())
+    return h.hexdigest()
 
 
 class ChunkCache:
-    """Very small disk-backed cache used for tests."""
+    """Disk-backed mapping from file SHA to stored chunks."""
 
-    def __init__(self, path: Path | None = None) -> None:
-        self.path = path or Path(tempfile.gettempdir()) / "gitingest_cache.json"
-        if self.path.exists():
-            try:
-                self._data = json.loads(self.path.read_text())
-            except Exception:
-                self._data = {}
+    def __init__(self) -> None:
+        CACHE_DIR.mkdir(exist_ok=True)
+        if CACHE_FILE.exists():
+            self.data = json.loads(CACHE_FILE.read_text())
         else:
-            self._data = {}
+            self.data = {}
 
-    def get(self, file: Path) -> Any:
-        return self._data.get(str(file))
+    def get(self, path: Path):
+        """Return cached chunks for a path if available.
 
-    def set(self, file: Path, value: Any) -> None:
-        self._data[str(file)] = value
+        Parameters
+        ----------
+        path : Path
+            File path being ingested.
 
-    def flush(self) -> None:
-        self.path.write_text(json.dumps(self._data))
+        Returns
+        -------
+        list[dict] | None
+            Cached chunk data or ``None`` if absent.
+        """
+        return self.data.get(_sha(path))
+
+    def set(self, path: Path, chunks: list[dict]):
+        """Store chunks for a path.
+
+        Parameters
+        ----------
+        path : Path
+            File path being ingested.
+        chunks : list[dict]
+            Chunk dictionaries to store.
+        """
+        self.data[_sha(path)] = chunks
+
+    def flush(self):
+        """Write cache contents to disk."""
+        CACHE_FILE.write_text(json.dumps(self.data))

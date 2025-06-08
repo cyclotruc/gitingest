@@ -3,10 +3,10 @@
 # pylint: disable=no-value-for-parameter
 
 import asyncio
+import os
 import gzip
 from pathlib import Path
 from typing import Optional, Tuple
-
 import click
 
 from gitingest.config import MAX_FILE_SIZE, OUTPUT_FILE_NAME
@@ -21,8 +21,9 @@ from gitingest.output_utils import write_digest
 @click.option("--exclude-pattern", "-e", multiple=True, help="Patterns to exclude")
 @click.option("--include-pattern", "-i", multiple=True, help="Patterns to include")
 @click.option("--branch", "-b", default=None, help="Branch to clone and ingest")
-@click.option("--parallel", is_flag=True, help="Use parallel ingestion")
-@click.option("--compress", is_flag=True, help="Compress output using gzip")
+@click.option("--parallel/--no-parallel", default=(os.cpu_count() or 1) > 2, help="Scan files with multiple threads")
+@click.option("--incremental", is_flag=True, help="Use disk cache to skip unchanged files")
+@click.option("--compress", is_flag=True, help="Write gzip compressed output")
 def main(
     source: str,
     output: str,
@@ -53,6 +54,18 @@ def main(
         A tuple of patterns to include during the analysis. Only files matching these patterns will be processed.
     branch : str, optional
         The branch to clone (optional).
+    parallel : bool
+        Enable multithreaded scanning.
+    incremental : bool
+        Use on-disk cache to skip unchanged files.
+    compress : bool
+        Write gzip compressed output.
+    parallel : bool
+        Enable multithreaded scanning.
+    incremental : bool
+        Use on-disk cache to skip unchanged files.
+    compress : bool
+        Write gzip compressed output.
     """
     # Main entry point for the CLI. This function is called when the CLI is run as a script.
     asyncio.run(
@@ -64,6 +77,7 @@ def main(
             include_pattern,
             branch,
             parallel,
+            incremental,
             compress,
         )
     )
@@ -77,6 +91,8 @@ async def _async_main(
     include_pattern: Tuple[str, ...],
     branch: Optional[str],
     parallel: bool,
+    incremental: bool,
+
     compress: bool,
 ) -> None:
     """
@@ -109,13 +125,22 @@ async def _async_main(
     try:
         exclude_patterns = set(exclude_pattern)
         include_patterns = set(include_pattern)
-
+        if not output:
+            output = OUTPUT_FILE_NAME
+        summary, _, _ = await ingest_async(
         summary, tree, content = await ingest_async(
             source,
             max_size,
             include_patterns,
             exclude_patterns,
             branch,
+            output=output,
+            parallel=parallel,
+            incremental=incremental,
+            compress=compress,
+        )
+
+        click.echo(f"Analysis complete! Output written to: {output}")
             output=None,
         )
 

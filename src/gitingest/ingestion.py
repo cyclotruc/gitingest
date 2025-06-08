@@ -4,8 +4,11 @@ import warnings
 from pathlib import Path
 from typing import Tuple
 
+from gitingest.cache.disk_cache import ChunkCache
+from gitingest.chunking import chunk_file
 from gitingest.config import MAX_DIRECTORY_DEPTH, MAX_FILES, MAX_TOTAL_SIZE_BYTES
 from gitingest.output_formatters import format_node
+from gitingest.parallel.walker import walk_parallel
 from gitingest.chunking import chunk_file
 from gitingest.query_parsing import IngestionQuery
 from gitingest.schemas import (
@@ -16,10 +19,10 @@ from gitingest.schemas import (
 )
 from gitingest.utils.ingestion_utils import _should_exclude, _should_include
 
-try:
-    import tomllib  # type: ignore[import]
-except ImportError:
-    import tomli as tomllib
+try:  # Python 3.11+
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - fallback for older Pythons
+    import tomli as tomllib  # type: ignore
 
 
 def ingest_query(query: IngestionQuery) -> Tuple[str, str, str]:
@@ -203,6 +206,7 @@ def _process_node(
     node.sort_children()
     return False
 
+
 def _process_symlink(path: Path, parent_node: FileSystemNode, stats: FileSystemStats, local_path: Path) -> None:
     """
     Process a symlink in the file system.
@@ -310,7 +314,46 @@ def limit_exceeded(stats: FileSystemStats, depth: int) -> bool:
 
     return False
 
+def _walk_serial(root: Path, fn):
+    for p in root.rglob("*"):
+        if p.is_file():
+            yield from fn(p)
 
+
+def ingest_directory_chunks(local_repo_root: Path, parallel: bool = False, incremental: bool = False):
+    """Yield file chunks for all files under a directory.
+
+    Parameters
+    ----------
+    local_repo_root : Path
+        Directory to scan.
+    parallel : bool, optional
+        Use multithreaded walking if ``True``.
+    incremental : bool, optional
+        Use a disk cache to skip unchanged files.
+
+    Yields
+    ------
+    dict
+        Serialized chunk dictionaries.
+    """
+    cache = ChunkCache() if incremental else None
+
+    def _ingest_single_path(path: Path):
+        if cache:
+            cached = cache.get(path)
+            if cached:
+                return cached
+        chunks = chunk_file(path)
+        data = [c.__dict__ for c in chunks]
+        if cache:
+            cache.set(path, data)
+        return data
+
+    walker = walk_parallel if parallel else _walk_serial
+    yield from walker(local_repo_root, _ingest_single_path)
+    if cache:
+        cache.flush()
 def _ingest_single_path(path: Path):
     """Return chunks for a single path."""
     return chunk_file(path)

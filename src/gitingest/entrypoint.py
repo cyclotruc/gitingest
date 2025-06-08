@@ -3,6 +3,7 @@
 import asyncio
 import inspect
 import shutil
+from pathlib import Path
 from typing import Optional, Set, Tuple, Union
 
 from gitingest.cloning import clone_repo
@@ -18,7 +19,11 @@ async def ingest_async(
     exclude_patterns: Optional[Union[str, Set[str]]] = None,
     branch: Optional[str] = None,
     output: Optional[str] = None,
+    parallel: bool = False,
+    incremental: bool = False,
+    compress: bool = False,
 ) -> Tuple[str, str, str]:
+    # pylint: disable=unused-argument
     """
     Main entry point for ingesting a source and processing its contents.
 
@@ -41,6 +46,18 @@ async def ingest_async(
         The branch to clone and ingest. If `None`, the default branch is used.
     output : str, optional
         File path where the summary and content should be written. If `None`, the results are not written to a file.
+    parallel : bool
+        Enable multithreaded scanning.
+    incremental : bool
+        Use on-disk cache to skip unchanged files.
+    compress : bool
+        Write gzip compressed output.
+    parallel : bool
+        Enable multithreaded scanning.
+    incremental : bool
+        Use on-disk cache to skip unchanged files.
+    compress : bool
+        Write gzip compressed output.
 
     Returns
     -------
@@ -86,8 +103,9 @@ async def ingest_async(
         summary, tree, content = ingest_query(query)
 
         if output is not None:
-            with open(output, "w", encoding="utf-8") as f:
-                f.write(tree + "\n" + content)
+            from gitingest.output_utils import write_digest  # pylint: disable=C0415
+
+            write_digest(tree + "\n" + content, Path(output), compress)
 
         return summary, tree, content
     finally:
@@ -103,6 +121,9 @@ def ingest(
     exclude_patterns: Optional[Union[str, Set[str]]] = None,
     branch: Optional[str] = None,
     output: Optional[str] = None,
+    parallel: bool = False,
+    incremental: bool = False,
+    compress: bool = False,
 ) -> Tuple[str, str, str]:
     """
     Synchronous version of ingest_async.
@@ -147,5 +168,8 @@ def ingest(
             exclude_patterns=exclude_patterns,
             branch=branch,
             output=output,
+            parallel=parallel,
+            incremental=incremental,
+            compress=compress,
         )
     )
