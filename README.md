@@ -1,5 +1,9 @@
 # Gitingest
 
+
+
+# Gitingest — Docker‑ready Fork 🐳
+
 [![Image](./docs/frontpage.png "Gitingest main page")](https://gitingest.com)
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/cyclotruc/gitingest/blob/main/LICENSE)
@@ -12,14 +16,50 @@
 
 [![Discord](https://dcbadge.limes.pink/api/server/https://discord.com/invite/zerRaGK9EC)](https://discord.com/invite/zerRaGK9EC)
 
-Turn any Git repository into a prompt-friendly text ingest for LLMs.
+> **Heads‑up** This repository is an **independent fork** of the fantastic
+> [cyclotruc/gitingest](https://github.com/cyclotruc/gitingest).
+> We aim for *zero‑surprise Docker usage* on WSL 2 / Linux while tracking
+> upstream features.
+> Huge thanks 🙏 to the original authors for making the project MIT‑licensed and
+> hack‑friendly!
+>
+> *If you want the pristine upstream package, just run `pip install gitingest` –
+> see the [Installation](#-installation) section below.*
 
-You can also replace `hub` with `ingest` in any GitHub URL to access the corresponding digest.
+Turn any Git repository into a prompt‑friendly text digest you can feed to an
+LLM – plus a one‑command container workflow.
+
+You can also **replace `hub` with `ingest`** in any GitHub URL to access the
+corresponding digest (This uses the orginal app for now):
+`https://github.com/tiangolo/fastapi` →
+`https://gitingest.com/tiangolo/fastapi`
+
+[https://gitingest.com](https://gitingest.com) ·
+[Chrome Extension](https://chrome.google.com/webstore/detail/gitingest/abc123) ·
+[Firefox Add‑on](https://addons.mozilla.org/firefox/addon/gitingest)
+---
 
 [gitingest.com](https://gitingest.com) · [Chrome Extension](https://chromewebstore.google.com/detail/adfjahbijlkjfoicpjkhjicpjpjfaood) · [Firefox Add-on](https://addons.mozilla.org/firefox/addon/gitingest)
 
-## 🚀 Features
+## ✨ What’s new in this fork (June 2025)
 
+| Change                                           | Why it matters                                                           |
+| ------------------------------------------------ | ------------------------------------------------------------------------ |
+| **Docker‑first workflow** (`docker-compose.yml`) | `docker compose up -d` → [http://localhost:9090](http://localhost:9090). |
+| **`entrypoint.sh`**                              | Auto‑chowns cache dir so non‑root container user can write.              |
+| **`.env` template**                              | Central place for hosts, debug flag, size limit, PAT token.              |
+| **Ext4‑friendly docs**                           | No more drvfs `chown` errors on WSL 2.                                   |
+| **LF enforcement** (`.gitattributes`)            | Prevents `bash\r` shebang crashes.                                       |
+| **Developer option:** `uv`                       | Conflict‑free, deterministic Python installs.                            |
+
+---
+
+## 🚀 Features *(upstream + fork)*
+
+* **CLI & Python API** – generate a `digest.txt` with one command or one import.
+* **Web UI** – paste any repo URL, tweak include/exclude patterns.
+* **Chrome / Firefox add‑ons** – swap *hub → ingest* automatically.
+* **Self‑host** – single `docker compose up -d` (this fork).
 - **Easy code context**: Get a text digest from a Git repository URL or a directory
 - **Smart Formatting**: Optimized output format for LLM prompts
 - **Statistics about**:
@@ -31,7 +71,15 @@ You can also replace `hub` with `ingest` in any GitHub URL to access the corresp
 
 ## 📚 Requirements
 
- - Python 3.8+
+| Tool             | Version                        |
+| ---------------- | ------------------------------ |
+| Python           | ≥ 3.8                          |
+| Git              | any                            |
+| Docker + Compose | ≥ v20 (for container workflow) |
+| Linux (Optional)  | optional but recommended       |
+| WSL 2 (Windows -  Optional)  | optional but recommended       |
+
+---
 
 ### 📦 Installation
 
@@ -39,10 +87,10 @@ Gitingest is available on [PyPI](https://pypi.org/project/gitingest/).
 You can install it using `pip`:
 
 ```bash
-pip install gitingest
+pip install gitingest # installs cyclotruc/gitingest from PyPI
 ```
 
-However, it might be a good idea to use `pipx` to install it.
+However, it might be a good idea to use `pipx` or `uv` to install it.
 You can install `pipx` using your preferred package manager.
 
 ```bash
@@ -62,6 +110,35 @@ pipx ensurepath
 # install gitingest
 pipx install gitingest
 ```
+
+### This fork via Docker (recommended)
+
+```bash
+# clone inside WSL 2 ext4 (or native Linux)
+$ git clone https://github.com/<your‑org>/gitingest.git ~/dev/gitingest
+$ cd ~/dev/gitingest
+
+# prepare runtime bits
+$ cp .env.example .env     # tweak if needed
+$ mkdir -p cache
+
+# build & run
+$ docker compose build --pull
+$ docker compose up -d
+
+→ http://localhost:9090
+```
+
+### ⚡ Optional: dev install with **uv**
+
+```bash
+pip install -U uv          # Rust‑powered installer
+uv pip compile --all-extras -o requirements.txt pyproject.toml
+uv venv .venv && source .venv/bin/activate
+uv pip install -r requirements.txt
+```
+
+---
 
 ## 🧩 Browser Extension Usage
 
@@ -126,7 +203,28 @@ summary, tree, content = await ingest_async("path/to/directory")
 
 This is because Jupyter notebooks are asynchronous by default.
 
-## 🐳 Self-host
+## 🐳 Self‑host (Docker)
+
+This fork adds a **single‑file stack**:
+
+```bash
+# build image & start
+$ docker compose up -d --build
+
+# env vars live in .env
+ALLOWED_HOSTS=localhost,127.0.0.1
+GITINGEST_DEBUG=false
+```
+
+* Container user: `appuser` (UID 1000).
+* Cache path: `./cache` → `/tmp/gitingest`.
+* Health check: `GET /health`.
+
+WSL 2 users **must clone on ext4** (e.g. `~/dev/...`).
+
+---
+
+Original method:
 
 1. Build the image:
 
@@ -161,6 +259,10 @@ If you are hosting it on a domain, you can specify the allowed hostnames via env
 
 Gitingest aims to be friendly for first time contributors, with a simple Python and HTML codebase. If you need any help while working with the code, reach out to us on [Discord](https://discord.com/invite/zerRaGK9EC). For detailed instructions on how to make a pull request, see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
+* Run `pre‑commit install` – hooks enforce LF & ruff/black.
+* Commit new shell scripts with `chmod +x`.
+* PR title prefix: `feat(docker): …`, `fix(ci): …`, etc.
+
 ## 🛠️ Stack
 
 - [Tailwind CSS](https://tailwindcss.com) - Frontend
@@ -169,10 +271,22 @@ Gitingest aims to be friendly for first time contributors, with a simple Python 
 - [tiktoken](https://github.com/openai/tiktoken) - Token estimation
 - [posthog](https://github.com/PostHog/posthog) - Amazing analytics
 
-### Looking for a JavaScript/FileSystemNode package?
+### 📦 Looking for a JavaScript/FileSystemNode package?
 
-Check out the NPM alternative 📦 Repomix: <https://github.com/yamadashy/repomix>
+Check out the NPM alternative 📦 **Repomix**:
+[https://github.com/yamadashy/repomix](https://github.com/yamadashy/repomix)
 
-## 🚀 Project Growth
+---
 
-[![Star History Chart](https://api.star-history.com/svg?repos=cyclotruc/gitingest&type=Date)](https://star-history.com/#cyclotruc/gitingest&Date)
+## 🚀 Project growth
+
+[![Stargazers over time](https://starchart.cc/Leonai-do/gitingest.svg?variant=adaptive)](https://starchart.cc/Leonai-do/gitingest)
+
+(Star history chart courtesy of [https://starchart.cc](https://starchart.cc).)
+
+---
+## 📄 License & credits
+
+This fork remains under the **MIT License**.
+Credit to [@cyclotruc](https://github.com/cyclotruc) and contributors for the
+original implementation.
