@@ -123,14 +123,14 @@ async def _process_folder(folder: Path) -> None:
     try:
         txt_files = [f for f in folder.iterdir() if f.suffix == ".txt"]
 
-        # Extract owner and repository name from the filename
-        filename = txt_files[0].stem
-        if txt_files and "-" in filename:
-            owner, repo = filename.split("-", 1)
-            repo_url = f"{owner}/{repo}"
+        if txt_files:
+            filename = txt_files[0].stem
+            if "-" in filename:
+                owner, repo = filename.split("-", 1)
+                repo_url = f"{owner}/{repo}"
 
-            with open("history.txt", mode="a", encoding="utf-8") as history:
-                history.write(f"{repo_url}\n")
+                with open("history.txt", mode="a", encoding="utf-8") as history:
+                    history.write(f"{repo_url}\n")
 
     except Exception as exc:
         print(f"Error logging repository URL for {folder}: {exc}")
