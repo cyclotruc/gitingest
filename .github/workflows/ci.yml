@@ -16,20 +16,24 @@ jobs:
       fail-fast: true
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ['3.8', '3.10', '3.12']
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
       with:
         python-version: ${{ matrix.python-version }}
 
     - name: Cache pip
-      uses: actions/cache@v4
+      uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
       with:
-        path: ~/.cache/pip
+        path: |
+          ~/.cache/pip
+          ~/.cache/pre-commit
+          ~/.cache/coverage
+          ~/.cache/mypy
         key: ${{ runner.os }}-pip-${{ hashFiles('**/*requirements*.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
@@ -38,13 +42,53 @@ jobs:
       run: |
         pip install --upgrade pip
         pip install -r requirements-dev.txt
+        pip install coverage
 
-    - name: Run tests
+    - name: Run tests with coverage
       run: |
-        pytest
+        coverage run -m pytest
+        coverage xml
+        coverage report --fail-under=90
 
-    #  Run pre-commit only on Python 3.13 + ubuntu.
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@ab904c41d6ece82784817410c45d8b8c02684457
+
     - name: Run pre-commit hooks
-      if: ${{ matrix.python-version == '3.13' && matrix.os == 'ubuntu-latest' }}
       run: |
         pre-commit run --all-files
+
+  build-wheel:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+
+      - name: Cache pip
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.cache/pre-commit
+            ~/.cache/coverage
+            ~/.cache/mypy
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/*requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install build module
+        run: |
+          pip install --upgrade pip
+          pip install build
+
+      - name: Build wheel
+        run: python -m build --wheel
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dist
+          path: dist/*.whl
