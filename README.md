@@ -31,7 +31,7 @@ You can also replace `hub` with `ingest` in any GitHub URL to access the corresp
 
 ## 📚 Requirements
 
-- Python 3.7+
+ - Python 3.8+
 
 ### 📦 Installation
 
