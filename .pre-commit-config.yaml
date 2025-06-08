@@ -96,15 +96,15 @@ repos:
         additional_dependencies:
           [
             click>=8.0.0,
-            "fastapi[standard]>=0.109.1",
+            "fastapi[standard]>=0.110.0",
             pydantic,
             pytest-asyncio,
             python-dotenv,
             slowapi,
-            starlette>=0.40.0,
+            starlette>=0.40.3,
             tiktoken,
             tomli,
-            uvicorn>=0.11.7,
+            uvicorn>=0.29.0,
           ]
       - id: pylint
         name: pylint for tests
@@ -114,15 +114,15 @@ repos:
         additional_dependencies:
           [
             click>=8.0.0,
-            "fastapi[standard]>=0.109.1",
+            "fastapi[standard]>=0.110.0",
             pydantic,
             pytest-asyncio,
             python-dotenv,
             slowapi,
-            starlette>=0.40.0,
+            starlette>=0.40.3,
             tiktoken,
             tomli,
-            uvicorn>=0.11.7,
+            uvicorn>=0.29.0,
           ]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
