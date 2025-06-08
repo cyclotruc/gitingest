@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+- Tree-sitter based chunker splits Python and JavaScript files by functions and classes.
+- Updated output formatter to include chunk indices.
+- Bumped version and dependencies.
+
 ## 0.2.0
 
 - Major internal refactor of the ingestion pipeline.

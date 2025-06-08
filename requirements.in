@@ -7,3 +7,5 @@ starlette>=0.40.3
 tiktoken
 tomli
 uvicorn>=0.29.0
+tree_sitter==0.20.2
+tree_sitter_languages==1.10.0
