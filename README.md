@@ -1,7 +1,3 @@
-# Gitingest
-
-
-
 # Gitingest — Docker‑ready Fork 🐳
 
 [![Image](./docs/frontpage.png "Gitingest main page")](https://gitingest.com)
