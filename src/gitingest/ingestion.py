@@ -4,8 +4,11 @@ import warnings
 from pathlib import Path
 from typing import Tuple
 
+from gitingest.cache.disk_cache import ChunkCache
+from gitingest.chunking import chunk_file
 from gitingest.config import MAX_DIRECTORY_DEPTH, MAX_FILES, MAX_TOTAL_SIZE_BYTES
 from gitingest.output_formatters import format_node
+from gitingest.parallel.walker import walk_parallel
 from gitingest.query_parsing import IngestionQuery
 from gitingest.schemas import (
     FileSystemNode,
@@ -202,6 +205,7 @@ def _process_node(
     node.sort_children()
     return False
 
+
 def _process_symlink(path: Path, parent_node: FileSystemNode, stats: FileSystemStats, local_path: Path) -> None:
     """
     Process a symlink in the file system.
@@ -308,3 +312,30 @@ def limit_exceeded(stats: FileSystemStats, depth: int) -> bool:
         return True  # TODO: end recursion
 
     return False
+
+
+def _walk_serial(root: Path, fn):
+    for p in root.rglob("*"):
+        if p.is_file():
+            yield from fn(p)
+
+
+def ingest_directory_chunks(local_repo_root: Path, parallel: bool = False, incremental: bool = False):
+    """Yield file chunks for all files under a directory."""
+    cache = ChunkCache() if incremental else None
+
+    def _ingest_single_path(path: Path):
+        if cache:
+            cached = cache.get(path)
+            if cached:
+                return cached
+        chunks = chunk_file(path)
+        data = [c.__dict__ for c in chunks]
+        if cache:
+            cache.set(path, data)
+        return data
+
+    walker = walk_parallel if parallel else _walk_serial
+    yield from walker(local_repo_root, _ingest_single_path)
+    if cache:
+        cache.flush()

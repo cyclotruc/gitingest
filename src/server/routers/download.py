@@ -9,7 +9,7 @@ router = APIRouter()
 
 
 @router.get("/download/{digest_id}")
-async def download_ingest(digest_id: str) -> Response:
+async def download_ingest(digest_id: str, compress: bool = False) -> Response:
     """
     Download a .txt file associated with a given digest ID.
 
@@ -41,7 +41,8 @@ async def download_ingest(digest_id: str) -> Response:
         if not directory.exists():
             raise FileNotFoundError("Directory not found")
 
-        txt_files = [f for f in directory.iterdir() if f.suffix == ".txt"]
+        suffix = ".txt.gz" if compress else ".txt"
+        txt_files = [f for f in directory.iterdir() if f.suffix == suffix]
         if not txt_files:
             raise FileNotFoundError("No .txt file found")
 
@@ -51,11 +52,17 @@ async def download_ingest(digest_id: str) -> Response:
     # Find the first .txt file in the directory
     first_file = txt_files[0]
 
-    with first_file.open(encoding="utf-8") as f:
-        content = f.read()
+    if compress:
+        content: bytes | str = first_file.read_bytes()
+        media_type = "application/gzip"
+        headers = {
+            "Content-Disposition": f"attachment; filename={first_file.name}",
+            "Content-Encoding": "gzip",
+        }
+    else:
+        with first_file.open(encoding="utf-8") as f:
+            content = f.read()
+        media_type = "text/plain"
+        headers = {"Content-Disposition": f"attachment; filename={first_file.name}"}
 
-    return Response(
-        content=content,
-        media_type="text/plain",
-        headers={"Content-Disposition": f"attachment; filename={first_file.name}"},
-    )
+    return Response(content=content, media_type=media_type, headers=headers)

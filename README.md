@@ -224,6 +224,11 @@ Tree-sitter (like Repomix). Unknown filetypes fall back to whole-file.
 
 ---
 
+### 🚀 Performance flags
+* `--parallel` (default ON): scan files with 8 threads.
+* `--incremental`: skip unchanged files using SHA cache in `~/.gitingestcache`.
+* `--compress`: write `digest.txt.gz` (≈ 10× smaller on monorepos).
+
 Original method:
 
 1. Build the image:

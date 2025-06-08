@@ -1,6 +1,6 @@
 [project]
 name = "gitingest"
-version = "0.3.0"
+version = "0.4.0"
 description="CLI tool to analyze and create text dumps of codebases for LLMs"
 readme = {file = "README.md", content-type = "text/markdown" }
 requires-python = ">= 3.9"
@@ -12,6 +12,8 @@ dependencies = [
     "slowapi",
     "starlette>=0.40.3",
     "tiktoken",
+    "tqdm>=4.67.1",
+    "joblib>=1.4",
     "tomli",
     "typing_extensions; python_version < '3.10'",
     "uvicorn>=0.29.0",

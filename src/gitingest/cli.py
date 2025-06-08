@@ -3,6 +3,7 @@
 # pylint: disable=no-value-for-parameter
 
 import asyncio
+import os
 from typing import Optional, Tuple
 
 import click
@@ -18,6 +19,9 @@ from gitingest.entrypoint import ingest_async
 @click.option("--exclude-pattern", "-e", multiple=True, help="Patterns to exclude")
 @click.option("--include-pattern", "-i", multiple=True, help="Patterns to include")
 @click.option("--branch", "-b", default=None, help="Branch to clone and ingest")
+@click.option("--parallel/--no-parallel", default=(os.cpu_count() or 1) > 2, help="Scan files with multiple threads")
+@click.option("--incremental", is_flag=True, help="Use disk cache to skip unchanged files")
+@click.option("--compress", is_flag=True, help="Write gzip compressed output")
 def main(
     source: str,
     output: Optional[str],
@@ -25,6 +29,9 @@ def main(
     exclude_pattern: Tuple[str, ...],
     include_pattern: Tuple[str, ...],
     branch: Optional[str],
+    parallel: bool,
+    incremental: bool,
+    compress: bool,
 ):
     """
      Main entry point for the CLI. This function is called when the CLI is run as a script.
@@ -48,7 +55,19 @@ def main(
         The branch to clone (optional).
     """
     # Main entry point for the CLI. This function is called when the CLI is run as a script.
-    asyncio.run(_async_main(source, output, max_size, exclude_pattern, include_pattern, branch))
+    asyncio.run(
+        _async_main(
+            source,
+            output,
+            max_size,
+            exclude_pattern,
+            include_pattern,
+            branch,
+            parallel,
+            incremental,
+            compress,
+        )
+    )
 
 
 async def _async_main(
@@ -58,6 +77,9 @@ async def _async_main(
     exclude_pattern: Tuple[str, ...],
     include_pattern: Tuple[str, ...],
     branch: Optional[str],
+    parallel: bool,
+    incremental: bool,
+    compress: bool,
 ) -> None:
     """
     Analyze a directory or repository and create a text dump of its contents.
@@ -93,7 +115,17 @@ async def _async_main(
 
         if not output:
             output = OUTPUT_FILE_NAME
-        summary, _, _ = await ingest_async(source, max_size, include_patterns, exclude_patterns, branch, output=output)
+        summary, _, _ = await ingest_async(
+            source,
+            max_size,
+            include_patterns,
+            exclude_patterns,
+            branch,
+            output=output,
+            parallel=parallel,
+            incremental=incremental,
+            compress=compress,
+        )
 
         click.echo(f"Analysis complete! Output written to: {output}")
         click.echo("\nSummary:")
