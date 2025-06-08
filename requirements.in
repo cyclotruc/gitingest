@@ -1,0 +1,9 @@
+click>=8.0.0
+fastapi[standard]>=0.110.0
+pydantic
+python-dotenv
+slowapi
+starlette>=0.40.3
+tiktoken
+tomli
+uvicorn>=0.29.0

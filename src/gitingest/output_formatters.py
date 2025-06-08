@@ -36,7 +36,6 @@ def format_node(node: FileSystemNode, query: IngestionQuery) -> Tuple[str, str, 
         summary += f"Lines: {len(node.content.splitlines()):,}\n"
 
     tree = "Directory structure:\n" + _create_tree_structure(query, node)
-    _create_tree_structure(query, node)
 
     content = _gather_file_contents(node)
 

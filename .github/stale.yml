@@ -1,0 +1,5 @@
+daysUntilStale: 60
+daysUntilClose: 14
+onlyLabels:
+  - type:question
+  - needs-info
