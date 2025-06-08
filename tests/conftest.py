@@ -12,6 +12,8 @@ from typing import Any, Callable, Dict
 import pytest
 
 from gitingest.query_parsing import IngestionQuery
+import subprocess
+import textwrap
 
 WriteNotebookFunc = Callable[[str, Dict[str, Any]], Path]
 
@@ -129,3 +131,25 @@ def write_notebook(tmp_path: Path) -> WriteNotebookFunc:
         return notebook_path
 
     return _write_notebook
+
+
+@pytest.fixture(scope="session")
+def sample_repo(tmp_path_factory):
+    """Create a tiny git repo to ingest."""
+    root = tmp_path_factory.mktemp("repo")
+    (root / "app").mkdir()
+    (root / "app/simple.py").write_text(
+        textwrap.dedent(
+            '''
+            class Foo:
+                def bar(self): pass
+
+            def baz(): pass
+            '''
+        )
+    )
+    (root / "app/hello.js").write_text("function greet(){ return 42; }")
+    subprocess.run(["git", "init"], cwd=root, check=True)
+    subprocess.run(["git", "add", "."], cwd=root, check=True)
+    subprocess.run(["git", "commit", "-m", "init"], cwd=root, check=True)
+    return root
