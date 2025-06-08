@@ -4,9 +4,7 @@
 
 import os
 from unittest.mock import patch
-
 from click.testing import CliRunner
-
 from gitingest.cli import main
 from gitingest.config import MAX_FILE_SIZE, OUTPUT_FILE_NAME
 
@@ -26,6 +24,9 @@ async def _stub_ingest_async(
     path = output or OUTPUT_FILE_NAME
     with open(path, "w", encoding="utf-8") as f:
         f.write("dummy")
+    if output:
+        with open(output, "w", encoding="utf-8") as f:
+            f.write("dummy")
     return "summary", "tree", "content"
 
 
@@ -33,7 +34,7 @@ def test_cli_with_default_options():
     runner = CliRunner()
     with runner.isolated_filesystem():
         with patch("gitingest.cli.ingest_async", new=_stub_ingest_async):
-            result = runner.invoke(main, ["./"])
+            result = runner.invoke(main, ["./", OUTPUT_FILE_NAME])
         output_lines = result.output.strip().split("\n")
         assert f"Analysis complete! Output written to: {OUTPUT_FILE_NAME}" in output_lines
         assert os.path.exists(OUTPUT_FILE_NAME), f"Output file was not created at {OUTPUT_FILE_NAME}"
@@ -47,8 +48,7 @@ def test_cli_with_options():
                 main,
                 [
                     "./",
-                    "--output",
-                    str(OUTPUT_FILE_NAME),
+                    OUTPUT_FILE_NAME,
                     "--max-size",
                     str(MAX_FILE_SIZE),
                     "--exclude-pattern",

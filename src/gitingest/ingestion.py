@@ -9,6 +9,7 @@ from gitingest.chunking import chunk_file
 from gitingest.config import MAX_DIRECTORY_DEPTH, MAX_FILES, MAX_TOTAL_SIZE_BYTES
 from gitingest.output_formatters import format_node
 from gitingest.parallel.walker import walk_parallel
+from gitingest.chunking import chunk_file
 from gitingest.query_parsing import IngestionQuery
 from gitingest.schemas import (
     FileSystemNode,
@@ -313,7 +314,6 @@ def limit_exceeded(stats: FileSystemStats, depth: int) -> bool:
 
     return False
 
-
 def _walk_serial(root: Path, fn):
     for p in root.rglob("*"):
         if p.is_file():
@@ -354,3 +354,6 @@ def ingest_directory_chunks(local_repo_root: Path, parallel: bool = False, incre
     yield from walker(local_repo_root, _ingest_single_path)
     if cache:
         cache.flush()
+def _ingest_single_path(path: Path):
+    """Return chunks for a single path."""
+    return chunk_file(path)
