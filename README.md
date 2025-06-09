@@ -231,6 +231,11 @@ Tree-sitter (like Repomix). Unknown filetypes fall back to whole-file.
 * `--compress`: write `digest.txt.gz` (≈ 10× smaller on monorepos).
 * `--stream`: fetch files directly from GitHub without creating a `.git` directory.
 
+### Security flags
+* Secrets are auto-redacted using [`detect-secrets`](https://github.com/Yelp/detect-secrets).
+* Path traversal protection blocks `../` and unsafe symlinks.
+* Rate limit: set `RATE_LIMIT_PER_MIN=60` in `.env` (0 disables).
+
 Original method:
 
 1. Build the image:

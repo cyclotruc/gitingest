@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 
 from gitingest.config import TMP_BASE_PATH
+from gitingest.security.path_safety import is_safe_path
 
 router = APIRouter()
 
@@ -36,6 +37,8 @@ async def download_ingest(digest_id: str, compress: bool = False) -> Response:
         If the digest directory is not found or if no `.txt` file exists in the directory.
     """
     directory = TMP_BASE_PATH / digest_id
+    if not is_safe_path(TMP_BASE_PATH, directory):
+        raise HTTPException(status_code=404, detail="Digest not found")
 
     try:
         if not directory.exists():

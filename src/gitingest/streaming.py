@@ -7,6 +7,8 @@ from urllib.parse import urlparse
 
 import requests
 
+from gitingest.security.path_safety import is_safe_path
+
 
 def _parse_owner_repo(url: str) -> tuple[str, str]:
     """Extract owner and repository name from a GitHub URL."""
@@ -17,7 +19,9 @@ def _parse_owner_repo(url: str) -> tuple[str, str]:
     return parts[0], parts[1]
 
 
-def stream_remote_repo(url: str, branch: Optional[str] = None, subpath: Optional[str] = None, dest: Path = Path(".")) -> None:
+def stream_remote_repo(
+    url: str, branch: Optional[str] = None, subpath: Optional[str] = None, dest: Path = Path(".")
+) -> None:
     """Download repository files using the GitHub REST API.
 
     Parameters
@@ -64,6 +68,8 @@ def stream_remote_repo(url: str, branch: Optional[str] = None, subpath: Optional
         else:
             data = content.encode()
         local_path = dest / path
+        if not is_safe_path(dest, local_path):
+            continue
         local_path.parent.mkdir(parents=True, exist_ok=True)
         with open(local_path, "wb") as f:
             f.write(data)
