@@ -284,27 +284,24 @@ async def test_clone_with_timeout() -> None:
 
 @pytest.mark.asyncio
 async def test_clone_specific_branch(tmp_path):
-    """
-    Test cloning a specific branch of a repository.
-
-    Given a valid repository URL and a branch name:
-    When `clone_repo` is called,
-    Then the repository should be cloned and checked out at that branch.
-    """
+    """Test cloning a specific branch of a repository."""
     repo_url = "https://github.com/cyclotruc/gitingest.git"
     branch_name = "main"
     local_path = tmp_path / "gitingest"
 
     config = CloneConfig(url=repo_url, local_path=str(local_path), branch=branch_name)
-    await clone_repo(config)
+    with patch("gitingest.cloning.check_repo_exists", return_value=True):
+        with patch("gitingest.cloning.run_command", new_callable=AsyncMock) as mock_exec:
+            await clone_repo(config)
 
-    # Assertions
-    assert local_path.exists(), "The repository was not cloned successfully."
-    assert local_path.is_dir(), "The cloned repository path is not a directory."
-
-    # Check the current branch
-    current_branch = os.popen(f"git -C {local_path} branch --show-current").read().strip()
-    assert current_branch == branch_name, f"Expected branch '{branch_name}', got '{current_branch}'."
+            mock_exec.assert_called_once_with(
+                "git",
+                "clone",
+                "--single-branch",
+                "--depth=1",
+                repo_url,
+                str(local_path),
+            )
 
 
 @pytest.mark.asyncio

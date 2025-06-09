@@ -156,7 +156,8 @@ async def test_parse_url_with_subpaths() -> None:
     with patch("gitingest.utils.git_utils.run_command", new_callable=AsyncMock) as mock_run_command:
         mock_run_command.return_value = (b"refs/heads/main\nrefs/heads/dev\nrefs/heads/feature-branch\n", b"")
         with patch(
-            "gitingest.utils.git_utils.fetch_remote_branch_list", new_callable=AsyncMock
+            "gitingest.query_parsing.fetch_remote_branch_list",
+            new_callable=AsyncMock,
         ) as mock_fetch_branches:
             mock_fetch_branches.return_value = ["main", "dev", "feature-branch"]
             query = await _parse_remote_repo(url)
@@ -336,7 +337,8 @@ async def test_parse_url_branch_and_commit_distinction(url: str, expected_branch
         # Mocking the return value to include 'main' and some additional branches
         mock_run_command.return_value = (b"refs/heads/main\nrefs/heads/dev\nrefs/heads/feature-branch\n", b"")
         with patch(
-            "gitingest.utils.git_utils.fetch_remote_branch_list", new_callable=AsyncMock
+            "gitingest.query_parsing.fetch_remote_branch_list",
+            new_callable=AsyncMock,
         ) as mock_fetch_branches:
             mock_fetch_branches.return_value = ["main", "dev", "feature-branch"]
 
@@ -434,8 +436,10 @@ async def test_parse_repo_source_with_failed_git_command(url, expected_branch, e
     When `_parse_remote_repo` is called,
     Then it should fall back to path components for branch identification.
     """
-    with patch("gitingest.utils.git_utils.fetch_remote_branch_list", new_callable=AsyncMock) as mock_fetch_branches:
-        mock_fetch_branches.side_effect = Exception("Failed to fetch branch list")
+    with patch(
+        "gitingest.query_parsing.fetch_remote_branch_list", new_callable=AsyncMock
+    ) as mock_fetch_branches:
+        mock_fetch_branches.side_effect = RuntimeError("Command failed: git ls-remote --heads https://github.com/user/repo")
 
         with pytest.warns(
             RuntimeWarning,
@@ -471,13 +475,19 @@ async def test_parse_repo_source_with_various_url_patterns(url, expected_branch,
     """
     with patch("gitingest.utils.git_utils.run_command", new_callable=AsyncMock) as mock_run_command:
         with patch(
-            "gitingest.utils.git_utils.fetch_remote_branch_list", new_callable=AsyncMock
+            "gitingest.query_parsing.fetch_remote_branch_list",
+            new_callable=AsyncMock,
         ) as mock_fetch_branches:
             mock_run_command.return_value = (
                 b"refs/heads/feature/fix1\nrefs/heads/main\nrefs/heads/feature-branch\nrefs/heads/fix\n",
                 b"",
             )
-            mock_fetch_branches.return_value = ["feature/fix1", "main", "feature-branch"]
+            mock_fetch_branches.return_value = [
+                "feature/fix1",
+                "main",
+                "feature-branch",
+                "fix",
+            ]
 
             query = await _parse_remote_repo(url)
 
