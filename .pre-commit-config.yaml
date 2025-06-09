@@ -32,6 +32,11 @@ repos:
       - id: requirements-txt-fixer
         description: "Sort entries in requirements.txt."
 
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+
   - repo: https://github.com/MarcoGorelli/absolufy-imports
     rev: v0.3.1
     hooks:

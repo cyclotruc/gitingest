@@ -8,9 +8,10 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from starlette.responses import Response
 from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
+from starlette.responses import Response
 
 from server.routers import download, dynamic, index
 from server.server_config import templates
@@ -22,6 +23,7 @@ load_dotenv()
 # Initialize the FastAPI application with lifespan
 app = FastAPI(lifespan=lifespan)
 app.state.limiter = limiter
+app.add_middleware(SlowAPIMiddleware)
 
 # Register the custom exception handler for rate limits
 app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)

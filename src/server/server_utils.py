@@ -2,14 +2,15 @@
 
 import asyncio
 import math
+import os
 import shutil
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import Response
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from fastapi.responses import PlainTextResponse, Response
+from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
@@ -17,7 +18,11 @@ from gitingest.config import TMP_BASE_PATH
 from server.server_config import DELETE_REPO_AFTER
 
 # Initialize a rate limiter
-limiter = Limiter(key_func=get_remote_address)
+limit = int(os.getenv("RATE_LIMIT_PER_MIN", "0"))
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=[] if limit == 0 else [f"{limit}/minute"],
+)
 
 
 async def rate_limit_exception_handler(request: Request, exc: Exception) -> Response:
@@ -42,9 +47,7 @@ async def rate_limit_exception_handler(request: Request, exc: Exception) -> Resp
         If the exception is not a RateLimitExceeded error, it is re-raised.
     """
     if isinstance(exc, RateLimitExceeded):
-        # Delegate to the default rate limit handler
-        return _rate_limit_exceeded_handler(request, exc)
-    # Re-raise other exceptions
+        return PlainTextResponse("Rate limit exceeded", status_code=429)
     raise exc
 
 

@@ -1,10 +1,10 @@
 """Functions to ingest and analyze a codebase directory or single file."""
 
-import warnings
-from pathlib import Path
-from typing import Iterable, Tuple
 import os
 import time
+import warnings
+from pathlib import Path
+from typing import Tuple
 
 from gitingest.cache.disk_cache import ChunkCache
 from gitingest.chunking import chunk_file
@@ -18,6 +18,7 @@ from gitingest.schemas import (
     FileSystemStats,
     GitingestConfig,
 )
+from gitingest.security.secret_scan import redact_secrets
 from gitingest.utils.ingestion_utils import _should_exclude, _should_include
 
 try:  # Python 3.11+
@@ -349,6 +350,8 @@ def ingest_directory_chunks(local_repo_root: Path, parallel: bool = False, incre
             if cached:
                 return cached
         chunks = chunk_file(path)
+        for c in chunks:
+            c.text = redact_secrets(c.text)
         data = [c.__dict__ for c in chunks]
         if cache:
             cache.set(path, data)
@@ -366,4 +369,7 @@ def ingest_directory_chunks(local_repo_root: Path, parallel: bool = False, incre
 
 def _ingest_single_path(path: Path):
     """Return chunks for a single path."""
-    return chunk_file(path)
+    chunks = chunk_file(path)
+    for c in chunks:
+        c.text = redact_secrets(c.text)
+    return chunks
