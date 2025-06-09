@@ -1,5 +1,7 @@
 # pylint: disable=no-value-for-parameter
 
+"""Command line interface for the ``gitingest`` package."""
+
 import asyncio
 import os
 import gzip

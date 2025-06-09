@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+"""Utilities for splitting source files into semantic chunks."""
+
 from pathlib import Path
 
 from .language_registry import build_parser, get_lang_from_path
@@ -6,6 +8,8 @@ from .language_registry import build_parser, get_lang_from_path
 
 @dataclass
 class Chunk:
+    """Representation of a single extracted code chunk."""
+
     path: str
     index: int
     kind: str
@@ -13,12 +17,16 @@ class Chunk:
 
 
 def _split_long(text: str, max_lines: int):
+    """Yield ``text`` in smaller pieces no longer than ``max_lines`` each."""
+
     lines = text.splitlines()
     for i in range(0, len(lines), max_lines):
         yield "\n".join(lines[i : i + max_lines])
 
 
 def chunk_file(path: Path, max_lines: int = 400) -> list[Chunk]:
+    """Return chunks of ``path`` splitting functions/classes if possible."""
+
     lang_name = get_lang_from_path(path)
     if not lang_name:
         try:

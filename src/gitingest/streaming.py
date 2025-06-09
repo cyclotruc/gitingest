@@ -1,3 +1,5 @@
+"""Fetch repository contents directly via the GitHub REST API."""
+
 import base64
 from pathlib import Path
 from typing import Optional
