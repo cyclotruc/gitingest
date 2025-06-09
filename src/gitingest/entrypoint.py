@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Optional, Set, Tuple, Union
 
 from gitingest.cloning import clone_repo
+from gitingest.streaming import stream_remote_repo
 from gitingest.config import TMP_BASE_PATH
 from gitingest.ingestion import ingest_query
 from gitingest.query_parsing import IngestionQuery, parse_query
@@ -22,6 +23,7 @@ async def ingest_async(
     parallel: bool = False,
     incremental: bool = False,
     compress: bool = False,
+    stream: bool = False,
 ) -> Tuple[str, str, str]:
     # pylint: disable=unused-argument
     """
@@ -52,6 +54,8 @@ async def ingest_async(
         Use on-disk cache to skip unchanged files.
     compress : bool
         Write gzip compressed output.
+    stream : bool
+        Download repository using the GitHub API instead of git clone.
     parallel : bool
         Enable multithreaded scanning.
     incremental : bool
@@ -84,19 +88,28 @@ async def ingest_async(
         )
 
         if query.url:
-            selected_branch = branch if branch else query.branch  # prioritize branch argument
+            selected_branch = branch if branch else query.branch
             query.branch = selected_branch
 
-            clone_config = query.extract_clone_config()
-            clone_coroutine = clone_repo(clone_config)
-
-            if inspect.iscoroutine(clone_coroutine):
-                if asyncio.get_event_loop().is_running():
-                    await clone_coroutine
-                else:
-                    asyncio.run(clone_coroutine)
+            if stream:
+                await asyncio.to_thread(
+                    stream_remote_repo,
+                    query.url,
+                    branch=selected_branch,
+                    subpath=query.subpath,
+                    dest=query.local_path,
+                )
             else:
-                raise TypeError("clone_repo did not return a coroutine as expected.")
+                clone_config = query.extract_clone_config()
+                clone_coroutine = clone_repo(clone_config)
+
+                if inspect.iscoroutine(clone_coroutine):
+                    if asyncio.get_event_loop().is_running():
+                        await clone_coroutine
+                    else:
+                        asyncio.run(clone_coroutine)
+                else:
+                    raise TypeError("clone_repo did not return a coroutine as expected.")
 
             repo_cloned = True
 
@@ -124,6 +137,7 @@ def ingest(
     parallel: bool = False,
     incremental: bool = False,
     compress: bool = False,
+    stream: bool = False,
 ) -> Tuple[str, str, str]:
     """
     Synchronous version of ingest_async.
@@ -171,5 +185,6 @@ def ingest(
             parallel=parallel,
             incremental=incremental,
             compress=compress,
+            stream=stream,
         )
     )
