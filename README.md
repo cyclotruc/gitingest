@@ -27,8 +27,7 @@ LLM – plus a one‑command container workflow.
 
 You can also **replace `hub` with `ingest`** in any GitHub URL to access the
 corresponding digest (This uses the orginal app for now):
-`https://github.com/tiangolo/fastapi` →
-`https://gitingest.com/tiangolo/fastapi`
+`https://github.com/cyclotruc/gitingest`
 
 [https://gitingest.com](https://gitingest.com) ·
 [Chrome Extension](https://chrome.google.com/webstore/detail/gitingest/abc123) ·
