@@ -131,3 +131,6 @@ websockets==15.0.1
     # via uvicorn
 wrapt==1.17.2
     # via deprecated
+tree_sitter==0.20.2
+tree_sitter_languages==1.10.2
+
