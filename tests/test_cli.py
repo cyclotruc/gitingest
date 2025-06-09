@@ -19,6 +19,7 @@ async def _stub_ingest_async(
     parallel: bool = False,
     incremental: bool = False,
     compress: bool = False,
+    stream: bool = False,
 ):
     # pylint: disable=unused-argument,too-many-arguments
     path = output or OUTPUT_FILE_NAME
