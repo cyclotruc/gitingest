@@ -23,6 +23,7 @@ from gitingest.output_utils import write_digest
 @click.option("--parallel/--no-parallel", default=(os.cpu_count() or 1) > 2, help="Scan files with multiple threads")
 @click.option("--incremental", is_flag=True, help="Use disk cache to skip unchanged files")
 @click.option("--compress", is_flag=True, help="Write gzip compressed output")
+@click.option("--stream", is_flag=True, help="Download via GitHub API instead of git")
 def main(
     source: str,
     output: str,
@@ -33,6 +34,7 @@ def main(
     parallel: bool,
     incremental: bool,
     compress: bool,
+    stream: bool,
 ) -> None:
     """Main entry point for the CLI."""
     asyncio.run(
@@ -46,6 +48,7 @@ def main(
             parallel,
             incremental,
             compress,
+            stream,
         )
     )
 
@@ -60,6 +63,7 @@ async def _async_main(
     parallel: bool,
     incremental: bool,
     compress: bool,
+    stream: bool,
 ) -> None:
     """Analyze a directory or repository and create a text dump of its contents."""
     try:
@@ -76,6 +80,7 @@ async def _async_main(
             parallel=parallel,
             incremental=incremental,
             compress=compress,
+            stream=stream,
         )
 
         text = tree + "\n" + content
