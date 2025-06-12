@@ -26,6 +26,7 @@ from gitingest.output_utils import write_digest
 @click.option("--incremental", is_flag=True, help="Use disk cache to skip unchanged files")
 @click.option("--compress", is_flag=True, help="Write gzip compressed output")
 @click.option("--stream", is_flag=True, help="Download via GitHub API instead of git")
+@click.option("--format", "-f", "output_format", type=click.Choice(['text', 'jsonl']), default='text', help="The output format for the digest.")
 def main(
     source: str,
     output: str,
@@ -37,6 +38,7 @@ def main(
     incremental: bool,
     compress: bool,
     stream: bool,
+    output_format: str,
 ) -> None:
     """Main entry point for the CLI."""
     asyncio.run(
@@ -51,6 +53,7 @@ def main(
             incremental,
             compress,
             stream,
+            output_format,
         )
     )
 
@@ -66,6 +69,7 @@ async def _async_main(
     incremental: bool,
     compress: bool,
     stream: bool,
+    output_format: str,
 ) -> None:
     """Analyze a directory or repository and create a text dump of its contents."""
     try:
@@ -83,6 +87,7 @@ async def _async_main(
             incremental=incremental,
             compress=compress,
             stream=stream,
+            output_format=output_format,
         )
 
         text = tree + "\n" + content

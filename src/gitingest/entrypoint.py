@@ -24,6 +24,7 @@ async def ingest_async(
     incremental: bool = False,
     compress: bool = False,
     stream: bool = False,
+    output_format: str = "text",
 ) -> Tuple[str, str, str]:
     # pylint: disable=unused-argument
     """
@@ -86,6 +87,7 @@ async def ingest_async(
             include_patterns=include_patterns,
             ignore_patterns=exclude_patterns,
         )
+        query.output_format = output_format
 
         if query.url:
             selected_branch = branch if branch else query.branch
@@ -113,7 +115,7 @@ async def ingest_async(
 
             repo_cloned = True
 
-        summary, tree, content = ingest_query(query)
+        summary, tree, content = ingest_query(query, output_format=output_format)
 
         if output is not None:
             from gitingest.output_utils import write_digest  # pylint: disable=C0415
@@ -138,6 +140,7 @@ def ingest(
     incremental: bool = False,
     compress: bool = False,
     stream: bool = False,
+    output_format: str = "text",
 ) -> Tuple[str, str, str]:
     """
     Synchronous version of ingest_async.
@@ -186,5 +189,6 @@ def ingest(
             incremental=incremental,
             compress=compress,
             stream=stream,
+            output_format=output_format,
         )
     )

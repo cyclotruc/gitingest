@@ -9,7 +9,7 @@ from typing import Tuple
 from gitingest.cache.disk_cache import ChunkCache
 from gitingest.chunking import chunk_file
 from gitingest.config import MAX_DIRECTORY_DEPTH, MAX_FILES, MAX_TOTAL_SIZE_BYTES
-from gitingest.output_formatters import format_node
+from gitingest.output_formatters import format_node, _gather_file_contents_jsonl
 from gitingest.parallel.walker import walk_parallel
 from gitingest.query_parsing import IngestionQuery
 from gitingest.schemas import (
@@ -27,7 +27,7 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for older Pythons
     import tomli as tomllib  # type: ignore
 
 
-def ingest_query(query: IngestionQuery) -> Tuple[str, str, str]:
+def ingest_query(query: IngestionQuery, output_format: str = "text") -> Tuple[str, str, str]:
     """
     Run the ingestion process for a parsed query.
 
@@ -77,6 +77,10 @@ def ingest_query(query: IngestionQuery) -> Tuple[str, str, str]:
         if not file_node.content:
             raise ValueError(f"File {file_node.name} has no content")
 
+        if output_format == "jsonl":
+            content = _gather_file_contents_jsonl(file_node)
+            summary = f"Processed 1 file into JSONL format."
+            return summary, "", content
         return format_node(file_node, query)
 
     root_node = FileSystemNode(
@@ -93,6 +97,12 @@ def ingest_query(query: IngestionQuery) -> Tuple[str, str, str]:
         query=query,
         stats=stats,
     )
+
+    if output_format == "jsonl":
+        content = _gather_file_contents_jsonl(root_node)
+        summary = f"Processed {stats.total_files} files into JSONL format."
+        tree = ""
+        return summary, tree, content
 
     return format_node(root_node, query)
 
