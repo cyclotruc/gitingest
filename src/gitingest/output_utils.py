@@ -3,8 +3,6 @@
 import gzip
 from pathlib import Path
 
-
-
 def write_digest(text: str, path: Path, compress: bool = False) -> None:
     """Write text to a path optionally gzipped."""
     if compress:
@@ -13,4 +11,3 @@ def write_digest(text: str, path: Path, compress: bool = False) -> None:
             f.write(text)
     else:
         path.write_text(text, encoding="utf-8")
-

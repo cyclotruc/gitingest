@@ -4,7 +4,6 @@
 
 import asyncio
 import os
-import gzip
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -91,14 +90,17 @@ async def _async_main(
         )
 
         text = tree + "\n" + content
+        output_path = Path(output)
+
+        # Single call to our robust utility function
+        write_digest(text, output_path, compress)
+
+        # Determine the final output name for the user message
         if compress:
-            gz_path = Path(str(output) + ".gz")
-            with gzip.open(gz_path, "wt", encoding="utf-8") as f:
-                f.write(text)
-            out_name = str(gz_path)
+            out_name = str(output_path) + ".gz"
         else:
-            write_digest(text, Path(output), compress=False)
-            out_name = str(output)
+            out_name = str(output_path)
+
         click.echo(f"Analysis complete! Output written to: {out_name}")
         click.echo("\nSummary:")
         click.echo(summary)
