@@ -2,6 +2,7 @@
 
 from typing import Optional, Tuple
 import os
+import json
 
 import tiktoken
 
@@ -119,6 +120,33 @@ def _gather_file_contents(node: FileSystemNode) -> str:
 
     # Recursively gather contents of all files under the current directory
     return "\n".join(_gather_file_contents(child) for child in node.children)
+
+
+def _gather_file_contents_jsonl(node: FileSystemNode) -> str:
+    """Recursively gather contents of all files under ``node`` as JSONL."""
+    if node.type != FileSystemNodeType.DIRECTORY:
+        try:
+            chunks = chunk_file(node.path)
+        except Exception:  # pragma: no cover - chunking may fail on binaries
+            return ""
+        lines = []
+        for ch in chunks:
+            chunk_data = {
+                "path": ch.path,
+                "kind": ch.kind,
+                "text": ch.text,
+                "start_line": -1,
+                "end_line": -1,
+            }
+            lines.append(json.dumps(chunk_data))
+        return "\n".join(lines)
+
+    all_lines = []
+    for child in node.children:
+        child_content = _gather_file_contents_jsonl(child)
+        if child_content:
+            all_lines.append(child_content)
+    return "\n".join(all_lines)
 
 
 def _create_tree_structure(query: IngestionQuery, node: FileSystemNode, prefix: str = "", is_last: bool = True) -> str:

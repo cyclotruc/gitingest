@@ -66,6 +66,7 @@ class IngestionQuery(BaseModel):  # pylint: disable=too-many-instance-attributes
     max_file_size: int = Field(default=MAX_FILE_SIZE)
     ignore_patterns: Optional[Set[str]] = None
     include_patterns: Optional[Set[str]] = None
+    output_format: str = "text"
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
