@@ -54,7 +54,7 @@ def ingest_query(query: IngestionQuery) -> Tuple[str, str, str]:
 
         relative_path = path.relative_to(query.local_path)
 
-        file_node = FileSystemNode(
+        query.root_node = FileSystemNode(
             name=path.name,
             type=FileSystemNodeType.FILE,
             size=path.stat().st_size,
@@ -63,12 +63,12 @@ def ingest_query(query: IngestionQuery) -> Tuple[str, str, str]:
             path=path,
         )
 
-        if not file_node.content:
-            raise ValueError(f"File {file_node.name} has no content")
+        if not query.root_node.content:
+            raise ValueError(f"File {query.root_node.name} has no content")
 
-        return format_node(file_node, query)
+        return format_node(query.root_node, query)
 
-    root_node = FileSystemNode(
+    query.root_node = FileSystemNode(
         name=path.name,
         type=FileSystemNodeType.DIRECTORY,
         path_str=str(path.relative_to(query.local_path)),
@@ -78,12 +78,12 @@ def ingest_query(query: IngestionQuery) -> Tuple[str, str, str]:
     stats = FileSystemStats()
 
     _process_node(
-        node=root_node,
+        node=query.root_node,
         query=query,
         stats=stats,
     )
 
-    return format_node(root_node, query)
+    return format_node(query.root_node, query)
 
 
 def apply_gitingest_file(path: Path, query: IngestionQuery) -> None:

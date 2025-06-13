@@ -7,6 +7,7 @@ from typing import Optional, Set
 from pydantic import BaseModel, ConfigDict, Field
 
 from gitingest.config import MAX_FILE_SIZE
+from gitingest.schemas.filesystem_schema import FileSystemNode
 
 
 @dataclass
@@ -57,6 +58,7 @@ class IngestionQuery(BaseModel):  # pylint: disable=too-many-instance-attributes
     max_file_size: int = Field(default=MAX_FILE_SIZE)
     ignore_patterns: Optional[Set[str]] = None
     include_patterns: Optional[Set[str]] = None
+    root_node: Optional[FileSystemNode] = None
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
