@@ -18,6 +18,7 @@ async def ingest_async(
     exclude_patterns: Optional[Union[str, Set[str]]] = None,
     branch: Optional[str] = None,
     output: Optional[str] = None,
+    access_token: Optional[str] = None,
 ) -> Tuple[str, str, str]:
     """
     Main entry point for ingesting a source and processing its contents.
@@ -41,6 +42,8 @@ async def ingest_async(
         The branch to clone and ingest. If `None`, the default branch is used.
     output : str, optional
         File path where the summary and content should be written. If `None`, the results are not written to a file.
+    access_token : str, optional
+        Access token for private repositories (optional).
 
     Returns
     -------
@@ -71,7 +74,7 @@ async def ingest_async(
             query.branch = selected_branch
 
             clone_config = query.extract_clone_config()
-            clone_coroutine = clone_repo(clone_config)
+            clone_coroutine = clone_repo(clone_config, access_token=access_token)
 
             if inspect.iscoroutine(clone_coroutine):
                 if asyncio.get_event_loop().is_running():
@@ -103,6 +106,7 @@ def ingest(
     exclude_patterns: Optional[Union[str, Set[str]]] = None,
     branch: Optional[str] = None,
     output: Optional[str] = None,
+    access_token: Optional[str] = None,
 ) -> Tuple[str, str, str]:
     """
     Synchronous version of ingest_async.
@@ -126,6 +130,8 @@ def ingest(
         The branch to clone and ingest. If `None`, the default branch is used.
     output : str, optional
         File path where the summary and content should be written. If `None`, the results are not written to a file.
+    access_token : str, optional
+        Access token for private repositories (optional).
 
     Returns
     -------
@@ -147,5 +153,6 @@ def ingest(
             exclude_patterns=exclude_patterns,
             branch=branch,
             output=output,
+            access_token=access_token,
         )
     )

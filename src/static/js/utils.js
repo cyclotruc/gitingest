@@ -99,10 +99,17 @@ function handleSubmit(event, showLoading = false) {
             // Replace the entire body content with the new HTML
             document.body.innerHTML = html;
 
-            // Wait for next tick to ensure DOM is updated
+            // Wait for next tick to ensure DOM is updated and scripts might re-run
             setTimeout(() => {
-                // Reinitialize slider functionality
-                initializeSlider();
+                // Explicitly re-run initialization for slider and enter key handler
+                // These might be necessary if the new HTML includes the script tags again
+                // or if the previous handlers were somehow detached.
+                if (typeof initializeSlider === 'function') {
+                    initializeSlider();
+                }
+                if (typeof setupGlobalEnterHandler === 'function') {
+                    setupGlobalEnterHandler(); // Re-attach enter key listener if needed
+                }
 
                 const starsElement = document.getElementById('github-stars');
                 if (starsElement && starCount) {
@@ -206,7 +213,7 @@ function setupGlobalEnterHandler() {
     });
 }
 
-// Add to the DOMContentLoaded event listener
+// Ensure event listeners are attached after DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     initializeSlider();
     setupGlobalEnterHandler();
