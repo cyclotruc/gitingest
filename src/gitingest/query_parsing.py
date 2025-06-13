@@ -25,7 +25,7 @@ from gitingest.utils.query_parser_utils import (
 
 async def parse_query(
     source: str,
-    max_file_size: int,
+    max_file_size: float,
     from_web: bool,
     include_patterns: Optional[Union[str, Set[str]]] = None,
     ignore_patterns: Optional[Union[str, Set[str]]] = None,
@@ -41,7 +41,7 @@ async def parse_query(
     ----------
     source : str
         The source URL or file path to parse.
-    max_file_size : int
+    max_file_size : float
         The maximum file size in bytes to include.
     from_web : bool
         Flag indicating whether the source is a web URL.

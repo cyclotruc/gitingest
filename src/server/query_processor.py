@@ -1,6 +1,7 @@
 """Process a query by parsing input, cloning a repository, and generating a summary."""
 
 from functools import partial
+from typing import Optional
 
 from fastapi import Request
 from starlette.templating import _TemplateResponse
@@ -15,10 +16,11 @@ from server.server_utils import Colors, log_slider_to_size
 async def process_query(
     request: Request,
     input_text: str,
-    slider_position: int,
+    slider_position: float,
     pattern_type: str = "exclude",
     pattern: str = "",
     is_index: bool = False,
+    exact_file_size: Optional[str] = None,
 ) -> _TemplateResponse:
     """
     Process a query by parsing input, cloning a repository, and generating a summary.
@@ -32,7 +34,7 @@ async def process_query(
         The HTTP request object.
     input_text : str
         Input text provided by the user, typically a Git repository URL or slug.
-    slider_position : int
+    slider_position : float
         Position of the slider, representing the maximum file size in the query.
     pattern_type : str
         Type of pattern to use, either "include" or "exclude" (default is "exclude").
@@ -40,7 +42,8 @@ async def process_query(
         Pattern to include or exclude in the query, depending on the pattern type.
     is_index : bool
         Flag indicating whether the request is for the index page (default is False).
-
+    exact_file_size : str
+        The exact file size value in KB, which preserves decimal precision.
     Returns
     -------
     _TemplateResponse
@@ -62,7 +65,17 @@ async def process_query(
 
     template = "index.jinja" if is_index else "git.jinja"
     template_response = partial(templates.TemplateResponse, name=template)
-    max_file_size = log_slider_to_size(slider_position)
+
+    # Use exact_file_size if provided, otherwise use the slider position
+    if exact_file_size is not None and exact_file_size.strip():
+        try:
+            # Convert exact_file_size from KB to bytes
+            max_file_size = float(exact_file_size) * 1024
+        except ValueError:
+            # If conversion fails, fall back to slider position
+            max_file_size = log_slider_to_size(int(slider_position))
+    else:
+        max_file_size = log_slider_to_size(int(slider_position))
 
     context = {
         "request": request,
@@ -125,13 +138,16 @@ async def process_query(
             "tree": tree,
             "content": content,
             "ingest_id": query.id,
+            "exact_file_size": (
+                exact_file_size if max_file_size < 1024 else max_file_size / 1024
+            ),  # Pass the exact file size back to the template
         }
     )
 
     return template_response(context=context)
 
 
-def _print_query(url: str, max_file_size: int, pattern_type: str, pattern: str) -> None:
+def _print_query(url: str, max_file_size: float, pattern_type: str, pattern: str) -> None:
     """
     Print a formatted summary of the query details, including the URL, file size,
     and pattern information, for easier debugging or logging.
@@ -140,7 +156,7 @@ def _print_query(url: str, max_file_size: int, pattern_type: str, pattern: str) 
     ----------
     url : str
         The URL associated with the query.
-    max_file_size : int
+    max_file_size : float
         The maximum file size allowed for the query, in bytes.
     pattern_type : str
         Specifies the type of pattern to use, either "include" or "exclude".
@@ -148,15 +164,23 @@ def _print_query(url: str, max_file_size: int, pattern_type: str, pattern: str) 
         The actual pattern string to include or exclude in the query.
     """
     print(f"{Colors.WHITE}{url:<20}{Colors.END}", end="")
-    if int(max_file_size / 1024) != 50:
-        print(f" | {Colors.YELLOW}Size: {int(max_file_size/1024)}kb{Colors.END}", end="")
+    if max_file_size / 1024 != 50.00:
+        # Format with up to 2 decimal places for KB values
+        kb_value = max_file_size / 1024
+        # If it's a whole number, display as integer
+        if kb_value == int(kb_value):
+            kb_display = f"{int(kb_value)}kb"
+        else:
+            # Otherwise show up to 2 decimal places, removing trailing zeros
+            kb_display = f"{kb_value:.2f}".rstrip("0").rstrip(".") + "kb"
+        print(f" | {Colors.YELLOW}Size: {kb_display}{Colors.END}", end="")
     if pattern_type == "include" and pattern != "":
         print(f" | {Colors.YELLOW}Include {pattern}{Colors.END}", end="")
     elif pattern_type == "exclude" and pattern != "":
         print(f" | {Colors.YELLOW}Exclude {pattern}{Colors.END}", end="")
 
 
-def _print_error(url: str, e: Exception, max_file_size: int, pattern_type: str, pattern: str) -> None:
+def _print_error(url: str, e: Exception, max_file_size: float, pattern_type: str, pattern: str) -> None:
     """
     Print a formatted error message including the URL, file size, pattern details, and the exception encountered,
     for debugging or logging purposes.
@@ -167,7 +191,7 @@ def _print_error(url: str, e: Exception, max_file_size: int, pattern_type: str, 
         The URL associated with the query that caused the error.
     e : Exception
         The exception raised during the query or process.
-    max_file_size : int
+    max_file_size : float
         The maximum file size allowed for the query, in bytes.
     pattern_type : str
         Specifies the type of pattern to use, either "include" or "exclude".
@@ -179,7 +203,7 @@ def _print_error(url: str, e: Exception, max_file_size: int, pattern_type: str, 
     print(f" | {Colors.RED}{e}{Colors.END}")
 
 
-def _print_success(url: str, max_file_size: int, pattern_type: str, pattern: str, summary: str) -> None:
+def _print_success(url: str, max_file_size: float, pattern_type: str, pattern: str, summary: str) -> None:
     """
     Print a formatted success message, including the URL, file size, pattern details, and a summary with estimated
     tokens, for debugging or logging purposes.
@@ -188,7 +212,7 @@ def _print_success(url: str, max_file_size: int, pattern_type: str, pattern: str
     ----------
     url : str
         The URL associated with the successful query.
-    max_file_size : int
+    max_file_size : float
         The maximum file size allowed for the query, in bytes.
     pattern_type : str
         Specifies the type of pattern to use, either "include" or "exclude".
