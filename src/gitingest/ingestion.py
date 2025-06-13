@@ -179,9 +179,13 @@ def _process_node(
 
         if query.ignore_patterns and _should_exclude(sub_path, query.local_path, query.ignore_patterns):
             continue
-
-        if query.include_patterns and not _should_include(sub_path, query.local_path, query.include_patterns):
-            continue
+ 
+        # If an inclusion pattern exists, apply it only to files.
+        # Directories should be traversed as long as they are not excluded, 
+        # because they may contain files that need to be included.
+        if query.include_patterns and sub_path.is_file():
+            if not _should_include(sub_path, query.local_path, query.include_patterns):
+                continue
 
         if sub_path.is_symlink():
             _process_symlink(path=sub_path, parent_node=node, stats=stats, local_path=query.local_path)
