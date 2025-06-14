@@ -44,6 +44,16 @@ from gitingest.entrypoint import ingest_async
     ),
 )
 @click.option("--branch", "-b", default=None, help="Branch to clone and ingest")
+@click.option(
+    "--token",
+    "-t",
+    envvar="GITHUB_TOKEN",
+    default=None,
+    help=(
+        "GitHub personal access token for accessing private repositories. "
+        "If omitted, the CLI will look for the GITHUB_TOKEN environment variable."
+    ),
+)
 def main(
     source: str,
     output: Optional[str],
@@ -51,6 +61,7 @@ def main(
     exclude_pattern: Tuple[str, ...],
     include_pattern: Tuple[str, ...],
     branch: Optional[str],
+    token: Optional[str],
 ):
     """
     Main entry point for the CLI. This function is called when the CLI is run as a script.
@@ -71,6 +82,9 @@ def main(
         Glob patterns for including files in the output.
     branch : str, optional
         Specific branch to ingest (defaults to the repository's default).
+    token: str, optional
+        GitHub personal-access token (PAT). Needed when *source* refers to a
+        **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
     """
 
     asyncio.run(
@@ -81,6 +95,7 @@ def main(
             exclude_pattern=exclude_pattern,
             include_pattern=include_pattern,
             branch=branch,
+            token=token,
         )
     )
 
@@ -92,6 +107,7 @@ async def _async_main(
     exclude_pattern: Tuple[str, ...],
     include_pattern: Tuple[str, ...],
     branch: Optional[str],
+    token: Optional[str],
 ) -> None:
     """
     Analyze a directory or repository and create a text dump of its contents.
@@ -113,6 +129,9 @@ async def _async_main(
         Glob patterns for including files in the output.
     branch : str, optional
         Specific branch to ingest (defaults to the repository's default).
+    token: str, optional
+        GitHub personal-access token (PAT). Needed when *source* refers to a
+        **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
 
     Raises
     ------
@@ -135,6 +154,7 @@ async def _async_main(
             exclude_patterns=exclude_patterns,
             branch=branch,
             output=output,
+            token=token,
         )
 
         click.echo(f"Analysis complete! Output written to: {output}")

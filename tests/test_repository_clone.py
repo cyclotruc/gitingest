@@ -12,9 +12,10 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from gitingest.cloning import check_repo_exists, clone_repo
+from gitingest.cloning import clone_repo
 from gitingest.schemas import CloneConfig
 from gitingest.utils.exceptions import AsyncTimeoutError
+from gitingest.utils.git_utils import check_repo_exists
 
 
 @pytest.mark.asyncio
@@ -41,7 +42,7 @@ async def test_clone_with_commit() -> None:
 
             await clone_repo(clone_config)
 
-            mock_check.assert_called_once_with(clone_config.url)
+            mock_check.assert_called_once_with(clone_config.url, token=None)
             assert mock_exec.call_count == 2  # Clone and checkout calls
 
 
@@ -69,7 +70,7 @@ async def test_clone_without_commit() -> None:
 
             await clone_repo(query)
 
-            mock_check.assert_called_once_with(query.url)
+            mock_check.assert_called_once_with(query.url, token=None)
             assert mock_exec.call_count == 1  # Only clone call
 
 

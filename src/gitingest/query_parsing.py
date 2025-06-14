@@ -94,7 +94,7 @@ async def parse_query(
     )
 
 
-async def _parse_remote_repo(source: str) -> IngestionQuery:
+async def _parse_remote_repo(source: str, token: Optional[str] = None) -> IngestionQuery:
     """
     Parse a repository URL into a structured query dictionary.
 
@@ -107,6 +107,9 @@ async def _parse_remote_repo(source: str) -> IngestionQuery:
     ----------
     source : str
         The URL or domain-less slug to parse.
+    token : str, optional
+        GitHub personal-access token (PAT). Needed when *source* refers to a
+        **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
 
     Returns
     -------
@@ -128,7 +131,7 @@ async def _parse_remote_repo(source: str) -> IngestionQuery:
             _validate_host(tmp_host)
         else:
             # No scheme, no domain => user typed "user/repo", so we'll guess the domain.
-            host = await try_domains_for_user_and_repo(*_get_user_and_repo_from_path(source))
+            host = await try_domains_for_user_and_repo(*_get_user_and_repo_from_path(source), token=token)
             source = f"{host}/{source}"
 
         source = "https://" + source
@@ -285,7 +288,7 @@ def _parse_local_dir_path(path_str: str) -> IngestionQuery:
     )
 
 
-async def try_domains_for_user_and_repo(user_name: str, repo_name: str) -> str:
+async def try_domains_for_user_and_repo(user_name: str, repo_name: str, token: Optional[str] = None) -> str:
     """
     Attempt to find a valid repository host for the given user_name and repo_name.
 
@@ -295,6 +298,9 @@ async def try_domains_for_user_and_repo(user_name: str, repo_name: str) -> str:
         The username or owner of the repository.
     repo_name : str
         The name of the repository.
+    token : str, optional
+        GitHub personal-access token (PAT). Needed when *source* refers to a
+        **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
 
     Returns
     -------
@@ -308,6 +314,6 @@ async def try_domains_for_user_and_repo(user_name: str, repo_name: str) -> str:
     """
     for domain in KNOWN_GIT_HOSTS:
         candidate = f"https://{domain}/{user_name}/{repo_name}"
-        if await check_repo_exists(candidate):
+        if await check_repo_exists(candidate, token=token if domain == "github.com" else None):
             return domain
     raise ValueError(f"Could not find a valid repository host for '{user_name}/{repo_name}'.")

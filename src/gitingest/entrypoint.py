@@ -17,6 +17,7 @@ async def ingest_async(
     include_patterns: Optional[Union[str, Set[str]]] = None,
     exclude_patterns: Optional[Union[str, Set[str]]] = None,
     branch: Optional[str] = None,
+    token: Optional[str] = None,
     output: Optional[str] = None,
 ) -> Tuple[str, str, str]:
     """
@@ -39,6 +40,9 @@ async def ingest_async(
         Pattern or set of patterns specifying which files to exclude. If `None`, no files are excluded.
     branch : str, optional
         The branch to clone and ingest. If `None`, the default branch is used.
+    token : str, optional
+        GitHub personal-access token (PAT). Needed when *source* refers to a
+        **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
     output : str, optional
         File path where the summary and content should be written. If `None`, the results are not written to a file.
 
@@ -71,7 +75,7 @@ async def ingest_async(
             query.branch = selected_branch
 
             clone_config = query.extract_clone_config()
-            clone_coroutine = clone_repo(clone_config)
+            clone_coroutine = clone_repo(clone_config, token=token)
 
             if inspect.iscoroutine(clone_coroutine):
                 if asyncio.get_event_loop().is_running():
@@ -102,6 +106,7 @@ def ingest(
     include_patterns: Optional[Union[str, Set[str]]] = None,
     exclude_patterns: Optional[Union[str, Set[str]]] = None,
     branch: Optional[str] = None,
+    token: Optional[str] = None,
     output: Optional[str] = None,
 ) -> Tuple[str, str, str]:
     """
@@ -124,6 +129,9 @@ def ingest(
         Pattern or set of patterns specifying which files to exclude. If `None`, no files are excluded.
     branch : str, optional
         The branch to clone and ingest. If `None`, the default branch is used.
+    token : str, optional
+        GitHub personal-access token (PAT). Needed when *source* refers to a
+        **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
     output : str, optional
         File path where the summary and content should be written. If `None`, the results are not written to a file.
 
@@ -146,6 +154,7 @@ def ingest(
             include_patterns=include_patterns,
             exclude_patterns=exclude_patterns,
             branch=branch,
+            token=token,
             output=output,
         )
     )
