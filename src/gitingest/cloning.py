@@ -4,14 +4,13 @@ import os
 from pathlib import Path
 from typing import Optional
 
+from gitingest.config import DEFAULT_TIMEOUT
 from gitingest.schemas import CloneConfig
 from gitingest.utils.git_utils import check_repo_exists, ensure_git_installed, run_command
 from gitingest.utils.timeout_wrapper import async_timeout
 
-TIMEOUT: int = 60
 
-
-@async_timeout(TIMEOUT)
+@async_timeout(DEFAULT_TIMEOUT)
 async def clone_repo(config: CloneConfig) -> None:
     """
     Clone a repository to a local path based on the provided configuration.
@@ -29,8 +28,6 @@ async def clone_repo(config: CloneConfig) -> None:
     ------
     ValueError
         If the repository is not found or if the provided URL is invalid.
-    OSError
-        If an error occurs while creating the parent directory for the repository.
     """
     # Extract and validate query parameters
     url: str = config.url
@@ -40,18 +37,14 @@ async def clone_repo(config: CloneConfig) -> None:
     partial_clone: bool = config.subpath != "/"
 
     # Create parent directory if it doesn't exist
-    parent_dir = Path(local_path).parent
-    try:
-        os.makedirs(parent_dir, exist_ok=True)
-    except OSError as exc:
-        raise OSError(f"Failed to create parent directory {parent_dir}: {exc}") from exc
+    await _ensure_directory(Path(local_path).parent)
 
     # Check if the repository exists
     if not await check_repo_exists(url):
         raise ValueError("Repository not found, make sure it is public")
 
     clone_cmd = ["git", "clone", "--single-branch"]
-    # TODO re-enable --recurse-submodules
+    # TODO: Re-enable --recurse-submodules when submodule support is needed
 
     if partial_clone:
         clone_cmd += ["--filter=blob:none", "--sparse"]
@@ -67,19 +60,35 @@ async def clone_repo(config: CloneConfig) -> None:
     await ensure_git_installed()
     await run_command(*clone_cmd)
 
-    if commit or partial_clone:
-        checkout_cmd = ["git", "-C", local_path]
+    # Checkout the subpath if it is a partial clone
+    if partial_clone:
+        subpath = config.subpath.lstrip("/")
+        if config.blob:
+            # When ingesting from a file url (blob/branch/path/file.txt), we need to remove the file name.
+            subpath = str(Path(subpath).parent.as_posix())
 
-        if partial_clone:
-            subpath = config.subpath.lstrip("/")
-            if config.blob:
-                # When ingesting from a file url (blob/branch/path/file.txt), we need to remove the file name.
-                subpath = str(Path(subpath).parent.as_posix())
+        await run_command("git", "-C", local_path, "sparse-checkout", "set", subpath)
 
-            checkout_cmd += ["sparse-checkout", "set", subpath]
+    # Checkout the commit if it is provided
+    if commit:
+        await run_command("git", "-C", local_path, "checkout", commit)
 
-        if commit:
-            checkout_cmd += ["checkout", commit]
 
-        # Check out the specific commit and/or subpath
-        await run_command(*checkout_cmd)
+async def _ensure_directory(path: Path) -> None:
+    """
+    Ensure the directory exists, creating it if necessary.
+
+    Parameters
+    ----------
+    path : Path
+        The path to ensure exists
+
+    Raises
+    ------
+    OSError
+        If the directory cannot be created
+    """
+    try:
+        os.makedirs(path, exist_ok=True)
+    except OSError as exc:
+        raise OSError(f"Failed to create directory {path}: {exc}") from exc

@@ -435,7 +435,7 @@ async def test_clone_with_commit_and_subpath() -> None:
                 clone_config.local_path,
             )
 
-            # Verify the sparse-checkout command sets the correct path
+            # Verify sparse-checkout set
             mock_exec.assert_any_call(
                 "git",
                 "-C",
@@ -443,8 +443,15 @@ async def test_clone_with_commit_and_subpath() -> None:
                 "sparse-checkout",
                 "set",
                 "src/docs",
+            )
+
+            # Verify checkout commit
+            mock_exec.assert_any_call(
+                "git",
+                "-C",
+                clone_config.local_path,
                 "checkout",
                 clone_config.commit,
             )
 
-            assert mock_exec.call_count == 2
+            assert mock_exec.call_count == 3

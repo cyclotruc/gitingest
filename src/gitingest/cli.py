@@ -29,17 +29,19 @@ from gitingest.entrypoint import ingest_async
     "--exclude-pattern",
     "-e",
     multiple=True,
-    help="""Patterns to exclude. Handles python's arbitrary subset of Unix
-    shell-style wildcards. See:
-    https://docs.python.org/3/library/fnmatch.html""",
+    help=(
+        "Patterns to exclude. Handles Python's arbitrary subset of Unix shell-style "
+        "wildcards. See: https://docs.python.org/3/library/fnmatch.html"
+    ),
 )
 @click.option(
     "--include-pattern",
     "-i",
     multiple=True,
-    help="""Patterns to include. Handles python's arbitrary subset of Unix
-    shell-style wildcards. See:
-    https://docs.python.org/3/library/fnmatch.html""",
+    help=(
+        "Patterns to include. Handles Python's arbitrary subset of Unix shell-style "
+        "wildcards. See: https://docs.python.org/3/library/fnmatch.html"
+    ),
 )
 @click.option("--branch", "-b", default=None, help="Branch to clone and ingest")
 def main(
@@ -58,21 +60,29 @@ def main(
     Parameters
     ----------
     source : str
-        The source directory or repository to analyze.
+        A directory path or a Git repository URL.
     output : str, optional
-        The path where the output file will be written. If not specified, the output will be written
-        to a file named `<repo_name>.txt` in the current directory.
+        Output file path. Defaults to `<repo_name>.txt`.
     max_size : int
-        The maximum file size to process, in bytes. Files larger than this size will be ignored.
+        Maximum file size (in bytes) to consider.
     exclude_pattern : Tuple[str, ...]
-        A tuple of patterns to exclude during the analysis. Files matching these patterns will be ignored.
+        Glob patterns for pruning the file set.
     include_pattern : Tuple[str, ...]
-        A tuple of patterns to include during the analysis. Only files matching these patterns will be processed.
+        Glob patterns for including files in the output.
     branch : str, optional
-        The branch to clone (optional).
+        Specific branch to ingest (defaults to the repository's default).
     """
-    # Main entry point for the CLI. This function is called when the CLI is run as a script.
-    asyncio.run(_async_main(source, output, max_size, exclude_pattern, include_pattern, branch))
+
+    asyncio.run(
+        _async_main(
+            source=source,
+            output=output,
+            max_size=max_size,
+            exclude_pattern=exclude_pattern,
+            include_pattern=include_pattern,
+            branch=branch,
+        )
+    )
 
 
 async def _async_main(
@@ -92,18 +102,17 @@ async def _async_main(
     Parameters
     ----------
     source : str
-        The source directory or repository to analyze.
+        A directory path or a Git repository URL.
     output : str, optional
-        The path where the output file will be written. If not specified, the output will be written
-        to a file named `<repo_name>.txt` in the current directory.
+        Output file path. Defaults to `<repo_name>.txt`.
     max_size : int
-        The maximum file size to process, in bytes. Files larger than this size will be ignored.
+        Maximum file size (in bytes) to consider.
     exclude_pattern : Tuple[str, ...]
-        A tuple of patterns to exclude during the analysis. Files matching these patterns will be ignored.
+        Glob patterns for pruning the file set.
     include_pattern : Tuple[str, ...]
-        A tuple of patterns to include during the analysis. Only files matching these patterns will be processed.
+        Glob patterns for including files in the output.
     branch : str, optional
-        The branch to clone (optional).
+        Specific branch to ingest (defaults to the repository's default).
 
     Raises
     ------
@@ -111,21 +120,31 @@ async def _async_main(
         If there is an error during the execution of the command, this exception is raised to abort the process.
     """
     try:
-        # Combine default and custom ignore patterns
+        # Normalise pattern containers (the ingest layer expects sets)
         exclude_patterns = set(exclude_pattern)
         include_patterns = set(include_pattern)
 
-        if not output:
+        # Choose a default output path if none provided
+        if output is None:
             output = OUTPUT_FILE_NAME
-        summary, _, _ = await ingest_async(source, max_size, include_patterns, exclude_patterns, branch, output=output)
+
+        summary, _, _ = await ingest_async(
+            source=source,
+            max_file_size=max_size,
+            include_patterns=include_patterns,
+            exclude_patterns=exclude_patterns,
+            branch=branch,
+            output=output,
+        )
 
         click.echo(f"Analysis complete! Output written to: {output}")
         click.echo("\nSummary:")
         click.echo(summary)
 
     except Exception as exc:
+        # Convert any exception into Click.Abort so that exit status is non-zero
         click.echo(f"Error: {exc}", err=True)
-        raise click.Abort()
+        raise click.Abort() from exc
 
 
 if __name__ == "__main__":
