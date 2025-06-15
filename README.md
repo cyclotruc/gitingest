@@ -29,6 +29,7 @@ You can also replace `hub` with `ingest` in any GitHub URL to access the corresp
 ## 📚 Requirements
 
 - Python 3.7+
+- For private repositories: A GitHub Personal Access Token (PAT). You can generate one at [https://github.com/settings/personal-access-tokens](https://github.com/settings/personal-access-tokens) (Profile → Settings → Developer Settings → Personal Access Tokens → Fine-grained Tokens)
 
 ### 📦 Installation
 
@@ -82,6 +83,10 @@ gitingest /path/to/directory
 
 # From URL
 gitingest https://github.com/cyclotruc/gitingest
+
+# For private repositories, use the --token option
+# Get your token from https://github.com/settings/personal-access-tokens
+gitingest https://github.com/username/private-repo --token github_pat_...
 
 # See more options
 gitingest --help
