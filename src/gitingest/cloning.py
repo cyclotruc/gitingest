@@ -33,7 +33,7 @@ async def clone_repo(config: CloneConfig, token: Optional[str] = None) -> None:
     token : str, optional
         GitHub personal-access token (PAT). Needed when *source* refers to a
         **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
-        Must start with 'github_pat_' for GitHub repositories.
+        Must start with 'github_pat_' or 'gph_' for GitHub repositories.
 
     Raises
     ------
