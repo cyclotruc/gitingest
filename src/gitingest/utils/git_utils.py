@@ -5,7 +5,7 @@ import base64
 import re
 from typing import List, Optional, Tuple
 
-GITHUB_PAT_PATTERN = r"^(?:github_pat_|gph_)[A-Za-z0-9_]{36,}$"
+GITHUB_PAT_PATTERN = r"^(?:github_pat_|ghp_)[A-Za-z0-9_]{36,}$"
 
 
 async def run_command(*args: str) -> Tuple[bytes, bytes]:
@@ -261,6 +261,6 @@ def validate_github_token(token: str) -> None:
     """
     if not re.match(GITHUB_PAT_PATTERN, token):
         raise ValueError(
-            "Invalid GitHub token format. Token should start with 'github_pat_' or 'gph_' "
+            "Invalid GitHub token format. Token should start with 'github_pat_' or 'ghp_' "
             "followed by at least 36 characters of letters, numbers, and underscores."
         )
