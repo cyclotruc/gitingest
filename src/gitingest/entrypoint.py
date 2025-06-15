@@ -2,6 +2,7 @@
 
 import asyncio
 import inspect
+import os
 import shutil
 from typing import Optional, Set, Tuple, Union
 
@@ -60,6 +61,9 @@ async def ingest_async(
         If `clone_repo` does not return a coroutine, or if the `source` is of an unsupported type.
     """
     repo_cloned = False
+
+    if not token:
+        token = os.getenv("GITHUB_TOKEN")
 
     try:
         query: IngestionQuery = await parse_query(
