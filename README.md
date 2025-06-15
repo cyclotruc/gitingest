@@ -88,6 +88,10 @@ gitingest https://github.com/cyclotruc/gitingest
 # Get your token from https://github.com/settings/personal-access-tokens
 gitingest https://github.com/username/private-repo --token github_pat_...
 
+# Or set it as an environment variable
+export GITHUB_TOKEN=github_pat_...
+gitingest https://github.com/username/private-repo
+
 # See more options
 gitingest --help
 ```
