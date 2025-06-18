@@ -163,15 +163,15 @@ async def _async_main(
             token=token,
         )
 
-        if output != "-":
-            click.echo(f"Analysis complete! Output written to: {output_target}")
-            click.echo("\nSummary:")
-            click.echo(summary)
-        else:
+        if output_target == "-":  # stdout
             click.echo("\n--- Summary ---", err=True)
             click.echo(summary, err=True)
             click.echo("--- End Summary ---", err=True)
             click.echo("Analysis complete! Output sent to stdout.", err=True)
+        else:  # file
+            click.echo(f"Analysis complete! Output written to: {output_target}")
+            click.echo("\nSummary:")
+            click.echo(summary)
 
     except Exception as exc:
         # Convert any exception into Click.Abort so that exit status is non-zero
