@@ -28,7 +28,7 @@ You can also replace `hub` with `ingest` in any GitHub URL to access the corresp
 
 ## 📚 Requirements
 
-- Python 3.7+
+- Python 3.8+
 - For private repositories: A GitHub Personal Access Token (PAT). You can generate one at [https://github.com/settings/personal-access-tokens](https://github.com/settings/personal-access-tokens) (Profile → Settings → Developer Settings → Personal Access Tokens → Fine-grained Tokens)
 
 ### 📦 Installation
