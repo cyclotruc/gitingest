@@ -1,6 +1,7 @@
 """Tests for the gitingest cli."""
 
 import os
+from inspect import signature
 
 from click.testing import CliRunner
 
@@ -43,7 +44,14 @@ def test_cli_with_options():
 
 def test_cli_with_stdout_output():
     """Test CLI invocation with output directed to STDOUT."""
-    runner = CliRunner(mix_stderr=False)
+
+    kwargs = {}
+    if "mix_stderr" in signature(CliRunner.__init__).parameters:
+        kwargs["mix_stderr"] = (
+            False  # Click < 8.2 (https://click.palletsprojects.com/en/stable/changes/#version-8-2-0)
+        )
+
+    runner = CliRunner(**kwargs)
     result = runner.invoke(main, ["./", "--output", "-", "--exclude-pattern", "tests/"])
 
     assert result.exit_code == 0, f"CLI exited with code {result.exit_code}, stderr: {result.stderr}"
