@@ -157,7 +157,7 @@ def _process_node(
     stats: FileSystemStats,
 ) -> bool:
     """
-    Process a file or directory item within a directory.
+    Process a file or directory item within a directory using iterative BFS.
 
     This function handles each file or directory item, checking if it should be included or excluded based on the
     provided patterns. It handles symlinks, directories, and files accordingly.
@@ -171,51 +171,59 @@ def _process_node(
     stats : FileSystemStats
         Statistics tracking object for the total file count and size.
     """
-
-    if limit_exceeded(stats, node.depth):
+    from collections import deque
+    from gitingest.utils.exceptions import LimitExceededError
+    
+    # Queue for BFS: (current_node, parent_node)
+    queue = deque()
+    queue.append((node, None))
+    
+    try:
+        while queue:
+            current_node, parent = queue.popleft()
+            
+            # Process current node
+            if limit_exceeded(stats, current_node.depth):
+                raise LimitExceededError("Directory depth limit exceeded")
+                
+            for sub_path in current_node.path.iterdir():
+                try:
+                    if query.ignore_patterns and _should_exclude(sub_path, query.local_path, query.ignore_patterns):
+                        continue
+                        
+                    if query.include_patterns and not _should_include(sub_path, query.local_path, query.include_patterns):
+                        continue
+                        
+                    if sub_path.is_symlink():
+                        _process_symlink(path=sub_path, parent_node=current_node, stats=stats, local_path=query.local_path)
+                    elif sub_path.is_file():
+                        _process_file(path=sub_path, parent_node=current_node, stats=stats, local_path=query.local_path)
+                    elif sub_path.is_dir():
+                        child = FileSystemNode(
+                            name=sub_path.name,
+                            type=FileSystemNodeType.DIRECTORY,
+                            path_str=str(sub_path.relative_to(query.local_path)),
+                            path=sub_path,
+                            depth=current_node.depth + 1,
+                        )
+                        current_node.children.append(child)
+                        queue.append((child, current_node))
+                    else:
+                        print(f"Warning: {sub_path} is an unknown file type, skipping")
+                except OSError as e:
+                    print(f"Warning: Could not process {sub_path}: {str(e)}")
+                    
+            current_node.sort_children()
+            
+            # Update parent stats after processing current node
+            if parent:
+                parent.size += current_node.size
+                parent.file_count += current_node.file_count
+                parent.dir_count += 1 + current_node.dir_count
+                
+    except LimitExceededError:
         return True
-
-    for sub_path in node.path.iterdir():
-
-        if query.ignore_patterns and _should_exclude(sub_path, query.local_path, query.ignore_patterns):
-            continue
-
-        if query.include_patterns and not _should_include(sub_path, query.local_path, query.include_patterns):
-            continue
-
-        if sub_path.is_symlink():
-            _process_symlink(path=sub_path, parent_node=node, stats=stats, local_path=query.local_path)
-            if limit_exceeded(stats, node.depth):
-                return True
-        elif sub_path.is_file():
-            _process_file(path=sub_path, parent_node=node, stats=stats, local_path=query.local_path)
-            if limit_exceeded(stats, node.depth):
-                return True
-        elif sub_path.is_dir():
-
-            child_directory_node = FileSystemNode(
-                name=sub_path.name,
-                type=FileSystemNodeType.DIRECTORY,
-                path_str=str(sub_path.relative_to(query.local_path)),
-                path=sub_path,
-                depth=node.depth + 1,
-            )
-
-            limit_hit = _process_node(
-                node=child_directory_node,
-                query=query,
-                stats=stats,
-            )
-            node.children.append(child_directory_node)
-            node.size += child_directory_node.size
-            node.file_count += child_directory_node.file_count
-            node.dir_count += 1 + child_directory_node.dir_count
-            if limit_hit:
-                return True
-        else:
-            print(f"Warning: {sub_path} is an unknown file type, skipping")
-
-    node.sort_children()
+        
     return False
 
 
