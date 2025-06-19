@@ -56,13 +56,15 @@ async def lifespan(_: FastAPI):
     Parameters
     ----------
     _ : FastAPI
-        The FastAPI application instance (unused).
+        The FastAPI application instance.
 
     Yields
     -------
     None
         Yields control back to the FastAPI application while the background task runs.
     """
+
+    # Start the repository cleanup task
     task = asyncio.create_task(_remove_old_repositories())
 
     yield
@@ -160,6 +162,27 @@ def log_slider_to_size(position: int) -> int:
     minv = math.log(1)
     maxv = math.log(102_400)
     return round(math.exp(minv + (maxv - minv) * pow(position / maxp, 1.5))) * 1024
+
+
+def is_browser(request: Request) -> bool:
+    """
+    Detect if the request is coming from a browser based on the User-Agent header.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming HTTP request.
+
+    Returns
+    -------
+    bool
+        True if the request is from a browser, False otherwise.
+    """
+    user_agent = request.headers.get("user-agent", "").lower()
+    browser_identifiers = ["mozilla", "chrome", "safari", "edge", "firefox", "webkit", "opera"]
+
+    # Check if any browser identifier is in the user agent string
+    return any(identifier in user_agent for identifier in browser_identifiers)
 
 
 ## Color printing utility
