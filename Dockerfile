@@ -13,7 +13,7 @@ RUN apt-get update \
     && pip install --no-cache-dir --timeout 1000 -r requirements.txt \
     && python - <<'EOF'
 import tree_sitter_languages
-for lang in ["python", "javascript"]:
+for lang in ["python", "javascript", "go"]:
     tree_sitter_languages.get_parser(lang)
 EOF
     && rm -rf /var/lib/apt/lists/*
