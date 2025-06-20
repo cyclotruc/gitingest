@@ -73,6 +73,7 @@ async def ingest_async(
             from_web=False,
             include_patterns=include_patterns,
             ignore_patterns=exclude_patterns,
+            token=token,
         )
 
         if query.url:

@@ -63,6 +63,7 @@ async def test_remote_repository_analysis(request):
         "max_file_size": "243",
         "pattern_type": "exclude",
         "pattern": "",
+        "token": "",
     }
 
     response = client.post("/", data=form_data)
@@ -79,6 +80,7 @@ async def test_invalid_repository_url(request):
         "max_file_size": "243",
         "pattern_type": "exclude",
         "pattern": "",
+        "token": "",
     }
 
     response = client.post("/", data=form_data)
@@ -95,6 +97,7 @@ async def test_large_repository(request):
         "max_file_size": "243",
         "pattern_type": "exclude",
         "pattern": "",
+        "token": "",
     }
 
     response = client.post("/", data=form_data)
@@ -113,6 +116,7 @@ async def test_concurrent_requests(request):
             "max_file_size": "243",
             "pattern_type": "exclude",
             "pattern": "",
+            "token": "",
         }
         response = client.post("/", data=form_data)
         assert response.status_code == 200, f"Request failed: {response.text}"
@@ -133,6 +137,7 @@ async def test_large_file_handling(request):
         "max_file_size": "1",
         "pattern_type": "exclude",
         "pattern": "",
+        "token": "",
     }
 
     response = client.post("/", data=form_data)
@@ -149,6 +154,7 @@ async def test_repository_with_patterns(request):
         "max_file_size": "243",
         "pattern_type": "include",
         "pattern": "*.md",
+        "token": "",
     }
 
     response = client.post("/", data=form_data)
