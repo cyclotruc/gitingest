@@ -1,7 +1,7 @@
 """Process a query by parsing input, cloning a repository, and generating a summary."""
 
 from functools import partial
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from fastapi import Request
 from starlette.templating import _TemplateResponse
@@ -21,6 +21,7 @@ async def process_query(
     pattern_type: str = "exclude",
     pattern: str = "",
     is_index: bool = False,
+    token: Optional[str] = None,
 ) -> _TemplateResponse:
     """
     Process a query by parsing input, cloning a repository, and generating a summary.
@@ -42,6 +43,9 @@ async def process_query(
         Pattern to include or exclude in the query, depending on the pattern type.
     is_index : bool
         Flag indicating whether the request is for the index page (default is False).
+    token : str, optional
+        GitHub personal-access token (PAT). Needed when *input_text* refers to a
+        **private** repository.
 
     Returns
     -------
@@ -73,6 +77,7 @@ async def process_query(
         "default_file_size": slider_position,
         "pattern_type": pattern_type,
         "pattern": pattern,
+        "token": token,
     }
 
     try:
@@ -82,12 +87,13 @@ async def process_query(
             from_web=True,
             include_patterns=include_patterns,
             ignore_patterns=exclude_patterns,
+            token=token,
         )
         if not query.url:
             raise ValueError("The 'url' parameter is required.")
 
         clone_config = query.extract_clone_config()
-        await clone_repo(clone_config)
+        await clone_repo(clone_config, token=token)
         summary, tree, content = ingest_query(query)
 
         tree_with_filenames = ((query.root_node is not None) and create_tree_structure(query, query.root_node)) or []
