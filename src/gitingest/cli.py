@@ -68,6 +68,7 @@ def main(
 
     It calls the async main function to run the command.
 
+    \b
     Parameters
     ----------
     source : str
