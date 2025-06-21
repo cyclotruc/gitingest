@@ -29,6 +29,8 @@ class CloneConfig:
         The branch to clone (default is None).
     subpath : str
         The subpath to clone from the repository (default is "/").
+    blob: bool
+        Whether the repository is a blob (default is False).
     """
 
     url: str

@@ -12,9 +12,10 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from gitingest.cloning import check_repo_exists, clone_repo
+from gitingest.cloning import clone_repo
 from gitingest.schemas import CloneConfig
 from gitingest.utils.exceptions import AsyncTimeoutError
+from gitingest.utils.git_utils import check_repo_exists
 
 
 @pytest.mark.asyncio
@@ -41,7 +42,7 @@ async def test_clone_with_commit() -> None:
 
             await clone_repo(clone_config)
 
-            mock_check.assert_called_once_with(clone_config.url)
+            mock_check.assert_called_once_with(clone_config.url, token=None)
             assert mock_exec.call_count == 2  # Clone and checkout calls
 
 
@@ -54,7 +55,7 @@ async def test_clone_without_commit() -> None:
     When `clone_repo` is called,
     Then only the clone_repo operation should be performed (no checkout).
     """
-    query = CloneConfig(
+    clone_config = CloneConfig(
         url="https://github.com/user/repo",
         local_path="/tmp/repo",
         commit=None,
@@ -67,9 +68,9 @@ async def test_clone_without_commit() -> None:
             mock_process.communicate.return_value = (b"output", b"error")
             mock_exec.return_value = mock_process
 
-            await clone_repo(query)
+            await clone_repo(clone_config)
 
-            mock_check.assert_called_once_with(query.url)
+            mock_check.assert_called_once_with(clone_config.url, token=None)
             assert mock_exec.call_count == 1  # Only clone call
 
 
@@ -106,10 +107,10 @@ async def test_clone_nonexistent_repository() -> None:
 )
 async def test_check_repo_exists(mock_stdout: bytes, return_code: int, expected: bool) -> None:
     """
-    Test the `_check_repo_exists` function with different Git HTTP responses.
+    Test the `check_repo_exists` function with different Git HTTP responses.
 
     Given various stdout lines and return codes:
-    When `_check_repo_exists` is called,
+    When `check_repo_exists` is called,
     Then it should correctly indicate whether the repository exists.
     """
     url = "https://github.com/user/repo"
@@ -295,8 +296,8 @@ async def test_clone_specific_branch(tmp_path):
     branch_name = "main"
     local_path = tmp_path / "gitingest"
 
-    config = CloneConfig(url=repo_url, local_path=str(local_path), branch=branch_name)
-    await clone_repo(config)
+    clone_config = CloneConfig(url=repo_url, local_path=str(local_path), branch=branch_name)
+    await clone_repo(clone_config)
 
     # Assertions
     assert local_path.exists(), "The repository was not cloned successfully."
@@ -347,10 +348,7 @@ async def test_clone_creates_parent_directory(tmp_path: Path) -> None:
     Then it should create the parent directories before attempting to clone.
     """
     nested_path = tmp_path / "deep" / "nested" / "path" / "repo"
-    clone_config = CloneConfig(
-        url="https://github.com/user/repo",
-        local_path=str(nested_path),
-    )
+    clone_config = CloneConfig(url="https://github.com/user/repo", local_path=str(nested_path))
 
     with patch("gitingest.cloning.check_repo_exists", return_value=True):
         with patch("gitingest.cloning.run_command", new_callable=AsyncMock) as mock_exec:
@@ -435,7 +433,7 @@ async def test_clone_with_commit_and_subpath() -> None:
                 clone_config.local_path,
             )
 
-            # Verify the sparse-checkout command sets the correct path
+            # Verify sparse-checkout set
             mock_exec.assert_any_call(
                 "git",
                 "-C",
@@ -443,8 +441,15 @@ async def test_clone_with_commit_and_subpath() -> None:
                 "sparse-checkout",
                 "set",
                 "src/docs",
+            )
+
+            # Verify checkout commit
+            mock_exec.assert_any_call(
+                "git",
+                "-C",
+                clone_config.local_path,
                 "checkout",
                 clone_config.commit,
             )
 
-            assert mock_exec.call_count == 2
+            assert mock_exec.call_count == 3

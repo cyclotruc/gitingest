@@ -44,7 +44,7 @@ repos:
       - id: black
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.19.1
+    rev: v3.20.0
     hooks:
       - id: pyupgrade
         description: "Automatically upgrade syntax for newer versions."
@@ -73,7 +73,7 @@ repos:
       - id: djlint-reformat-jinja
 
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.44.0
+    rev: v0.45.0
     hooks:
       - id: markdownlint
         description: "Lint markdown files."
@@ -88,7 +88,7 @@ repos:
         files: ^src/
 
   - repo: https://github.com/pycqa/pylint
-    rev: v3.3.6
+    rev: v3.3.7
     hooks:
       - id: pylint
         name: pylint for source
