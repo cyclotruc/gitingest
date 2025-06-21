@@ -84,7 +84,7 @@ gitingest /path/to/directory
 # From URL
 gitingest https://github.com/cyclotruc/gitingest
 
-# From a specific subdirectory
+# or from specific subdirectory
 gitingest https://github.com/cyclotruc/gitingest/tree/main/src/gitingest/utils
 ```
 
