@@ -44,6 +44,7 @@ from gitingest.entrypoint import ingest_async
     ),
 )
 @click.option("--branch", "-b", default=None, help="Branch to clone and ingest")
+@click.option("--use-gitignore", is_flag=True, help="Automatically use .gitignore files to exclude files")
 @click.option(
     "--token",
     "-t",
@@ -61,6 +62,7 @@ def main(
     exclude_pattern: Tuple[str, ...],
     include_pattern: Tuple[str, ...],
     branch: Optional[str],
+    use_gitignore: bool,
     token: Optional[str],
 ):
     """
@@ -83,11 +85,12 @@ def main(
         Glob patterns for including files in the output.
     branch : str, optional
         Specific branch to ingest (defaults to the repository's default).
+    use_gitignore : bool
+        A flag to automatically exclude files and directories listed in .gitignore files.
     token: str, optional
         GitHub personal-access token (PAT). Needed when *source* refers to a
         **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
     """
-
     asyncio.run(
         _async_main(
             source=source,
@@ -96,6 +99,7 @@ def main(
             exclude_pattern=exclude_pattern,
             include_pattern=include_pattern,
             branch=branch,
+            use_gitignore=use_gitignore,
             token=token,
         )
     )
@@ -108,6 +112,7 @@ async def _async_main(
     exclude_pattern: Tuple[str, ...],
     include_pattern: Tuple[str, ...],
     branch: Optional[str],
+    use_gitignore: bool,
     token: Optional[str],
 ) -> None:
     """
@@ -132,6 +137,8 @@ async def _async_main(
         Glob patterns for including files in the output.
     branch : str, optional
         Specific branch to ingest (defaults to the repository's default).
+    use_gitignore : bool
+        A flag to automatically exclude files and directories listed in .gitignore files.
     token: str, optional
         GitHub personal-access token (PAT). Needed when *source* refers to a
         **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
@@ -147,7 +154,7 @@ async def _async_main(
         include_patterns = set(include_pattern)
 
         output_target = output if output is not None else OUTPUT_FILE_NAME
-
+        
         if output_target == "-":
             click.echo("Analyzing source, preparing output for stdout...", err=True)
         else:
@@ -160,6 +167,7 @@ async def _async_main(
             exclude_patterns=exclude_patterns,
             branch=branch,
             output=output_target,
+            use_gitignore=use_gitignore,
             token=token,
         )
 
@@ -172,6 +180,7 @@ async def _async_main(
             click.echo(f"Analysis complete! Output written to: {output_target}")
             click.echo("\nSummary:")
             click.echo(summary)
+
 
     except Exception as exc:
         # Convert any exception into Click.Abort so that exit status is non-zero
