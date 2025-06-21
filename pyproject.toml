@@ -11,7 +11,7 @@ dependencies = [
     "python-dotenv",
     "slowapi",
     "starlette>=0.40.0",  # Vulnerable to https://osv.dev/vulnerability/GHSA-f96h-pmfr-66vw
-    "tiktoken",
+    "tiktoken>=0.7.0",  # Support for o200k_base encoding
     "tomli",
     "typing_extensions; python_version < '3.10'",
     "uvicorn>=0.11.7",  # Vulnerable to https://osv.dev/vulnerability/PYSEC-2020-150
@@ -23,7 +23,6 @@ classifiers=[
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",

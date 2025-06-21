@@ -2,7 +2,9 @@
 
 import asyncio
 import inspect
+import os
 import shutil
+import sys
 from typing import Optional, Set, Tuple, Union
 
 from gitingest.cloning import clone_repo
@@ -19,6 +21,7 @@ async def ingest_async(
     exclude_patterns: Optional[Union[str, Set[str]]] = None,
     branch: Optional[str] = None,
     use_gitignore: bool = False,
+    token: Optional[str] = None,
     output: Optional[str] = None,
 ) -> Tuple[str, str, str]:
     """
@@ -43,6 +46,9 @@ async def ingest_async(
         The branch to clone and ingest. If `None`, the default branch is used.
     use_gitignore : bool
         A flag to automatically exclude files and directories listed in .gitignore files. Disabled by default.
+    token : str, optional
+        GitHub personal-access token (PAT). Needed when *source* refers to a
+        **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
     output : str, optional
         File path where the summary and content should be written. If `None`, the results are not written to a file.
 
@@ -61,6 +67,9 @@ async def ingest_async(
     """
     repo_cloned = False
 
+    if not token:
+        token = os.getenv("GITHUB_TOKEN")
+
     try:
         query: IngestionQuery = await parse_query(
             source=source,
@@ -68,6 +77,7 @@ async def ingest_async(
             from_web=False,
             include_patterns=include_patterns,
             ignore_patterns=exclude_patterns,
+            token=token,
         )
 
         if use_gitignore:
@@ -79,7 +89,7 @@ async def ingest_async(
             query.branch = selected_branch
 
             clone_config = query.extract_clone_config()
-            clone_coroutine = clone_repo(clone_config)
+            clone_coroutine = clone_repo(clone_config, token=token)
 
             if inspect.iscoroutine(clone_coroutine):
                 if asyncio.get_event_loop().is_running():
@@ -93,7 +103,12 @@ async def ingest_async(
 
         summary, tree, content = ingest_query(query)
 
-        if output is not None:
+        if output == "-":
+            loop = asyncio.get_running_loop()
+            output_data = tree + "\n" + content
+            await loop.run_in_executor(None, sys.stdout.write, output_data)
+            await loop.run_in_executor(None, sys.stdout.flush)
+        elif output is not None:
             with open(output, "w", encoding="utf-8") as f:
                 f.write(tree + "\n" + content)
 
@@ -110,6 +125,7 @@ def ingest(
     include_patterns: Optional[Union[str, Set[str]]] = None,
     exclude_patterns: Optional[Union[str, Set[str]]] = None,
     branch: Optional[str] = None,
+    token: Optional[str] = None,
     output: Optional[str] = None,
 ) -> Tuple[str, str, str]:
     """
@@ -132,6 +148,9 @@ def ingest(
         Pattern or set of patterns specifying which files to exclude. If `None`, no files are excluded.
     branch : str, optional
         The branch to clone and ingest. If `None`, the default branch is used.
+    token : str, optional
+        GitHub personal-access token (PAT). Needed when *source* refers to a
+        **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
     output : str, optional
         File path where the summary and content should be written. If `None`, the results are not written to a file.
 
@@ -154,6 +173,7 @@ def ingest(
             include_patterns=include_patterns,
             exclude_patterns=exclude_patterns,
             branch=branch,
+            token=token,
             output=output,
         )
     )
