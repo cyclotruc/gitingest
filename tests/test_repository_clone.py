@@ -8,18 +8,24 @@ and handling edge cases such as nonexistent URLs, timeouts, redirects, and speci
 import asyncio
 import os
 from pathlib import Path
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
+from pytest_mock import MockerFixture
 
 from gitingest.cloning import clone_repo
 from gitingest.schemas import CloneConfig
 from gitingest.utils.exceptions import AsyncTimeoutError
 from gitingest.utils.git_utils import check_repo_exists
+from tests.conftest import DEMO_URL, LOCAL_REPO_PATH
+
+# All cloning-related tests assume (unless explicitly overridden) that the repository exists.
+# Apply the check-repo patch automatically so individual tests don't need to repeat it.
+pytestmark = pytest.mark.usefixtures("repo_exists_true")
 
 
 @pytest.mark.asyncio
-async def test_clone_with_commit() -> None:
+async def test_clone_with_commit(repo_exists_true: AsyncMock, run_command_mock: AsyncMock) -> None:
     """
     Test cloning a repository with a specific commit hash.
 
@@ -28,26 +34,20 @@ async def test_clone_with_commit() -> None:
     Then the repository should be cloned and checked out at that commit.
     """
     clone_config = CloneConfig(
-        url="https://github.com/user/repo",
-        local_path="/tmp/repo",
+        url=DEMO_URL,
+        local_path=LOCAL_REPO_PATH,
         commit="a" * 40,  # Simulating a valid commit hash
         branch="main",
     )
 
-    with patch("gitingest.cloning.check_repo_exists", return_value=True) as mock_check:
-        with patch("gitingest.cloning.run_command", new_callable=AsyncMock) as mock_exec:
-            mock_process = AsyncMock()
-            mock_process.communicate.return_value = (b"output", b"error")
-            mock_exec.return_value = mock_process
+    await clone_repo(clone_config)
 
-            await clone_repo(clone_config)
-
-            mock_check.assert_called_once_with(clone_config.url, token=None)
-            assert mock_exec.call_count == 2  # Clone and checkout calls
+    repo_exists_true.assert_called_once_with(clone_config.url, token=None)
+    assert run_command_mock.call_count == 2  # Clone and checkout calls
 
 
 @pytest.mark.asyncio
-async def test_clone_without_commit() -> None:
+async def test_clone_without_commit(repo_exists_true: AsyncMock, run_command_mock: AsyncMock) -> None:
     """
     Test cloning a repository when no commit hash is provided.
 
@@ -55,27 +55,16 @@ async def test_clone_without_commit() -> None:
     When `clone_repo` is called,
     Then only the clone_repo operation should be performed (no checkout).
     """
-    clone_config = CloneConfig(
-        url="https://github.com/user/repo",
-        local_path="/tmp/repo",
-        commit=None,
-        branch="main",
-    )
+    clone_config = CloneConfig(url=DEMO_URL, local_path=LOCAL_REPO_PATH, commit=None, branch="main")
 
-    with patch("gitingest.cloning.check_repo_exists", return_value=True) as mock_check:
-        with patch("gitingest.cloning.run_command", new_callable=AsyncMock) as mock_exec:
-            mock_process = AsyncMock()
-            mock_process.communicate.return_value = (b"output", b"error")
-            mock_exec.return_value = mock_process
+    await clone_repo(clone_config)
 
-            await clone_repo(clone_config)
-
-            mock_check.assert_called_once_with(clone_config.url, token=None)
-            assert mock_exec.call_count == 1  # Only clone call
+    repo_exists_true.assert_called_once_with(clone_config.url, token=None)
+    assert run_command_mock.call_count == 1  # Only clone call
 
 
 @pytest.mark.asyncio
-async def test_clone_nonexistent_repository() -> None:
+async def test_clone_nonexistent_repository(repo_exists_true: AsyncMock) -> None:
     """
     Test cloning a nonexistent repository URL.
 
@@ -85,15 +74,17 @@ async def test_clone_nonexistent_repository() -> None:
     """
     clone_config = CloneConfig(
         url="https://github.com/user/nonexistent-repo",
-        local_path="/tmp/repo",
+        local_path=LOCAL_REPO_PATH,
         commit=None,
         branch="main",
     )
-    with patch("gitingest.cloning.check_repo_exists", return_value=False) as mock_check:
-        with pytest.raises(ValueError, match="Repository not found"):
-            await clone_repo(clone_config)
+    # Override the default fixture behaviour for this test
+    repo_exists_true.return_value = False
 
-            mock_check.assert_called_once_with(clone_config.url)
+    with pytest.raises(ValueError, match="Repository not found"):
+        await clone_repo(clone_config)
+
+    repo_exists_true.assert_called_once_with(clone_config.url, token=None)
 
 
 @pytest.mark.asyncio
@@ -105,7 +96,7 @@ async def test_clone_nonexistent_repository() -> None:
         (b"HTTP/1.1 200 OK\n", 1, False),  # Failed request
     ],
 )
-async def test_check_repo_exists(mock_stdout: bytes, return_code: int, expected: bool) -> None:
+async def test_check_repo_exists(mock_stdout: bytes, return_code: int, expected: bool, mocker: MockerFixture) -> None:
     """
     Test the `check_repo_exists` function with different Git HTTP responses.
 
@@ -113,22 +104,19 @@ async def test_check_repo_exists(mock_stdout: bytes, return_code: int, expected:
     When `check_repo_exists` is called,
     Then it should correctly indicate whether the repository exists.
     """
-    url = "https://github.com/user/repo"
+    mock_exec = mocker.patch("asyncio.create_subprocess_exec", new_callable=AsyncMock)
+    mock_process = AsyncMock()
+    mock_process.communicate.return_value = (mock_stdout, b"")
+    mock_process.returncode = return_code
+    mock_exec.return_value = mock_process
 
-    with patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_exec:
-        mock_process = AsyncMock()
-        # Mock the subprocess output
-        mock_process.communicate.return_value = (mock_stdout, b"")
-        mock_process.returncode = return_code
-        mock_exec.return_value = mock_process
+    repo_exists = await check_repo_exists(DEMO_URL)
 
-        repo_exists = await check_repo_exists(url)
-
-        assert repo_exists is expected
+    assert repo_exists is expected
 
 
 @pytest.mark.asyncio
-async def test_clone_with_custom_branch() -> None:
+async def test_clone_with_custom_branch(run_command_mock: AsyncMock) -> None:
     """
     Test cloning a repository with a specified custom branch.
 
@@ -136,25 +124,24 @@ async def test_clone_with_custom_branch() -> None:
     When `clone_repo` is called,
     Then the repository should be cloned shallowly to that branch.
     """
-    clone_config = CloneConfig(url="https://github.com/user/repo", local_path="/tmp/repo", branch="feature-branch")
-    with patch("gitingest.cloning.check_repo_exists", return_value=True):
-        with patch("gitingest.cloning.run_command", new_callable=AsyncMock) as mock_exec:
-            await clone_repo(clone_config)
+    clone_config = CloneConfig(url=DEMO_URL, local_path=LOCAL_REPO_PATH, branch="feature-branch")
 
-            mock_exec.assert_called_once_with(
-                "git",
-                "clone",
-                "--single-branch",
-                "--depth=1",
-                "--branch",
-                "feature-branch",
-                clone_config.url,
-                clone_config.local_path,
-            )
+    await clone_repo(clone_config)
+
+    run_command_mock.assert_called_once_with(
+        "git",
+        "clone",
+        "--single-branch",
+        "--depth=1",
+        "--branch",
+        "feature-branch",
+        clone_config.url,
+        clone_config.local_path,
+    )
 
 
 @pytest.mark.asyncio
-async def test_git_command_failure() -> None:
+async def test_git_command_failure(run_command_mock: AsyncMock) -> None:
     """
     Test cloning when the Git command fails during execution.
 
@@ -162,18 +149,16 @@ async def test_git_command_failure() -> None:
     When `clone_repo` is called,
     Then a RuntimeError should be raised with the correct message.
     """
-    clone_config = CloneConfig(
-        url="https://github.com/user/repo",
-        local_path="/tmp/repo",
-    )
-    with patch("gitingest.cloning.check_repo_exists", return_value=True):
-        with patch("gitingest.cloning.run_command", side_effect=RuntimeError("Git command failed")):
-            with pytest.raises(RuntimeError, match="Git command failed"):
-                await clone_repo(clone_config)
+    clone_config = CloneConfig(url=DEMO_URL, local_path=LOCAL_REPO_PATH)
+
+    run_command_mock.side_effect = RuntimeError("Git command failed")
+
+    with pytest.raises(RuntimeError, match="Git command failed"):
+        await clone_repo(clone_config)
 
 
 @pytest.mark.asyncio
-async def test_clone_default_shallow_clone() -> None:
+async def test_clone_default_shallow_clone(run_command_mock: AsyncMock) -> None:
     """
     Test cloning a repository with the default shallow clone options.
 
@@ -181,27 +166,22 @@ async def test_clone_default_shallow_clone() -> None:
     When `clone_repo` is called,
     Then the repository should be cloned with `--depth=1` and `--single-branch`.
     """
-    clone_config = CloneConfig(
-        url="https://github.com/user/repo",
-        local_path="/tmp/repo",
+    clone_config = CloneConfig(url=DEMO_URL, local_path=LOCAL_REPO_PATH)
+
+    await clone_repo(clone_config)
+
+    run_command_mock.assert_called_once_with(
+        "git",
+        "clone",
+        "--single-branch",
+        "--depth=1",
+        clone_config.url,
+        clone_config.local_path,
     )
-
-    with patch("gitingest.cloning.check_repo_exists", return_value=True):
-        with patch("gitingest.cloning.run_command", new_callable=AsyncMock) as mock_exec:
-            await clone_repo(clone_config)
-
-            mock_exec.assert_called_once_with(
-                "git",
-                "clone",
-                "--single-branch",
-                "--depth=1",
-                clone_config.url,
-                clone_config.local_path,
-            )
 
 
 @pytest.mark.asyncio
-async def test_clone_commit_without_branch() -> None:
+async def test_clone_commit_without_branch(run_command_mock: AsyncMock) -> None:
     """
     Test cloning when a commit hash is provided but no branch is specified.
 
@@ -209,22 +189,18 @@ async def test_clone_commit_without_branch() -> None:
     When `clone_repo` is called,
     Then the repository should be cloned and checked out at that commit.
     """
-    clone_config = CloneConfig(
-        url="https://github.com/user/repo",
-        local_path="/tmp/repo",
-        commit="a" * 40,  # Simulating a valid commit hash
-    )
-    with patch("gitingest.cloning.check_repo_exists", return_value=True):
-        with patch("gitingest.cloning.run_command", new_callable=AsyncMock) as mock_exec:
-            await clone_repo(clone_config)
+    # Simulating a valid commit hash
+    clone_config = CloneConfig(url=DEMO_URL, local_path=LOCAL_REPO_PATH, commit="a" * 40)
 
-            assert mock_exec.call_count == 2  # Clone and checkout calls
-            mock_exec.assert_any_call("git", "clone", "--single-branch", clone_config.url, clone_config.local_path)
-            mock_exec.assert_any_call("git", "-C", clone_config.local_path, "checkout", clone_config.commit)
+    await clone_repo(clone_config)
+
+    assert run_command_mock.call_count == 2  # Clone and checkout calls
+    run_command_mock.assert_any_call("git", "clone", "--single-branch", clone_config.url, clone_config.local_path)
+    run_command_mock.assert_any_call("git", "-C", clone_config.local_path, "checkout", clone_config.commit)
 
 
 @pytest.mark.asyncio
-async def test_check_repo_exists_with_redirect() -> None:
+async def test_check_repo_exists_with_redirect(mocker: MockerFixture) -> None:
     """
     Test `check_repo_exists` when a redirect (302) is returned.
 
@@ -232,20 +208,19 @@ async def test_check_repo_exists_with_redirect() -> None:
     When `check_repo_exists` is called,
     Then it should return `False`, indicating the repo is inaccessible.
     """
-    url = "https://github.com/user/repo"
-    with patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_exec:
-        mock_process = AsyncMock()
-        mock_process.communicate.return_value = (b"HTTP/1.1 302 Found\n", b"")
-        mock_process.returncode = 0  # Simulate successful request
-        mock_exec.return_value = mock_process
+    mock_exec = mocker.patch("asyncio.create_subprocess_exec", new_callable=AsyncMock)
+    mock_process = AsyncMock()
+    mock_process.communicate.return_value = (b"HTTP/1.1 302 Found\n", b"")
+    mock_process.returncode = 0  # Simulate successful request
+    mock_exec.return_value = mock_process
 
-        repo_exists = await check_repo_exists(url)
+    repo_exists = await check_repo_exists(DEMO_URL)
 
-        assert repo_exists is False
+    assert repo_exists is False
 
 
 @pytest.mark.asyncio
-async def test_check_repo_exists_with_permanent_redirect() -> None:
+async def test_check_repo_exists_with_permanent_redirect(mocker: MockerFixture) -> None:
     """
     Test `check_repo_exists` when a permanent redirect (301) is returned.
 
@@ -253,20 +228,19 @@ async def test_check_repo_exists_with_permanent_redirect() -> None:
     When `check_repo_exists` is called,
     Then it should return `True`, indicating the repo may exist at the new location.
     """
-    url = "https://github.com/user/repo"
-    with patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_exec:
-        mock_process = AsyncMock()
-        mock_process.communicate.return_value = (b"HTTP/1.1 301 Found\n", b"")
-        mock_process.returncode = 0  # Simulate successful request
-        mock_exec.return_value = mock_process
+    mock_exec = mocker.patch("asyncio.create_subprocess_exec", new_callable=AsyncMock)
+    mock_process = AsyncMock()
+    mock_process.communicate.return_value = (b"HTTP/1.1 301 Found\n", b"")
+    mock_process.returncode = 0  # Simulate successful request
+    mock_exec.return_value = mock_process
 
-        repo_exists = await check_repo_exists(url)
+    repo_exists = await check_repo_exists(DEMO_URL)
 
-        assert repo_exists
+    assert repo_exists
 
 
 @pytest.mark.asyncio
-async def test_clone_with_timeout() -> None:
+async def test_clone_with_timeout(run_command_mock: AsyncMock) -> None:
     """
     Test cloning a repository when a timeout occurs.
 
@@ -274,17 +248,16 @@ async def test_clone_with_timeout() -> None:
     When `clone_repo` is called,
     Then an `AsyncTimeoutError` should be raised to indicate the operation exceeded time limits.
     """
-    clone_config = CloneConfig(url="https://github.com/user/repo", local_path="/tmp/repo")
+    clone_config = CloneConfig(url=DEMO_URL, local_path=LOCAL_REPO_PATH)
 
-    with patch("gitingest.cloning.check_repo_exists", return_value=True):
-        with patch("gitingest.cloning.run_command", new_callable=AsyncMock) as mock_exec:
-            mock_exec.side_effect = asyncio.TimeoutError
-            with pytest.raises(AsyncTimeoutError, match="Operation timed out after"):
-                await clone_repo(clone_config)
+    run_command_mock.side_effect = asyncio.TimeoutError
+
+    with pytest.raises(AsyncTimeoutError, match="Operation timed out after"):
+        await clone_repo(clone_config)
 
 
 @pytest.mark.asyncio
-async def test_clone_specific_branch(tmp_path):
+async def test_clone_specific_branch(tmp_path: Path) -> None:
     """
     Test cloning a specific branch of a repository.
 
@@ -295,21 +268,18 @@ async def test_clone_specific_branch(tmp_path):
     repo_url = "https://github.com/cyclotruc/gitingest.git"
     branch_name = "main"
     local_path = tmp_path / "gitingest"
-
     clone_config = CloneConfig(url=repo_url, local_path=str(local_path), branch=branch_name)
+
     await clone_repo(clone_config)
 
-    # Assertions
     assert local_path.exists(), "The repository was not cloned successfully."
     assert local_path.is_dir(), "The cloned repository path is not a directory."
-
-    # Check the current branch
     current_branch = os.popen(f"git -C {local_path} branch --show-current").read().strip()
     assert current_branch == branch_name, f"Expected branch '{branch_name}', got '{current_branch}'."
 
 
 @pytest.mark.asyncio
-async def test_clone_branch_with_slashes(tmp_path):
+async def test_clone_branch_with_slashes(tmp_path: Path, run_command_mock: AsyncMock) -> None:
     """
     Test cloning a branch with slashes in the name.
 
@@ -317,29 +287,26 @@ async def test_clone_branch_with_slashes(tmp_path):
     When `clone_repo` is called,
     Then the repository should be cloned and checked out at that branch.
     """
-    repo_url = "https://github.com/user/repo"
     branch_name = "fix/in-operator"
     local_path = tmp_path / "gitingest"
+    clone_config = CloneConfig(url=DEMO_URL, local_path=str(local_path), branch=branch_name)
 
-    clone_config = CloneConfig(url=repo_url, local_path=str(local_path), branch=branch_name)
-    with patch("gitingest.cloning.check_repo_exists", return_value=True):
-        with patch("gitingest.cloning.run_command", new_callable=AsyncMock) as mock_exec:
-            await clone_repo(clone_config)
+    await clone_repo(clone_config)
 
-            mock_exec.assert_called_once_with(
-                "git",
-                "clone",
-                "--single-branch",
-                "--depth=1",
-                "--branch",
-                "fix/in-operator",
-                clone_config.url,
-                clone_config.local_path,
-            )
+    run_command_mock.assert_called_once_with(
+        "git",
+        "clone",
+        "--single-branch",
+        "--depth=1",
+        "--branch",
+        "fix/in-operator",
+        clone_config.url,
+        clone_config.local_path,
+    )
 
 
 @pytest.mark.asyncio
-async def test_clone_creates_parent_directory(tmp_path: Path) -> None:
+async def test_clone_creates_parent_directory(tmp_path: Path, run_command_mock: AsyncMock) -> None:
     """
     Test that clone_repo creates parent directories if they don't exist.
 
@@ -348,28 +315,23 @@ async def test_clone_creates_parent_directory(tmp_path: Path) -> None:
     Then it should create the parent directories before attempting to clone.
     """
     nested_path = tmp_path / "deep" / "nested" / "path" / "repo"
-    clone_config = CloneConfig(url="https://github.com/user/repo", local_path=str(nested_path))
+    clone_config = CloneConfig(url=DEMO_URL, local_path=str(nested_path))
 
-    with patch("gitingest.cloning.check_repo_exists", return_value=True):
-        with patch("gitingest.cloning.run_command", new_callable=AsyncMock) as mock_exec:
-            await clone_repo(clone_config)
+    await clone_repo(clone_config)
 
-            # Verify parent directory was created
-            assert nested_path.parent.exists()
-
-            # Verify git clone was called with correct parameters
-            mock_exec.assert_called_once_with(
-                "git",
-                "clone",
-                "--single-branch",
-                "--depth=1",
-                clone_config.url,
-                str(nested_path),
-            )
+    assert nested_path.parent.exists()
+    run_command_mock.assert_called_once_with(
+        "git",
+        "clone",
+        "--single-branch",
+        "--depth=1",
+        clone_config.url,
+        str(nested_path),
+    )
 
 
 @pytest.mark.asyncio
-async def test_clone_with_specific_subpath() -> None:
+async def test_clone_with_specific_subpath(run_command_mock: AsyncMock) -> None:
     """
     Test cloning a repository with a specific subpath.
 
@@ -377,32 +339,30 @@ async def test_clone_with_specific_subpath() -> None:
     When `clone_repo` is called,
     Then the repository should be cloned with sparse checkout enabled and the specified subpath.
     """
-    clone_config = CloneConfig(url="https://github.com/user/repo", local_path="/tmp/repo", subpath="src/docs")
+    clone_config = CloneConfig(url=DEMO_URL, local_path=LOCAL_REPO_PATH, subpath="src/docs")
 
-    with patch("gitingest.cloning.check_repo_exists", return_value=True):
-        with patch("gitingest.cloning.run_command", new_callable=AsyncMock) as mock_exec:
-            await clone_repo(clone_config)
+    await clone_repo(clone_config)
 
-            # Verify the clone command includes sparse checkout flags
-            mock_exec.assert_any_call(
-                "git",
-                "clone",
-                "--single-branch",
-                "--filter=blob:none",
-                "--sparse",
-                "--depth=1",
-                clone_config.url,
-                clone_config.local_path,
-            )
+    # Verify the clone command includes sparse checkout flags
+    run_command_mock.assert_any_call(
+        "git",
+        "clone",
+        "--single-branch",
+        "--filter=blob:none",
+        "--sparse",
+        "--depth=1",
+        clone_config.url,
+        clone_config.local_path,
+    )
 
-            # Verify the sparse-checkout command sets the correct path
-            mock_exec.assert_any_call("git", "-C", clone_config.local_path, "sparse-checkout", "set", "src/docs")
+    # Verify the sparse-checkout command sets the correct path
+    run_command_mock.assert_any_call("git", "-C", clone_config.local_path, "sparse-checkout", "set", "src/docs")
 
-            assert mock_exec.call_count == 2
+    assert run_command_mock.call_count == 2
 
 
 @pytest.mark.asyncio
-async def test_clone_with_commit_and_subpath() -> None:
+async def test_clone_with_commit_and_subpath(run_command_mock: AsyncMock) -> None:
     """
     Test cloning a repository with both a specific commit and subpath.
 
@@ -411,45 +371,39 @@ async def test_clone_with_commit_and_subpath() -> None:
     Then the repository should be cloned with sparse checkout enabled,
     checked out at the specific commit, and only include the specified subpath.
     """
-    clone_config = CloneConfig(
-        url="https://github.com/user/repo",
-        local_path="/tmp/repo",
-        commit="a" * 40,  # Simulating a valid commit hash
-        subpath="src/docs",
+    # Simulating a valid commit hash
+    clone_config = CloneConfig(url=DEMO_URL, local_path=LOCAL_REPO_PATH, commit="a" * 40, subpath="src/docs")
+
+    await clone_repo(clone_config)
+
+    # Verify the clone command includes sparse checkout flags
+    run_command_mock.assert_any_call(
+        "git",
+        "clone",
+        "--single-branch",
+        "--filter=blob:none",
+        "--sparse",
+        clone_config.url,
+        clone_config.local_path,
     )
 
-    with patch("gitingest.cloning.check_repo_exists", return_value=True):
-        with patch("gitingest.cloning.run_command", new_callable=AsyncMock) as mock_exec:
-            await clone_repo(clone_config)
+    # Verify sparse-checkout set
+    run_command_mock.assert_any_call(
+        "git",
+        "-C",
+        clone_config.local_path,
+        "sparse-checkout",
+        "set",
+        "src/docs",
+    )
 
-            # Verify the clone command includes sparse checkout flags
-            mock_exec.assert_any_call(
-                "git",
-                "clone",
-                "--single-branch",
-                "--filter=blob:none",
-                "--sparse",
-                clone_config.url,
-                clone_config.local_path,
-            )
+    # Verify checkout commit
+    run_command_mock.assert_any_call(
+        "git",
+        "-C",
+        clone_config.local_path,
+        "checkout",
+        clone_config.commit,
+    )
 
-            # Verify sparse-checkout set
-            mock_exec.assert_any_call(
-                "git",
-                "-C",
-                clone_config.local_path,
-                "sparse-checkout",
-                "set",
-                "src/docs",
-            )
-
-            # Verify checkout commit
-            mock_exec.assert_any_call(
-                "git",
-                "-C",
-                clone_config.local_path,
-                "checkout",
-                clone_config.commit,
-            )
-
-            assert mock_exec.call_count == 3
+    assert run_command_mock.call_count == 3

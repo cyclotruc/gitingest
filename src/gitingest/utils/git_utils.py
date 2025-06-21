@@ -5,6 +5,8 @@ import base64
 import re
 from typing import List, Optional, Tuple
 
+from gitingest.utils.exceptions import InvalidGitHubTokenError
+
 GITHUB_PAT_PATTERN = r"^(?:github_pat_|ghp_)[A-Za-z0-9_]{36,}$"
 
 
@@ -256,11 +258,8 @@ def validate_github_token(token: str) -> None:
 
     Raises
     ------
-    ValueError
+    InvalidGitHubTokenError
         If the token format is invalid
     """
     if not re.match(GITHUB_PAT_PATTERN, token):
-        raise ValueError(
-            "Invalid GitHub token format. Token should start with 'github_pat_' or 'ghp_' "
-            "followed by at least 36 characters of letters, numbers, and underscores."
-        )
+        raise InvalidGitHubTokenError()

@@ -83,6 +83,9 @@ gitingest /path/to/directory
 
 # From URL
 gitingest https://github.com/cyclotruc/gitingest
+
+# or from specific subdirectory
+gitingest https://github.com/cyclotruc/gitingest/tree/main/src/gitingest/utils
 ```
 
 For private repositories, use the `--token/-t` option.
@@ -134,6 +137,9 @@ summary, tree, content = ingest("path/to/directory")
 
 # or from URL
 summary, tree, content = ingest("https://github.com/cyclotruc/gitingest")
+
+# or from a specific subdirectory
+summary, tree, content = ingest("https://github.com/cyclotruc/gitingest/tree/main/src/gitingest/utils")
 ```
 
 For private repositories, you can pass a token:
