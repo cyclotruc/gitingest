@@ -129,6 +129,7 @@
                                onchange="toggleAccessSettings()"
                                {% if token %}checked{% endif %}>
                         <label for="showAccessSettings" class="text-gray-900">Private Repository</label>
+                        {% include "components/badge_new.jinja" %}
                     </div>
                     <!-- PAT field -->
                     <div id="accessSettingsContainer"
