@@ -1,4 +1,11 @@
 {% extends "base.jinja" %}
+{% block title %}
+    {% if short_repo_url %}
+        Gitingtest - {{ short_repo_url }}
+    {% else %}
+        Gitingtest
+    {% endif %}
+{% endblock %}
 {% block extra_head %}
     <script>
     function submitExample(repoName) {
