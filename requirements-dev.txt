@@ -5,3 +5,4 @@ pre-commit
 pylint
 pytest
 pytest-asyncio
+pytest-mock

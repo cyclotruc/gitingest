@@ -7,13 +7,18 @@ to write `.ipynb` notebooks for testing notebook utilities.
 
 import json
 from pathlib import Path
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, List
+from unittest.mock import AsyncMock
 
 import pytest
+from pytest_mock import MockerFixture
 
 from gitingest.query_parsing import IngestionQuery
 
 WriteNotebookFunc = Callable[[str, Dict[str, Any]], Path]
+
+DEMO_URL = "https://github.com/user/repo"
+LOCAL_REPO_PATH = "/tmp/repo"
 
 
 @pytest.fixture
@@ -129,3 +134,51 @@ def write_notebook(tmp_path: Path) -> WriteNotebookFunc:
         return notebook_path
 
     return _write_notebook
+
+
+@pytest.fixture
+def stub_branches(mocker: MockerFixture) -> Callable[[List[str]], None]:
+    """Return a function that stubs git branch discovery to *branches*."""
+
+    def _factory(branches: List[str]) -> None:
+        mocker.patch(
+            "gitingest.utils.git_utils.run_command",
+            new_callable=AsyncMock,
+            return_value=("\n".join(f"refs/heads/{b}" for b in branches).encode() + b"\n", b""),
+        )
+        mocker.patch(
+            "gitingest.utils.git_utils.fetch_remote_branch_list",
+            new_callable=AsyncMock,
+            return_value=branches,
+        )
+
+    return _factory
+
+
+@pytest.fixture
+def repo_exists_true(mocker: MockerFixture) -> AsyncMock:
+    """Patch `gitingest.cloning.check_repo_exists` to always return ``True``.
+
+    Many cloning-related tests assume that the remote repository exists. This fixture centralises
+    that behaviour so individual tests no longer need to repeat the same ``mocker.patch`` call.
+    The mock object is returned so that tests can make assertions on how it was used or override
+    its behaviour when needed.
+    """
+    return mocker.patch("gitingest.cloning.check_repo_exists", return_value=True)
+
+
+@pytest.fixture
+def run_command_mock(mocker: MockerFixture) -> AsyncMock:
+    """Patch `gitingest.cloning.run_command` with an ``AsyncMock``.
+
+    The mocked function returns a dummy process whose ``communicate`` method yields generic
+    *stdout* / *stderr* bytes. Tests can still access / tweak the mock via the fixture argument.
+    """
+    mock_exec = mocker.patch("gitingest.cloning.run_command", new_callable=AsyncMock)
+
+    # Provide a default dummy process so most tests don't have to create one.
+    dummy_process = AsyncMock()
+    dummy_process.communicate.return_value = (b"output", b"error")
+    mock_exec.return_value = dummy_process
+
+    return mock_exec

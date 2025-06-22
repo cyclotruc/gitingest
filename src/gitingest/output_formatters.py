@@ -31,7 +31,7 @@ def format_node(node: FileSystemNode, query: IngestionQuery) -> Tuple[str, str, 
 
     if node.type == FileSystemNodeType.DIRECTORY:
         summary += f"Files analyzed: {node.file_count}\n"
-    else:
+    elif node.type == FileSystemNodeType.FILE:
         summary += f"File: {node.name}\n"
         summary += f"Lines: {len(node.content.splitlines()):,}\n"
 
@@ -101,7 +101,7 @@ def _gather_file_contents(node: FileSystemNode) -> str:
     str
         The concatenated content of all files under the given node.
     """
-    if node.type == FileSystemNodeType.FILE:
+    if node.type != FileSystemNodeType.DIRECTORY:
         return node.content_string
 
     # Recursively gather contents of all files under the current directory
@@ -142,6 +142,8 @@ def _create_tree_structure(query: IngestionQuery, node: FileSystemNode, prefix: 
     display_name = node.name
     if node.type == FileSystemNodeType.DIRECTORY:
         display_name += "/"
+    elif node.type == FileSystemNodeType.SYMLINK:
+        display_name += " -> " + node.path.readlink().name
 
     tree_str += f"{prefix}{current_prefix}{display_name}\n"
 
@@ -169,7 +171,7 @@ def _format_token_count(text: str) -> Optional[str]:
         The formatted number of tokens as a string (e.g., '1.2k', '1.2M'), or `None` if an error occurs.
     """
     try:
-        encoding = tiktoken.get_encoding("cl100k_base")
+        encoding = tiktoken.get_encoding("o200k_base")  # gpt-4o, gpt-4o-mini
         total_tokens = len(encoding.encode(text, disallowed_special=()))
     except (ValueError, UnicodeEncodeError) as exc:
         print(exc)
