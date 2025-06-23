@@ -24,6 +24,9 @@ URLS_HTTPS: List[str] = [
     "https://gitea.com/user/repo",
     "https://codeberg.org/user/repo",
     "https://gist.github.com/user/repo",
+    "https://git.example.com/user/repo",
+    "https://gitlab.example.com/user/repo",
+    "https://gitlab.example.se/user/repo",
 ]
 
 URLS_HTTP: List[str] = [url.replace("https://", "http://") for url in URLS_HTTPS]
