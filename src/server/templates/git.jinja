@@ -1,11 +1,4 @@
 {% extends "base.jinja" %}
-{% block title %}
-    {% if short_repo_url %}
-        Gitingest - {{ short_repo_url }}
-    {% else %}
-        Gitingest
-    {% endif %}
-{% endblock %}
 {% block content %}
     {% if error_message %}
         <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700"
