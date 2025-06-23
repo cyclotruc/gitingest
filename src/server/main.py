@@ -104,6 +104,19 @@ async def robots() -> FileResponse:
     return FileResponse("static/robots.txt")
 
 
+@app.get("/llm.txt")
+async def llm_txt() -> FileResponse:
+    """
+    Serve the `llm.txt` file to provide information about the site to LLMs.
+
+    Returns
+    -------
+    FileResponse
+        The `llm.txt` file located in the static directory.
+    """
+    return FileResponse("static/llm.txt")
+
+
 # Include routers for modular endpoints
 app.include_router(index)
 app.include_router(download)

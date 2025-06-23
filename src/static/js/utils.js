@@ -179,9 +179,9 @@ function initializeSlider() {
 // Add helper function for formatting size
 function formatSize(sizeInKB) {
     if (sizeInKB >= 1024) {
-        return Math.round(sizeInKB / 1024) + 'mb';
+        return Math.round(sizeInKB / 1024) + 'MB';
     }
-    return Math.round(sizeInKB) + 'kb';
+    return Math.round(sizeInKB) + 'kB';
 }
 
 // Initialize slider on page load
