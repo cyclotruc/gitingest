@@ -69,19 +69,9 @@ async def process_query(
     template_response = partial(templates.TemplateResponse, name=template)
     max_file_size = log_slider_to_size(slider_position)
 
-    # Find the Short Repository URL:
-    # 1. https://github.com/abc/xyz -> abc/xyz.
-    # 2. abc/xyz -> abc/xyz (doesn't change)
-    if input_text.count("/") > 1:
-        short_repo_url = input_text.rsplit("/", 2)[1:]
-        short_repo_url = "/".join(short_repo_url)
-    else:
-        short_repo_url = input_text
-
     context = {
         "request": request,
         "repo_url": input_text,
-        "short_repo_url": short_repo_url,
         "examples": EXAMPLE_REPOS if is_index else [],
         "default_file_size": slider_position,
         "pattern_type": pattern_type,
@@ -100,6 +90,9 @@ async def process_query(
         )
         if not query.url:
             raise ValueError("The 'url' parameter is required.")
+
+        # Sets the "<user>/<repo>" for the page title
+        context["short_repo_url"] = f"{query.user_name}/{query.repo_name}"
 
         clone_config = query.extract_clone_config()
         await clone_repo(clone_config, token=token)
