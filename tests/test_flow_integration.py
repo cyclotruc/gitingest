@@ -1,5 +1,6 @@
 """Integration tests covering core functionalities, edge cases, and concurrency handling."""
 
+import os
 import shutil
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -11,6 +12,9 @@ from pytest import FixtureRequest
 from pytest_mock import MockerFixture
 
 from src.server.main import app
+
+# Set environment variable for testing to disable rate limiting
+os.environ["TESTING"] = "true"
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 TEMPLATE_DIR = BASE_DIR / "src" / "templates"
