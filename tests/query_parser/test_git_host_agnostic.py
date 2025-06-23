@@ -10,6 +10,7 @@ from typing import List, Tuple
 import pytest
 
 from gitingest.query_parsing import parse_query
+from gitingest.utils.query_parser_utils import KNOWN_GIT_HOSTS
 
 # Repository matrix: (host, user, repo)
 _REPOS: List[Tuple[str, str, str]] = [
@@ -18,6 +19,8 @@ _REPOS: List[Tuple[str, str, str]] = [
     ("bitbucket.org", "na-dna", "llm-knowledge-share"),
     ("gitea.com", "xorm", "xorm"),
     ("codeberg.org", "forgejo", "forgejo"),
+    ("git.rwth-aachen.de", "medialab", "19squared"),
+    ("gitlab.alpinelinux.org", "alpine", "apk-tools"),
 ]
 
 
@@ -42,6 +45,13 @@ async def test_parse_query_without_host(
         url = f"{user}/{repo}"
 
     expected_url = f"https://{host}/{user}/{repo}"
+
+    # For slug form with a custom host (not in KNOWN_GIT_HOSTS) we expect a failure,
+    # because the parser cannot guess which domain to use.
+    if variant == "slug" and host not in KNOWN_GIT_HOSTS:
+        with pytest.raises(ValueError):
+            await parse_query(url, max_file_size=50, from_web=True)
+        return
 
     query = await parse_query(url, max_file_size=50, from_web=True)
 
