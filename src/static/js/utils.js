@@ -28,7 +28,7 @@ function copyText(className) {
 
             // Reset after 1 second
             setTimeout(() => {
-                button.innerHTML = originalContent;
+                button.textContent = originalContent;
             }, 1000);
         })
         .catch(err => {
