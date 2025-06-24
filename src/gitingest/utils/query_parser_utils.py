@@ -60,20 +60,46 @@ def _is_valid_pattern(pattern: str) -> bool:
 
 def _validate_host(host: str) -> None:
     """
-    Validate the given host against the known Git hosts.
+    Validate a hostname.
+
+    The host is accepted if it is either present in the hard-coded `KNOWN_GIT_HOSTS` list or if it satisfies the
+    simple heuristics in `_looks_like_git_host`, which try to recognise common self-hosted Git services (e.g. GitLab
+    instances on sub-domains such as `gitlab.example.com` or `git.example.com`).
 
     Parameters
     ----------
     host : str
-        The host to validate.
+        Hostname (case-insensitive).
 
     Raises
     ------
     ValueError
-        If the host is not a known Git host.
+        If the host cannot be recognised as a probable Git hosting domain.
     """
-    if host not in KNOWN_GIT_HOSTS:
+    host = host.lower()
+    if host not in KNOWN_GIT_HOSTS and not _looks_like_git_host(host):
         raise ValueError(f"Unknown domain '{host}' in URL")
+
+
+def _looks_like_git_host(host: str) -> bool:
+    """
+    Check if the given host looks like a Git host.
+
+    The current heuristic returns `True` when the host starts with `git.` (e.g. `git.example.com`) or starts with
+    `gitlab.` (e.g. `gitlab.company.com`).
+
+    Parameters
+    ----------
+    host : str
+        Hostname (case-insensitive).
+
+    Returns
+    -------
+    bool
+        True if the host looks like a Git host, otherwise False.
+    """
+    host = host.lower()
+    return host.startswith(("git.", "gitlab."))
 
 
 def _validate_url_scheme(scheme: str) -> None:
@@ -90,6 +116,7 @@ def _validate_url_scheme(scheme: str) -> None:
     ValueError
         If the scheme is not 'http' or 'https'.
     """
+    scheme = scheme.lower()
     if scheme not in ("https", "http"):
         raise ValueError(f"Invalid URL scheme '{scheme}' in URL")
 

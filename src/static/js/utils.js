@@ -109,6 +109,9 @@ function handleSubmit(event, showLoading = false) {
                     starsElement.textContent = starCount;
                 }
 
+                // Set dynamic title that includes the repo name.
+                document.title = document.body.getElementsByTagName('title')[0].textContent;
+
                 // Scroll to results if they exist
                 const resultsSection = document.querySelector('[data-results]');
                 if (resultsSection) {
