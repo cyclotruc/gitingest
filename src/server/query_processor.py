@@ -91,6 +91,9 @@ async def process_query(
         if not query.url:
             raise ValueError("The 'url' parameter is required.")
 
+        # Sets the "<user>/<repo>" for the page title
+        context["short_repo_url"] = f"{query.user_name}/{query.repo_name}"
+
         clone_config = query.extract_clone_config()
         await clone_repo(clone_config, token=token)
         summary, tree, content = ingest_query(query)
