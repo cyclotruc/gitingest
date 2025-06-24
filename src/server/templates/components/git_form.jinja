@@ -24,7 +24,7 @@
         const row = document.getElementById('controlsRow');
         const show = checkbox.checked;
         container.classList.toggle('hidden', !show);
-        row.classList.toggle('mb-8', show);
+        row.classList.toggle('mb-12', show);
     }
 </script>
 <div class="relative">
@@ -107,7 +107,7 @@
                     <!-- File size selector -->
                     <div class="w-full md:w-[200px]">
                         <label for="file_size" class="block text-gray-700 mb-1">
-                            Include files under: <span id="size_value" class="font-bold">50kb</span>
+                            Include files under: <span id="size_value" class="font-bold">50kB</span>
                         </label>
                         <input type="range"
                                id="file_size"
@@ -129,6 +129,7 @@
                                onchange="toggleAccessSettings()"
                                {% if token %}checked{% endif %}>
                         <label for="showAccessSettings" class="text-gray-900">Private Repository</label>
+                        {% include "components/badge_new.jinja" %}
                     </div>
                     <!-- PAT field -->
                     <div id="accessSettingsContainer"
