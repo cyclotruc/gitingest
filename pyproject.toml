@@ -13,7 +13,7 @@ dependencies = [
     "requests",
     "detect-secrets>=1.5",
     "starlette>=0.40.3",
-    "tiktoken",
+    "tiktoken>=0.7.0",  # Support for o200k_base encoding
     "tqdm>=4.67.1",
     "joblib>=1.4",
     "tomli",
@@ -27,7 +27,6 @@ classifiers=[
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",

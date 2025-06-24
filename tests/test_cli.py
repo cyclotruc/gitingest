@@ -1,63 +1,85 @@
-"""Tests for the gitingest CLI."""
-
-# pylint: disable=too-many-arguments,too-many-positional-arguments
+"""Tests for the Gitingest CLI."""
 
 import os
-from unittest.mock import patch
-from click.testing import CliRunner
+from inspect import signature
+from pathlib import Path
+from typing import List
+
+import pytest
+from _pytest.monkeypatch import MonkeyPatch
+from click.testing import CliRunner, Result
+
 from gitingest.cli import main
-from gitingest.config import MAX_FILE_SIZE, OUTPUT_FILE_NAME
+from gitingest.config import OUTPUT_FILE_NAME
 
 
-async def _stub_ingest_async(
-    source: str,
-    max_file_size: int = MAX_FILE_SIZE,
-    include_patterns=None,
-    exclude_patterns=None,
-    branch=None,
-    output: str | None = None,
-    parallel: bool = False,
-    incremental: bool = False,
-    compress: bool = False,
-    stream: bool = False,
-):
-    # pylint: disable=unused-argument,too-many-arguments
-    path = output or OUTPUT_FILE_NAME
-    with open(path, "w", encoding="utf-8") as f:
-        f.write("dummy")
-    if output:
-        with open(output, "w", encoding="utf-8") as f:
-            f.write("dummy")
-    return "summary", "tree", "content"
+@pytest.mark.parametrize(
+    "cli_args, expect_file",
+    [
+        pytest.param(["./"], True, id="default-options"),
+        pytest.param(
+            [
+                "./",
+                "--output",
+                str(OUTPUT_FILE_NAME),
+                "--max-size",
+                "100000",
+                "--exclude-pattern",
+                "tests/",
+                "--include-pattern",
+                "src/",
+            ],
+            True,
+            id="custom-options",
+        ),
+    ],
+)
+def test_cli_writes_file(tmp_path: Path, monkeypatch: MonkeyPatch, cli_args: List[str], expect_file: bool) -> None:
+    """Run the CLI and verify that the output file is created (or not)."""
+    # Work inside an isolated temp directory
+    monkeypatch.chdir(tmp_path)
+
+    # We can run the real thing since it works on local directories
+    result = _invoke_isolated_cli_runner(cli_args)
+
+    assert result.exit_code == 0, result.stderr
+
+    # Summary line should be on STDOUT
+    stdout_lines = result.stdout.splitlines()
+    assert f"Analysis complete! Output written to: {OUTPUT_FILE_NAME}" in stdout_lines
+
+    # File side-effect
+    output_file = tmp_path / OUTPUT_FILE_NAME
+    assert output_file.exists() is expect_file, f"{OUTPUT_FILE_NAME} existence did not match expectation"
 
 
-def test_cli_with_default_options():
-    runner = CliRunner()
-    with runner.isolated_filesystem():
-        with patch("gitingest.cli.ingest_async", new=_stub_ingest_async):
-            result = runner.invoke(main, ["./", OUTPUT_FILE_NAME])
-        output_lines = result.output.strip().split("\n")
-        assert f"Analysis complete! Output written to: {OUTPUT_FILE_NAME}" in output_lines
-        assert os.path.exists(OUTPUT_FILE_NAME), f"Output file was not created at {OUTPUT_FILE_NAME}"
+def test_cli_with_stdout_output(tmp_path: Path, monkeypatch: MonkeyPatch) -> None:
+    """Test CLI invocation with output directed to STDOUT."""
+    monkeypatch.chdir(tmp_path)
+
+    result = _invoke_isolated_cli_runner(["./", "--output", "-", "--exclude-pattern", "tests/"])
+
+    # ─── core expectations (stdout) ────────────────────────────────────-
+    assert result.exit_code == 0, f"CLI exited with code {result.exit_code}, stderr: {result.stderr}"
+    assert "---" in result.stdout, "Expected file separator '---' not found in STDOUT"
+    assert (
+        "src/gitingest/cli.py" in result.stdout
+    ), "Expected content (e.g., src/gitingest/cli.py) not found in STDOUT"
+    assert not os.path.exists(OUTPUT_FILE_NAME), f"Output file {OUTPUT_FILE_NAME} was unexpectedly created."
+
+    # ─── the summary must *not* pollute STDOUT, must appear on STDERR ───
+    summary = "Analysis complete! Output sent to stdout."
+    stdout_lines = result.stdout.splitlines()
+    stderr_lines = result.stderr.splitlines()
+    assert summary not in stdout_lines, "Unexpected summary message found in STDOUT"
+    assert summary in stderr_lines, "Expected summary message not found in STDERR"
+    assert f"Output written to: {OUTPUT_FILE_NAME}" not in stderr_lines
 
 
-def test_cli_with_options():
-    runner = CliRunner()
-    with runner.isolated_filesystem():
-        with patch("gitingest.cli.ingest_async", new=_stub_ingest_async):
-            result = runner.invoke(
-                main,
-                [
-                    "./",
-                    OUTPUT_FILE_NAME,
-                    "--max-size",
-                    str(MAX_FILE_SIZE),
-                    "--exclude-pattern",
-                    "tests/",
-                    "--include-pattern",
-                    "src/",
-                ],
-            )
-        output_lines = result.output.strip().split("\n")
-        assert f"Analysis complete! Output written to: {OUTPUT_FILE_NAME}" in output_lines
-        assert os.path.exists(OUTPUT_FILE_NAME), f"Output file was not created at {OUTPUT_FILE_NAME}"
+def _invoke_isolated_cli_runner(args: List[str]) -> Result:
+    """Return a CliRunner that keeps stderr apart on Click 8.0-8.1."""
+    kwargs = {}
+    if "mix_stderr" in signature(CliRunner.__init__).parameters:
+        kwargs["mix_stderr"] = False  # Click 8.0–8.1
+    runner = CliRunner(**kwargs)
+    return runner.invoke(main, args)

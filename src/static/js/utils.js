@@ -109,6 +109,9 @@ function handleSubmit(event, showLoading = false) {
                     starsElement.textContent = starCount;
                 }
 
+                // Set dynamic title that includes the repo name.
+                document.title = document.body.getElementsByTagName('title')[0].textContent;
+
                 // Scroll to results if they exist
                 const resultsSection = document.querySelector('[data-results]');
                 if (resultsSection) {
@@ -179,9 +182,9 @@ function initializeSlider() {
 // Add helper function for formatting size
 function formatSize(sizeInKB) {
     if (sizeInKB >= 1024) {
-        return Math.round(sizeInKB / 1024) + 'mb';
+        return Math.round(sizeInKB / 1024) + 'MB';
     }
-    return Math.round(sizeInKB) + 'kb';
+    return Math.round(sizeInKB) + 'kB';
 }
 
 // Initialize slider on page load

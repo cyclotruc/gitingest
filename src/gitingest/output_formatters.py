@@ -1,15 +1,15 @@
 """Functions to ingest and analyze a codebase directory or single file."""
 
-from typing import Optional, Tuple
-import os
 import json
+import os
+from typing import Optional, Tuple
 
 import tiktoken
 
+from gitingest.chunking import chunk_file
 from gitingest.query_parsing import IngestionQuery
 from gitingest.schemas import FileSystemNode, FileSystemNodeType
 from gitingest.schemas.filesystem_schema import SEPARATOR
-from gitingest.chunking import chunk_file
 
 
 def format_node(node: FileSystemNode, query: IngestionQuery) -> Tuple[str, str, str]:
@@ -212,7 +212,7 @@ def _format_token_count(text: str) -> Optional[str]:
         The formatted number of tokens as a string (e.g., '1.2k', '1.2M'), or `None` if an error occurs.
     """
     try:
-        encoding = tiktoken.get_encoding("cl100k_base")
+        encoding = tiktoken.get_encoding("o200k_base")  # gpt-4o, gpt-4o-mini
         total_tokens = len(encoding.encode(text, disallowed_special=()))
     except (ValueError, UnicodeEncodeError) as exc:
         print(exc)
