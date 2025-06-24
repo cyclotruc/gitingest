@@ -6,8 +6,6 @@ from typing import Optional, Set
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from gitingest.config import MAX_FILE_SIZE
-
 
 class GitingestConfig(BaseModel):
     """Schema for .gitingest configuration file."""
@@ -16,6 +14,8 @@ class GitingestConfig(BaseModel):
 
     class Config:
         extra = "forbid"
+
+from gitingest.config import MAX_FILE_SIZE
 
 
 @dataclass

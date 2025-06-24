@@ -47,7 +47,6 @@ async def index_post(
     max_file_size: int = Form(...),
     pattern_type: str = Form(...),
     pattern: str = Form(...),
-    token: str = Form(...),
 ) -> HTMLResponse:
     """
     Process the form submission with user input for query parameters.
@@ -68,16 +67,13 @@ async def index_post(
         The type of pattern used for the query, specified by the user.
     pattern : str
         The pattern string used in the query, specified by the user.
-    token : str
-        GitHub personal-access token (PAT). Needed when *input_text* refers to a
-        **private** repository.
+
     Returns
     -------
     HTMLResponse
         An HTML response containing the results of processing the form input and query logic,
         which will be rendered and returned to the user.
     """
-    resolved_token = None if token == "" else token
     return await process_query(
         request,
         input_text,
@@ -85,5 +81,4 @@ async def index_post(
         pattern_type,
         pattern,
         is_index=True,
-        token=resolved_token,
     )

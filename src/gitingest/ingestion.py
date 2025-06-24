@@ -9,7 +9,7 @@ from typing import Tuple
 from gitingest.cache.disk_cache import ChunkCache
 from gitingest.chunking import chunk_file
 from gitingest.config import MAX_DIRECTORY_DEPTH, MAX_FILES, MAX_TOTAL_SIZE_BYTES
-from gitingest.output_formatters import _gather_file_contents_jsonl, format_node
+from gitingest.output_formatters import format_node, _gather_file_contents_jsonl
 from gitingest.parallel.walker import walk_parallel
 from gitingest.query_parsing import IngestionQuery
 from gitingest.schemas import (
@@ -39,8 +39,6 @@ def ingest_query(query: IngestionQuery, output_format: str = "text") -> Tuple[st
     ----------
     query : IngestionQuery
         The parsed query object containing information about the repository and query parameters.
-    output_format : str
-        The desired output format, e.g., 'text' or 'jsonl'.
 
     Returns
     -------
@@ -61,6 +59,7 @@ def ingest_query(query: IngestionQuery, output_format: str = "text") -> Tuple[st
         raise ValueError(f"{query.slug} cannot be found")
 
     if (query.type and query.type == "blob") or query.local_path.is_file():
+        # TODO: We do this wrong! We should still check the branch and commit!
         if not path.is_file():
             raise ValueError(f"Path {path} is not a file")
 
@@ -80,7 +79,7 @@ def ingest_query(query: IngestionQuery, output_format: str = "text") -> Tuple[st
 
         if output_format == "jsonl":
             content = _gather_file_contents_jsonl(file_node)
-            summary = "Processed 1 file into JSONL format."
+            summary = f"Processed 1 file into JSONL format."
             return summary, "", content
         return format_node(file_node, query)
 
@@ -149,6 +148,8 @@ def apply_gitingest_file(path: Path, query: IngestionQuery) -> None:
     else:
         query.ignore_patterns.update(ignore_patterns)
 
+    return
+
 
 def _process_node(
     node: FileSystemNode,
@@ -172,27 +173,27 @@ def _process_node(
     """
     from collections import deque
     from gitingest.utils.exceptions import LimitExceededError
-
+    
     # Queue for BFS: (current_node, parent_node)
     queue = deque()
     queue.append((node, None))
-
+    
     try:
         while queue:
             current_node, parent = queue.popleft()
-
+            
             # Process current node
             if limit_exceeded(stats, current_node.depth):
                 raise LimitExceededError("Directory depth limit exceeded")
-
+                
             for sub_path in current_node.path.iterdir():
                 try:
                     if query.ignore_patterns and _should_exclude(sub_path, query.local_path, query.ignore_patterns):
                         continue
-
+                        
                     if query.include_patterns and not _should_include(sub_path, query.local_path, query.include_patterns):
                         continue
-
+                        
                     if sub_path.is_symlink():
                         _process_symlink(path=sub_path, parent_node=current_node, stats=stats, local_path=query.local_path)
                     elif sub_path.is_file():
@@ -211,18 +212,18 @@ def _process_node(
                         print(f"Warning: {sub_path} is an unknown file type, skipping")
                 except OSError as e:
                     print(f"Warning: Could not process {sub_path}: {str(e)}")
-
+                    
             current_node.sort_children()
-
+            
             # Update parent stats after processing current node
             if parent:
                 parent.size += current_node.size
                 parent.file_count += current_node.file_count
                 parent.dir_count += 1 + current_node.dir_count
-
+                
     except LimitExceededError:
         return True
-
+        
     return False
 
 
@@ -325,11 +326,11 @@ def limit_exceeded(stats: FileSystemStats, depth: int) -> bool:
 
     if stats.total_files >= MAX_FILES:
         print(f"Maximum file limit ({MAX_FILES}) reached")
-        return True
+        return True  # TODO: end recursion
 
     if stats.total_size >= MAX_TOTAL_SIZE_BYTES:
         print(f"Maximum total size limit ({MAX_TOTAL_SIZE_BYTES/1024/1024:.1f}MB) reached")
-        return True
+        return True  # TODO: end recursion
 
     return False
 

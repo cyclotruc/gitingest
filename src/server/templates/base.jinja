@@ -33,13 +33,7 @@
         <meta property="og:url" content="{{ request.url }}">
         <meta property="og:image" content="/static/og-image.png">
         <title>
-            {% block title %}
-                {% if short_repo_url %}
-                    Gitingest - {{ short_repo_url }}
-                {% else %}
-                    Gitingest
-                {% endif %}
-            {% endblock %}
+            {% block title %}Gitingest{% endblock %}
         </title>
         <script src="https://cdn.tailwindcss.com"></script>
         <script src="/static/js/utils.js"></script>

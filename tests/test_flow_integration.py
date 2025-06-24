@@ -3,12 +3,10 @@
 import shutil
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Generator
+from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
-from pytest import FixtureRequest
-from pytest_mock import MockerFixture
 
 from src.server.main import app
 
@@ -17,33 +15,30 @@ TEMPLATE_DIR = BASE_DIR / "src" / "templates"
 
 
 @pytest.fixture(scope="module")
-def test_client() -> Generator[TestClient, None, None]:
+def test_client():
     """Create a test client fixture."""
     with TestClient(app) as client_instance:
         client_instance.headers.update({"Host": "localhost"})
         yield client_instance
 
 
-@pytest.fixture(autouse=True)
-def mock_static_files(mocker: MockerFixture) -> Generator[None, None, None]:
+@pytest.fixture(scope="module", autouse=True)
+def mock_static_files():
     """Mock the static file mount to avoid directory errors."""
-    mock_static = mocker.patch("src.server.main.StaticFiles", autospec=True)
-    mock_static.return_value = None
-    yield mock_static
-
-
-@pytest.fixture(autouse=True)
-def mock_templates(mocker: MockerFixture) -> Generator[None, None, None]:
-    """Mock Jinja2 template rendering to bypass actual file loading."""
-    mock_template = mocker.patch("starlette.templating.Jinja2Templates.TemplateResponse", autospec=True)
-    mock_template.return_value = "Mocked Template Response"
-    yield mock_template
+    with patch("src.server.main.StaticFiles") as mock_static:
+        mock_static.return_value = None  # Mocks the StaticFiles response
+        yield mock_static
 
 
 @pytest.fixture(scope="module", autouse=True)
-def cleanup_tmp_dir() -> Generator[None, None, None]:
-    """Remove /tmp/gitingest after this test-module is done."""
-    yield  # run tests
+def mock_templates():
+    """Mock Jinja2 template rendering to bypass actual file loading."""
+    with patch("starlette.templating.Jinja2Templates.TemplateResponse") as mock_template:
+        mock_template.return_value = "Mocked Template Response"
+        yield mock_template
+
+
+def cleanup_temp_directories():
     temp_dir = Path("/tmp/gitingest")
     if temp_dir.exists():
         try:
@@ -52,8 +47,15 @@ def cleanup_tmp_dir() -> Generator[None, None, None]:
             print(f"Error cleaning up {temp_dir}: {exc}")
 
 
+@pytest.fixture(scope="module", autouse=True)
+def cleanup():
+    """Cleanup temporary directories after tests."""
+    yield
+    cleanup_temp_directories()
+
+
 @pytest.mark.asyncio
-async def test_remote_repository_analysis(request: FixtureRequest) -> None:
+async def test_remote_repository_analysis(request):
     """Test the complete flow of analyzing a remote repository."""
     client = request.getfixturevalue("test_client")
     form_data = {
@@ -61,7 +63,6 @@ async def test_remote_repository_analysis(request: FixtureRequest) -> None:
         "max_file_size": "243",
         "pattern_type": "exclude",
         "pattern": "",
-        "token": "",
     }
 
     response = client.post("/", data=form_data)
@@ -70,7 +71,7 @@ async def test_remote_repository_analysis(request: FixtureRequest) -> None:
 
 
 @pytest.mark.asyncio
-async def test_invalid_repository_url(request: FixtureRequest) -> None:
+async def test_invalid_repository_url(request):
     """Test handling of an invalid repository URL."""
     client = request.getfixturevalue("test_client")
     form_data = {
@@ -78,7 +79,6 @@ async def test_invalid_repository_url(request: FixtureRequest) -> None:
         "max_file_size": "243",
         "pattern_type": "exclude",
         "pattern": "",
-        "token": "",
     }
 
     response = client.post("/", data=form_data)
@@ -87,7 +87,7 @@ async def test_invalid_repository_url(request: FixtureRequest) -> None:
 
 
 @pytest.mark.asyncio
-async def test_large_repository(request: FixtureRequest) -> None:
+async def test_large_repository(request):
     """Simulate analysis of a large repository with nested folders."""
     client = request.getfixturevalue("test_client")
     form_data = {
@@ -95,7 +95,6 @@ async def test_large_repository(request: FixtureRequest) -> None:
         "max_file_size": "243",
         "pattern_type": "exclude",
         "pattern": "",
-        "token": "",
     }
 
     response = client.post("/", data=form_data)
@@ -104,7 +103,7 @@ async def test_large_repository(request: FixtureRequest) -> None:
 
 
 @pytest.mark.asyncio
-async def test_concurrent_requests(request: FixtureRequest) -> None:
+async def test_concurrent_requests(request):
     """Test handling of multiple concurrent requests."""
     client = request.getfixturevalue("test_client")
 
@@ -114,7 +113,6 @@ async def test_concurrent_requests(request: FixtureRequest) -> None:
             "max_file_size": "243",
             "pattern_type": "exclude",
             "pattern": "",
-            "token": "",
         }
         response = client.post("/", data=form_data)
         assert response.status_code == 200, f"Request failed: {response.text}"
@@ -127,7 +125,7 @@ async def test_concurrent_requests(request: FixtureRequest) -> None:
 
 
 @pytest.mark.asyncio
-async def test_large_file_handling(request: FixtureRequest) -> None:
+async def test_large_file_handling(request):
     """Test handling of repositories with large files."""
     client = request.getfixturevalue("test_client")
     form_data = {
@@ -135,7 +133,6 @@ async def test_large_file_handling(request: FixtureRequest) -> None:
         "max_file_size": "1",
         "pattern_type": "exclude",
         "pattern": "",
-        "token": "",
     }
 
     response = client.post("/", data=form_data)
@@ -144,7 +141,7 @@ async def test_large_file_handling(request: FixtureRequest) -> None:
 
 
 @pytest.mark.asyncio
-async def test_repository_with_patterns(request: FixtureRequest) -> None:
+async def test_repository_with_patterns(request):
     """Test repository analysis with include/exclude patterns."""
     client = request.getfixturevalue("test_client")
     form_data = {
@@ -152,7 +149,6 @@ async def test_repository_with_patterns(request: FixtureRequest) -> None:
         "max_file_size": "243",
         "pattern_type": "include",
         "pattern": "*.md",
-        "token": "",
     }
 
     response = client.post("/", data=form_data)

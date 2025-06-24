@@ -5,70 +5,91 @@ These tests confirm that `parse_query` correctly identifies user/repo pairs and 
 Bitbucket, Gitea, and Codeberg, even if the host is omitted.
 """
 
-from typing import List, Tuple
+from typing import List
 
 import pytest
 
 from gitingest.query_parsing import parse_query
-from gitingest.utils.query_parser_utils import KNOWN_GIT_HOSTS
-
-# Repository matrix: (host, user, repo)
-_REPOS: List[Tuple[str, str, str]] = [
-    ("github.com", "tiangolo", "fastapi"),
-    ("gitlab.com", "gitlab-org", "gitlab-runner"),
-    ("bitbucket.org", "na-dna", "llm-knowledge-share"),
-    ("gitea.com", "xorm", "xorm"),
-    ("codeberg.org", "forgejo", "forgejo"),
-    ("git.rwth-aachen.de", "medialab", "19squared"),
-    ("gitlab.alpinelinux.org", "alpine", "apk-tools"),
-]
 
 
-# Generate cartesian product of repository tuples with URL variants.
-@pytest.mark.parametrize("host, user, repo", _REPOS, ids=[f"{h}:{u}/{r}" for h, u, r in _REPOS])
-@pytest.mark.parametrize("variant", ["full", "noscheme", "slug"])
+@pytest.mark.parametrize(
+    "urls, expected_user, expected_repo, expected_url",
+    [
+        (
+            [
+                "https://github.com/tiangolo/fastapi",
+                "github.com/tiangolo/fastapi",
+                "tiangolo/fastapi",
+            ],
+            "tiangolo",
+            "fastapi",
+            "https://github.com/tiangolo/fastapi",
+        ),
+        (
+            [
+                "https://gitlab.com/gitlab-org/gitlab-runner",
+                "gitlab.com/gitlab-org/gitlab-runner",
+                "gitlab-org/gitlab-runner",
+            ],
+            "gitlab-org",
+            "gitlab-runner",
+            "https://gitlab.com/gitlab-org/gitlab-runner",
+        ),
+        (
+            [
+                "https://bitbucket.org/na-dna/llm-knowledge-share",
+                "bitbucket.org/na-dna/llm-knowledge-share",
+                "na-dna/llm-knowledge-share",
+            ],
+            "na-dna",
+            "llm-knowledge-share",
+            "https://bitbucket.org/na-dna/llm-knowledge-share",
+        ),
+        (
+            [
+                "https://gitea.com/xorm/xorm",
+                "gitea.com/xorm/xorm",
+                "xorm/xorm",
+            ],
+            "xorm",
+            "xorm",
+            "https://gitea.com/xorm/xorm",
+        ),
+        (
+            [
+                "https://codeberg.org/forgejo/forgejo",
+                "codeberg.org/forgejo/forgejo",
+                "forgejo/forgejo",
+            ],
+            "forgejo",
+            "forgejo",
+            "https://codeberg.org/forgejo/forgejo",
+        ),
+    ],
+)
 @pytest.mark.asyncio
 async def test_parse_query_without_host(
-    host: str,
-    user: str,
-    repo: str,
-    variant: str,
+    urls: List[str],
+    expected_user: str,
+    expected_repo: str,
+    expected_url: str,
 ) -> None:
-    """Verify that `parse_query` handles URLs, host-omitted URLs and raw slugs."""
+    """
+    Test `parse_query` for Git host agnosticism.
 
-    # Build the input URL based on the selected variant
-    if variant == "full":
-        url = f"https://{host}/{user}/{repo}"
-    elif variant == "noscheme":
-        url = f"{host}/{user}/{repo}"
-    else:  # "slug"
-        url = f"{user}/{repo}"
+    Given multiple URL variations for the same user/repo on different Git hosts (with or without host names):
+    When `parse_query` is called with each variation,
+    Then the parser should correctly identify the user, repo, canonical URL, and other default fields.
+    """
+    for url in urls:
+        query = await parse_query(url, max_file_size=50, from_web=True)
 
-    expected_url = f"https://{host}/{user}/{repo}"
-
-    # For slug form with a custom host (not in KNOWN_GIT_HOSTS) we expect a failure,
-    # because the parser cannot guess which domain to use.
-    if variant == "slug" and host not in KNOWN_GIT_HOSTS:
-        with pytest.raises(ValueError):
-            await parse_query(url, max_file_size=50, from_web=True)
-        return
-
-    query = await parse_query(url, max_file_size=50, from_web=True)
-
-    # Compare against the canonical dict while ignoring unpredictable fields.
-    actual = query.model_dump(exclude={"id", "local_path", "ignore_patterns"})
-
-    expected = {
-        "user_name": user,
-        "repo_name": repo,
-        "url": expected_url,
-        "slug": f"{user}-{repo}",
-        "subpath": "/",
-        "type": None,
-        "branch": None,
-        "commit": None,
-        "max_file_size": 50,
-        "include_patterns": None,
-    }
-
-    assert actual == expected
+        assert query.user_name == expected_user
+        assert query.repo_name == expected_repo
+        assert query.url == expected_url
+        assert query.slug == f"{expected_user}-{expected_repo}"
+        assert query.id is not None
+        assert query.subpath == "/"
+        assert query.branch is None
+        assert query.commit is None
+        assert query.type is None
