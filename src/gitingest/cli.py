@@ -68,9 +68,9 @@ def main(
     exclude_pattern: Tuple[str, ...],
     include_pattern: Tuple[str, ...],
     branch: Optional[str],
-    include_submodules: bool,
     include_gitignored: bool,
     token: Optional[str],
+    include_submodules: bool = False,
 ):
     """
     Main entry point for the CLI. This function is called when the CLI is run as a script.
@@ -123,9 +123,9 @@ async def _async_main(
     exclude_pattern: Tuple[str, ...],
     include_pattern: Tuple[str, ...],
     branch: Optional[str],
-    include_submodules: bool,
     include_gitignored: bool,
     token: Optional[str],
+    include_submodules: bool = False,
 ) -> None:
     """
     Analyze a directory or repository and create a text dump of its contents.
