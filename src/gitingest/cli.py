@@ -46,6 +46,12 @@ from gitingest.entrypoint import ingest_async
 @click.option("--branch", "-b", default=None, help="Branch to clone and ingest")
 @click.option("--include-submodules", is_flag=True, help="Include repository's submodules in the analysis")
 @click.option(
+    "--include-gitignored",
+    is_flag=True,
+    default=False,
+    help="Include files matched by .gitignore",
+)
+@click.option(
     "--token",
     "-t",
     envvar="GITHUB_TOKEN",
@@ -63,6 +69,7 @@ def main(
     include_pattern: Tuple[str, ...],
     branch: Optional[str],
     include_submodules: bool,
+    include_gitignored: bool,
     token: Optional[str],
 ):
     """
@@ -88,11 +95,12 @@ def main(
     include_submodules : bool
         If True, recursively include and analyze all Git submodules within the repository.
         Set to False to ignore submodules during analysis (default is False).
+    include_gitignored : bool
+        If provided, include files normally ignored by .gitignore.
     token: str, optional
         GitHub personal-access token (PAT). Needed when *source* refers to a
         **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
     """
-
     asyncio.run(
         _async_main(
             source=source,
@@ -102,6 +110,7 @@ def main(
             include_pattern=include_pattern,
             branch=branch,
             include_submodules=include_submodules,
+            include_gitignored=include_gitignored,
             token=token,
         )
     )
@@ -115,6 +124,7 @@ async def _async_main(
     include_pattern: Tuple[str, ...],
     branch: Optional[str],
     include_submodules: bool,
+    include_gitignored: bool,
     token: Optional[str],
 ) -> None:
     """
@@ -139,6 +149,8 @@ async def _async_main(
         Glob patterns for including files in the output.
     branch : str, optional
         Specific branch to ingest (defaults to the repository's default).
+    include_gitignored : bool
+        If provided, include files normally ignored by .gitignore.
     token: str, optional
         GitHub personal-access token (PAT). Needed when *source* refers to a
         **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
@@ -171,6 +183,7 @@ async def _async_main(
             branch=branch,
             include_submodules=include_submodules,
             output=output_target,
+            include_gitignored=include_gitignored,
             token=token,
         )
 

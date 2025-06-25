@@ -84,10 +84,10 @@ class PatternScenario(TypedDict):
                         "*/file_dir2.txt",
                     },
                     "ignore_patterns": {*()},
-                    "expected_num_files": 3,
-                    "expected_content": {"file1.txt", "file2.py", "dir2/file_dir2.txt"},
-                    "expected_structure": {"test_repo/", "dir2/"},
-                    "expected_not_structure": {"src/", "subdir/", "dir1/"},
+                    "expected_num_files": 4,
+                    "expected_content": {"file1.txt", "file2.py", "dir1/file_dir1.txt", "dir2/file_dir2.txt"},
+                    "expected_structure": {"test_repo/", "dir1/", "dir2/"},
+                    "expected_not_structure": {"src/", "subdir/"},
                 }
             ),
             id="include-wildcard-directory",
@@ -114,9 +114,10 @@ class PatternScenario(TypedDict):
                 {
                     "include_patterns": {"**/file_dir2.txt", "src/**/*.py"},
                     "ignore_patterns": {*()},
-                    "expected_num_files": 2,
+                    "expected_num_files": 3,
                     "expected_content": {
                         "dir2/file_dir2.txt",
+                        "src/subfile2.py",
                         "src/subdir/file_subdir.py",
                     },
                     "expected_structure": {"test_repo/", "dir2/", "src/", "subdir/"},
@@ -169,12 +170,11 @@ class PatternScenario(TypedDict):
                 {
                     "include_patterns": {*()},
                     "ignore_patterns": {"src/**/*.py"},
-                    "expected_num_files": 7,
+                    "expected_num_files": 6,
                     "expected_content": {
                         "file1.txt",
                         "file2.py",
                         "src/subfile1.txt",
-                        "src/subfile2.py",
                         "src/subdir/file_subdir.txt",
                         "dir1/file_dir1.txt",
                         "dir2/file_dir2.txt",

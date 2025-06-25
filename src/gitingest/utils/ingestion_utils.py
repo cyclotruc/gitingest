@@ -1,8 +1,9 @@
 """Utility functions for the ingestion process."""
 
-from fnmatch import fnmatch
 from pathlib import Path
 from typing import Set
+
+from pathspec import PathSpec
 
 
 def _should_include(path: Path, base_path: Path, include_patterns: Set[str]) -> bool:
@@ -38,10 +39,8 @@ def _should_include(path: Path, base_path: Path, include_patterns: Set[str]) -> 
     if path.is_dir():
         return True
 
-    for pattern in include_patterns:
-        if fnmatch(rel_str, pattern):
-            return True
-    return False
+    spec = PathSpec.from_lines("gitwildmatch", include_patterns)
+    return spec.match_file(rel_str)
 
 
 def _should_exclude(path: Path, base_path: Path, ignore_patterns: Set[str]) -> bool:
@@ -73,7 +72,5 @@ def _should_exclude(path: Path, base_path: Path, ignore_patterns: Set[str]) -> b
         return True
 
     rel_str = str(rel_path)
-    for pattern in ignore_patterns:
-        if pattern and fnmatch(rel_str, pattern):
-            return True
-    return False
+    spec = PathSpec.from_lines("gitwildmatch", ignore_patterns)
+    return spec.match_file(rel_str)
