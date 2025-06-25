@@ -109,6 +109,9 @@ export GITHUB_TOKEN=github_pat_...
 gitingest https://github.com/username/private-repo
 ```
 
+By default, files listed in `.gitignore` are skipped. Use `--include-gitignored` if you
+need those files in the digest.
+
 By default, the digest is written to a text file (`digest.txt`) in your current working directory. You can customize the output in two ways:
 
 - Use `--output/-o <filename>` to write to a specific file.

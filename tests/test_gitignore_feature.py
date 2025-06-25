@@ -10,13 +10,13 @@ from gitingest.entrypoint import ingest_async
 from gitingest.utils.ignore_patterns import load_gitignore_patterns
 
 
-@pytest.fixture
+@pytest.fixture(name="repo_path")
 def repo_fixture(tmp_path: Path) -> Path:
     """
     Create a temporary repository structure with:
       - A .gitignore that excludes 'exclude.txt'
       - 'include.txt' (should be processed)
-      - 'exclude.txt' (should be skipped when use_gitignore is enabled)
+      - 'exclude.txt' (should be skipped when gitignore rules are respected)
     """
     # Create a .gitignore file that excludes 'exclude.txt'
     gitignore_file = tmp_path / ".gitignore"
@@ -54,20 +54,20 @@ def test_load_gitignore_patterns(tmp_path: Path):
 @pytest.mark.asyncio
 async def test_ingest_with_gitignore(repo_path: Path):
     """
-    Integration test for ingest_async() using the use_gitignore flag.
+    Integration test for ingest_async() respecting .gitignore rules.
 
-    When use_gitignore is True, the content of 'exclude.txt' should be omitted.
-    When it is False, both files should be present.
+    When ``include_gitignored`` is ``False`` (default), the content of 'exclude.txt' should be omitted.
+    When ``include_gitignored`` is ``True``, both files should be present.
     """
     # Run ingestion with the gitignore functionality enabled.
-    _, _, content_with_ignore = await ingest_async(source=str(repo_path), use_gitignore=True)
+    _, _, content_with_ignore = await ingest_async(source=str(repo_path))
     # 'exclude.txt' should be skipped.
     assert "This file should be excluded." not in content_with_ignore
     # 'include.txt' should be processed.
     assert "This file should be included." in content_with_ignore
 
     # Run ingestion with the gitignore functionality disabled.
-    _, _, content_without_ignore = await ingest_async(source=str(repo_path), use_gitignore=False)
+    _, _, content_without_ignore = await ingest_async(source=str(repo_path), include_gitignored=True)
     # Now both files should be present.
     assert "This file should be excluded." in content_without_ignore
     assert "This file should be included." in content_without_ignore

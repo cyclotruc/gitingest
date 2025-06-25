@@ -178,23 +178,31 @@ def load_gitignore_patterns(root: Path) -> Set[str]:
     Set[str]
         A set of ignore patterns extracted from all .gitignore files found under the root directory.
     """
-    patterns = set()
+    patterns: Set[str] = set()
     for dirpath, _, filenames in os.walk(root):
-        if ".gitignore" in filenames:
-            gitignore_path = Path(dirpath) / ".gitignore"
-            with gitignore_path.open("r", encoding="utf-8") as f:
-                for line in f:
-                    stripped = line.strip()
-                    # Skip empty lines and comments
-                    if stripped and not stripped.startswith("#"):
-                        # Skip the global wildcard pattern if you don't intend to ignore everything
-                        if stripped == "*":
-                            continue
-                        if stripped.startswith("/"):
-                            rel_dir = os.path.relpath(dirpath, root)
-                            pattern = os.path.join(rel_dir, stripped.lstrip("/"))
-                            pattern = pattern.replace("\\", "/")
-                        else:
-                            pattern = stripped
-                        patterns.add(pattern)
+        if ".gitignore" not in filenames:
+            continue
+
+        gitignore_path = Path(dirpath) / ".gitignore"
+        with gitignore_path.open("r", encoding="utf-8") as f:
+            for line in f:
+                stripped = line.strip()
+
+                if not stripped or stripped.startswith("#"):
+                    continue
+
+                negated = stripped.startswith("!")
+                if negated:
+                    stripped = stripped[1:]
+
+                rel_dir = os.path.relpath(dirpath, root)
+                if stripped.startswith("/"):
+                    pattern_body = os.path.join(rel_dir, stripped.lstrip("/"))
+                else:
+                    pattern_body = os.path.join(rel_dir, stripped) if rel_dir != "." else stripped
+
+                pattern_body = pattern_body.replace("\\", "/")
+                pattern = f"!{pattern_body}" if negated else pattern_body
+                patterns.add(pattern)
+
     return patterns
