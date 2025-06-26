@@ -125,7 +125,7 @@ gitingest --help
 
 ### Using Multiple Patterns (CLI)
 
-You can specify multiple patterns to include or exclude files and directories by repeating the respective flags (-e for exclude, -i for include). Patterns use standard shell wildcards.
+You can specify multiple patterns to include or exclude files and directories by repeating the respective flags (`-e` for exclude, `-i` for include). Patterns use standard shell wildcards.
 
 ```bash
 # Example 1: Exclude all log files, temporary files, and the entire 'dist' directory
@@ -135,7 +135,7 @@ gitingest /path/to/your/project -e "*.log" -e "*.tmp" -e "dist/"
 gitingest https://github.com/user/repo -i "*.py" -i "*.md"
 
 # Example 3: Exclude test directories and specific config files from the current directory (.)
-gitingest . -e "tests/" -e "**/config.dev.json" -e "node_modules/"
+gitingest -e "tests/" -e "**/config.dev.json" -e "node_modules/"
 ```
 
 Remember that exclusion patterns take precedence. If specific include patterns are provided, only files matching those and not matching any exclude pattern will be processed.
@@ -179,11 +179,11 @@ result = asyncio.run(ingest_async("path/to/directory"))
 
 ### Advanced Pattern Usage (Python API)
 
-The Python API allows for fine-grained control by combining include_patterns and exclude_patterns. When both are provided:
+The Python API allows for fine-grained control by combining `include_patterns` and `exclude_patterns`. When both are provided:
 
-Files/directories are first checked against all exclusion patterns (default built-in patterns + user-provided exclude_patterns). If a match occurs, the item is skipped.
+Files/directories are first checked against all exclusion patterns (default built-in patterns + user-provided `exclude_patterns`). If a match occurs, the item is skipped.
 
-If include_patterns are specified, any remaining item must also match at least one of the include patterns to be kept. If include_patterns is None or empty, this step is skipped.
+If `include_patterns` are specified, any remaining item must also match at least one of the include patterns to be kept. If `include_patterns` is None or empty, this step is skipped.
 
 ```python
 # Advanced Python API Example
@@ -229,7 +229,7 @@ async def run_async_ingest():
 # asyncio.run(run_async_ingest())
 ```
 
-This setup ensures that even if src/ contains log files, they will be explicitly removed from the final digest, while only other files directly within src/ are included.
+This setup ensures that even if `src/` contains log files, they will be explicitly removed from the final digest, while only other files directly within `src/` are included.
 
 ### Jupyter notebook usage
 
