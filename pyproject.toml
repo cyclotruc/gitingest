@@ -1,6 +1,6 @@
 [project]
 name = "gitingest"
-version = "0.1.4"
+version = "0.1.5"
 description="CLI tool to analyze and create text dumps of codebases for LLMs"
 readme = {file = "README.md", content-type = "text/markdown" }
 requires-python = ">= 3.8"
@@ -13,6 +13,7 @@ dependencies = [
     "starlette>=0.40.0",  # Vulnerable to https://osv.dev/vulnerability/GHSA-f96h-pmfr-66vw
     "tiktoken>=0.7.0",  # Support for o200k_base encoding
     "tomli",
+    "pathspec>=0.12.1",
     "typing_extensions; python_version < '3.10'",
     "uvicorn>=0.11.7",  # Vulnerable to https://osv.dev/vulnerability/PYSEC-2020-150
 ]

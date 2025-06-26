@@ -10,6 +10,7 @@ from typing import Optional, Set, Tuple, Union
 from gitingest.cloning import clone_repo
 from gitingest.ingestion import ingest_query
 from gitingest.query_parsing import IngestionQuery, parse_query
+from gitingest.utils.ignore_patterns import load_gitignore_patterns
 
 
 async def ingest_async(
@@ -18,6 +19,7 @@ async def ingest_async(
     include_patterns: Optional[Union[str, Set[str]]] = None,
     exclude_patterns: Optional[Union[str, Set[str]]] = None,
     branch: Optional[str] = None,
+    include_gitignored: bool = False,
     token: Optional[str] = None,
     output: Optional[str] = None,
 ) -> Tuple[str, str, str]:
@@ -41,6 +43,8 @@ async def ingest_async(
         Pattern or set of patterns specifying which files to exclude. If `None`, no files are excluded.
     branch : str, optional
         The branch to clone and ingest. If `None`, the default branch is used.
+    include_gitignored : bool
+        If ``True``, include files ignored by ``.gitignore``. Defaults to ``False``.
     token : str, optional
         GitHub personal-access token (PAT). Needed when *source* refers to a
         **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
@@ -74,6 +78,10 @@ async def ingest_async(
             ignore_patterns=exclude_patterns,
             token=token,
         )
+
+        if not include_gitignored:
+            gitignore_patterns = load_gitignore_patterns(query.local_path)
+            query.ignore_patterns.update(gitignore_patterns)
 
         if query.url:
             selected_branch = branch if branch else query.branch  # prioritize branch argument
@@ -116,6 +124,7 @@ def ingest(
     include_patterns: Optional[Union[str, Set[str]]] = None,
     exclude_patterns: Optional[Union[str, Set[str]]] = None,
     branch: Optional[str] = None,
+    include_gitignored: bool = False,
     token: Optional[str] = None,
     output: Optional[str] = None,
 ) -> Tuple[str, str, str]:
@@ -139,6 +148,8 @@ def ingest(
         Pattern or set of patterns specifying which files to exclude. If `None`, no files are excluded.
     branch : str, optional
         The branch to clone and ingest. If `None`, the default branch is used.
+    include_gitignored : bool
+        If ``True``, include files ignored by ``.gitignore``. Defaults to ``False``.
     token : str, optional
         GitHub personal-access token (PAT). Needed when *source* refers to a
         **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
@@ -164,6 +175,7 @@ def ingest(
             include_patterns=include_patterns,
             exclude_patterns=exclude_patterns,
             branch=branch,
+            include_gitignored=include_gitignored,
             token=token,
             output=output,
         )
