@@ -131,7 +131,7 @@ You can specify multiple patterns to include or exclude files and directories by
 # Example 1: Exclude all log files, temporary files, and the entire 'dist' directory
 gitingest /path/to/your/project -e "*.log" -e "*.tmp" -e "dist/"
 
-# Example 2: Include only Python files and Markdown files from the repository
+# Example 2: Include only Python and Markdown files from the repository
 gitingest https://github.com/user/repo -i "*.py" -i "*.md"
 
 # Example 3: Exclude test directories and specific config files from the current directory (.)
