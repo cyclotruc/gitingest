@@ -46,6 +46,7 @@ async def clone_repo(config: CloneConfig, token: Optional[str] = None) -> None:
     commit: Optional[str] = config.commit
     branch: Optional[str] = config.branch
     partial_clone: bool = config.subpath != "/"
+    include_submodules: bool = config.include_submodules
 
     # Validate token if provided
     if token and url.startswith("https://github.com"):
@@ -63,7 +64,8 @@ async def clone_repo(config: CloneConfig, token: Optional[str] = None) -> None:
         clone_cmd += ["-c", create_git_auth_header(token)]
 
     clone_cmd += ["clone", "--single-branch"]
-    # TODO: Re-enable --recurse-submodules when submodule support is needed
+    if include_submodules:
+        clone_cmd += ["--recurse-submodules"]
 
     if partial_clone:
         clone_cmd += ["--filter=blob:none", "--sparse"]

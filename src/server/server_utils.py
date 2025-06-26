@@ -2,7 +2,9 @@
 
 import asyncio
 import math
+import os
 import shutil
+import sys
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -16,8 +18,34 @@ from slowapi.util import get_remote_address
 from gitingest.config import TMP_BASE_PATH
 from server.server_config import DELETE_REPO_AFTER
 
-# Initialize a rate limiter
-limiter = Limiter(key_func=get_remote_address)
+# Use a no-op limiter for tests
+if os.getenv("TESTING") or "pytest" in sys.modules:
+
+    class NoOpLimiter:
+        """A no-op rate limiter for testing environments that bypasses rate limiting."""
+
+        def limit(self, *_args, **_kwargs):
+            """
+            Return the function unchanged, effectively disabling rate limiting.
+
+            Parameters
+            ----------
+            *_args : tuple
+                Unused positional arguments.
+            **_kwargs : dict
+                Unused keyword arguments.
+
+            Returns
+            -------
+            function
+                The original function, unchanged.
+            """
+            return lambda func: func  # Return function unchanged
+
+    limiter = NoOpLimiter()
+else:
+    # Initialize a rate limiter
+    limiter = Limiter(key_func=get_remote_address)
 
 
 async def rate_limit_exception_handler(request: Request, exc: Exception) -> Response:

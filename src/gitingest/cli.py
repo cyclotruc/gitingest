@@ -44,6 +44,7 @@ from gitingest.entrypoint import ingest_async
     ),
 )
 @click.option("--branch", "-b", default=None, help="Branch to clone and ingest")
+@click.option("--include-submodules", is_flag=True, help="Include repository's submodules in the analysis")
 @click.option(
     "--include-gitignored",
     is_flag=True,
@@ -69,6 +70,7 @@ def main(
     branch: Optional[str],
     include_gitignored: bool,
     token: Optional[str],
+    include_submodules: bool = False,
 ):
     """
     Main entry point for the CLI. This function is called when the CLI is run as a script.
@@ -90,6 +92,9 @@ def main(
         Glob patterns for including files in the output.
     branch : str, optional
         Specific branch to ingest (defaults to the repository's default).
+    include_submodules : bool
+        If True, recursively include and analyze all Git submodules within the repository.
+        Set to False to ignore submodules during analysis (default is False).
     include_gitignored : bool
         If provided, include files normally ignored by .gitignore.
     token: str, optional
@@ -104,6 +109,7 @@ def main(
             exclude_pattern=exclude_pattern,
             include_pattern=include_pattern,
             branch=branch,
+            include_submodules=include_submodules,
             include_gitignored=include_gitignored,
             token=token,
         )
@@ -119,6 +125,7 @@ async def _async_main(
     branch: Optional[str],
     include_gitignored: bool,
     token: Optional[str],
+    include_submodules: bool = False,
 ) -> None:
     """
     Analyze a directory or repository and create a text dump of its contents.
@@ -147,6 +154,9 @@ async def _async_main(
     token: str, optional
         GitHub personal-access token (PAT). Needed when *source* refers to a
         **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
+    include_submodules : bool
+        If True, recursively include and analyze all Git submodules within the repository.
+        Set to False to ignore submodules during analysis (default is False).
 
     Raises
     ------
@@ -171,6 +181,7 @@ async def _async_main(
             include_patterns=include_patterns,
             exclude_patterns=exclude_patterns,
             branch=branch,
+            include_submodules=include_submodules,
             output=output_target,
             include_gitignored=include_gitignored,
             token=token,

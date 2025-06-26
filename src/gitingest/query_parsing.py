@@ -30,6 +30,7 @@ async def parse_query(
     include_patterns: Optional[Union[str, Set[str]]] = None,
     ignore_patterns: Optional[Union[str, Set[str]]] = None,
     token: Optional[str] = None,
+    include_submodules: bool = False,
 ) -> IngestionQuery:
     """
     Parse the input source (URL or path) to extract relevant details for the query.
@@ -54,6 +55,9 @@ async def parse_query(
         GitHub personal-access token (PAT). Needed when *source* refers to a
         **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
         Must start with 'github_pat_' or 'gph_' for GitHub repositories.
+    include_submodules : bool
+        The flag whether to include Git submodules in the analysis. Defaults to False.
+
     Returns
     -------
     IngestionQuery
@@ -95,6 +99,7 @@ async def parse_query(
         max_file_size=max_file_size,
         ignore_patterns=ignore_patterns_set,
         include_patterns=parsed_include,
+        include_submodules=include_submodules,
     )
 
 

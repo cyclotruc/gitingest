@@ -21,6 +21,7 @@ async def process_query(
     pattern: str = "",
     is_index: bool = False,
     token: Optional[str] = None,
+    include_submodules: bool = False,
 ) -> _TemplateResponse:
     """
     Process a query by parsing input, cloning a repository, and generating a summary.
@@ -42,6 +43,8 @@ async def process_query(
         Pattern to include or exclude in the query, depending on the pattern type.
     is_index : bool
         Flag indicating whether the request is for the index page (default is False).
+    include_submodules : bool
+        Flag indicating whether to include Git submodules in the query (default is False).
     token : str, optional
         GitHub personal-access token (PAT). Needed when *input_text* refers to a
         **private** repository.
@@ -76,6 +79,7 @@ async def process_query(
         "default_file_size": slider_position,
         "pattern_type": pattern_type,
         "pattern": pattern,
+        "include_submodules": include_submodules,
         "token": token,
     }
 
@@ -86,6 +90,7 @@ async def process_query(
             from_web=True,
             include_patterns=include_patterns,
             ignore_patterns=exclude_patterns,
+            include_submodules=include_submodules,
             token=token,
         )
         if not query.url:
