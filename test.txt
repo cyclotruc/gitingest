@@ -1,0 +1,5928 @@
+Directory structure:
+└── gitingest/
+    ├── src/
+    │   ├── gitingest/
+    │   │   ├── __init__.py
+    │   │   ├── cli.py
+    │   │   ├── cloning.py
+    │   │   ├── config.py
+    │   │   ├── entrypoint.py
+    │   │   ├── ingestion.py
+    │   │   ├── output_formatters.py
+    │   │   ├── query_parsing.py
+    │   │   ├── schemas/
+    │   │   │   ├── __init__.py
+    │   │   │   ├── filesystem_schema.py
+    │   │   │   └── ingestion_schema.py
+    │   │   └── utils/
+    │   │       ├── __init__.py
+    │   │       ├── exceptions.py
+    │   │       ├── file_utils.py
+    │   │       ├── git_utils.py
+    │   │       ├── ignore_patterns.py
+    │   │       ├── ingestion_utils.py
+    │   │       ├── notebook_utils.py
+    │   │       ├── os_utils.py
+    │   │       ├── path_utils.py
+    │   │       ├── query_parser_utils.py
+    │   │       └── timeout_wrapper.py
+    │   └── server/
+    │       ├── __init__.py
+    │       ├── main.py
+    │       ├── query_processor.py
+    │       ├── server_config.py
+    │       ├── server_utils.py
+    │       └── routers/
+    │           ├── __init__.py
+    │           ├── download.py
+    │           ├── dynamic.py
+    │           └── index.py
+    └── tests/
+        ├── __init__.py
+        ├── conftest.py
+        ├── test_cli.py
+        ├── test_flow_integration.py
+        ├── test_git_utils.py
+        ├── test_gitignore_feature.py
+        ├── test_ingestion.py
+        ├── test_notebook_utils.py
+        ├── test_repository_clone.py
+        └── query_parser/
+            ├── __init__.py
+            ├── test_git_host_agnostic.py
+            └── test_query_parser.py
+
+================================================
+FILE: src/gitingest/__init__.py
+================================================
+"""Gitingest: A package for ingesting data from Git repositories."""
+
+from gitingest.cloning import clone_repo
+from gitingest.entrypoint import ingest, ingest_async
+from gitingest.ingestion import ingest_query
+from gitingest.query_parsing import parse_query
+
+__all__ = ["ingest_query", "clone_repo", "parse_query", "ingest", "ingest_async"]
+
+
+
+================================================
+FILE: src/gitingest/cli.py
+================================================
+"""Command-line interface for the Gitingest package."""
+
+# pylint: disable=no-value-for-parameter
+
+import asyncio
+from typing import Optional, Tuple
+
+import click
+
+from gitingest.config import MAX_FILE_SIZE, OUTPUT_FILE_NAME
+from gitingest.entrypoint import ingest_async
+
+
+@click.command()
+@click.argument("source", type=str, default=".")
+@click.option(
+    "--output",
+    "-o",
+    default=None,
+    help="Output file path (default: digest.txt in current directory). Use '-' for stdout.",
+)
+@click.option(
+    "--max-size",
+    "-s",
+    default=MAX_FILE_SIZE,
+    help="Maximum file size to process in bytes",
+)
+@click.option(
+    "--exclude-pattern",
+    "-e",
+    multiple=True,
+    help=(
+        "Patterns to exclude. Handles Python's arbitrary subset of Unix shell-style "
+        "wildcards. See: https://docs.python.org/3/library/fnmatch.html"
+    ),
+)
+@click.option(
+    "--include-pattern",
+    "-i",
+    multiple=True,
+    help=(
+        "Patterns to include. Handles Python's arbitrary subset of Unix shell-style "
+        "wildcards. See: https://docs.python.org/3/library/fnmatch.html"
+    ),
+)
+@click.option("--branch", "-b", default=None, help="Branch to clone and ingest")
+@click.option(
+    "--include-gitignored",
+    is_flag=True,
+    default=False,
+    help="Include files matched by .gitignore",
+)
+@click.option(
+    "--token",
+    "-t",
+    envvar="GITHUB_TOKEN",
+    default=None,
+    help=(
+        "GitHub personal access token for accessing private repositories. "
+        "If omitted, the CLI will look for the GITHUB_TOKEN environment variable."
+    ),
+)
+def main(
+    source: str,
+    output: Optional[str],
+    max_size: int,
+    exclude_pattern: Tuple[str, ...],
+    include_pattern: Tuple[str, ...],
+    branch: Optional[str],
+    include_gitignored: bool,
+    token: Optional[str],
+):
+    """
+    Main entry point for the CLI. This function is called when the CLI is run as a script.
+
+    It calls the async main function to run the command.
+
+    Parameters
+    ----------
+    source : str
+        A directory path or a Git repository URL.
+    output : str, optional
+        The path where the output file will be written. If not specified, the output will be written
+        to a file named `digest.txt` in the current directory. Use '-' to output to stdout.
+    max_size : int
+        Maximum file size (in bytes) to consider.
+    exclude_pattern : Tuple[str, ...]
+        Glob patterns for pruning the file set.
+    include_pattern : Tuple[str, ...]
+        Glob patterns for including files in the output.
+    branch : str, optional
+        Specific branch to ingest (defaults to the repository's default).
+    include_gitignored : bool
+        If provided, include files normally ignored by .gitignore.
+    token: str, optional
+        GitHub personal-access token (PAT). Needed when *source* refers to a
+        **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
+
+    Examples
+    --------
+    Basic usage:
+        $ gitingest .
+        $ gitingest /path/to/repo
+        $ gitingest https://github.com/user/repo
+
+    Output to stdout:
+        $ gitingest . -o -
+        $ gitingest https://github.com/user/repo --output -
+
+    With filtering:
+        $ gitingest . -i "*.py" -e "*.log"
+        $ gitingest . --include-pattern "*.js" --exclude-pattern "node_modules/*"
+
+    Private repositories:
+        $ gitingest https://github.com/user/private-repo -t ghp_token
+        $ GITHUB_TOKEN=ghp_token gitingest https://github.com/user/private-repo
+    """
+    asyncio.run(
+        _async_main(
+            source=source,
+            output=output,
+            max_size=max_size,
+            exclude_pattern=exclude_pattern,
+            include_pattern=include_pattern,
+            branch=branch,
+            include_gitignored=include_gitignored,
+            token=token,
+        )
+    )
+
+
+async def _async_main(
+    source: str,
+    output: Optional[str],
+    max_size: int,
+    exclude_pattern: Tuple[str, ...],
+    include_pattern: Tuple[str, ...],
+    branch: Optional[str],
+    include_gitignored: bool,
+    token: Optional[str],
+) -> None:
+    """
+    Analyze a directory or repository and create a text dump of its contents.
+
+    This command analyzes the contents of a specified source directory or repository, applies custom include and
+    exclude patterns, and generates a text summary of the analysis which is then written to an output file
+    or printed to stdout.
+
+    Parameters
+    ----------
+    source : str
+        A directory path or a Git repository URL.
+    output : str, optional
+        The path where the output file will be written. If not specified, the output will be written
+        to a file named `digest.txt` in the current directory. Use '-' to output to stdout.
+    max_size : int
+        Maximum file size (in bytes) to consider.
+    exclude_pattern : Tuple[str, ...]
+        Glob patterns for pruning the file set.
+    include_pattern : Tuple[str, ...]
+        Glob patterns for including files in the output.
+    branch : str, optional
+        Specific branch to ingest (defaults to the repository's default).
+    include_gitignored : bool
+        If provided, include files normally ignored by .gitignore.
+    token: str, optional
+        GitHub personal-access token (PAT). Needed when *source* refers to a
+        **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
+
+    Raises
+    ------
+    Abort
+        If there is an error during the execution of the command, this exception is raised to abort the process.
+    """
+    try:
+        # Normalise pattern containers (the ingest layer expects sets)
+        exclude_patterns = set(exclude_pattern)
+        include_patterns = set(include_pattern)
+
+        output_target = output if output is not None else OUTPUT_FILE_NAME
+
+        if output_target == "-":
+            click.echo("Analyzing source, preparing output for stdout...", err=True)
+        else:
+            click.echo(f"Analyzing source, output will be written to '{output_target}'...", err=True)
+
+        summary, _, _ = await ingest_async(
+            source=source,
+            max_file_size=max_size,
+            include_patterns=include_patterns,
+            exclude_patterns=exclude_patterns,
+            branch=branch,
+            output=output_target,
+            include_gitignored=include_gitignored,
+            token=token,
+        )
+
+        if output_target == "-":  # stdout
+            click.echo("\n--- Summary ---", err=True)
+            click.echo(summary, err=True)
+            click.echo("--- End Summary ---", err=True)
+            click.echo("Analysis complete! Output sent to stdout.", err=True)
+        else:  # file
+            click.echo(f"Analysis complete! Output written to: {output_target}")
+            click.echo("\nSummary:")
+            click.echo(summary)
+
+    except Exception as exc:
+        # Convert any exception into Click.Abort so that exit status is non-zero
+        click.echo(f"Error: {exc}", err=True)
+        raise click.Abort() from exc
+
+
+if __name__ == "__main__":
+    main()
+
+
+================================================
+FILE: src/gitingest/cloning.py
+================================================
+"""This module contains functions for cloning a Git repository to a local path."""
+
+from pathlib import Path
+from typing import Optional
+
+from gitingest.config import DEFAULT_TIMEOUT
+from gitingest.schemas import CloneConfig
+from gitingest.utils.git_utils import (
+    check_repo_exists,
+    create_git_auth_header,
+    create_git_command,
+    ensure_git_installed,
+    run_command,
+    validate_github_token,
+)
+from gitingest.utils.os_utils import ensure_directory
+from gitingest.utils.timeout_wrapper import async_timeout
+
+
+@async_timeout(DEFAULT_TIMEOUT)
+async def clone_repo(config: CloneConfig, token: Optional[str] = None) -> None:
+    """
+    Clone a repository to a local path based on the provided configuration.
+
+    This function handles the process of cloning a Git repository to the local file system.
+    It can clone a specific branch or commit if provided, and it raises exceptions if
+    any errors occur during the cloning process.
+
+    Parameters
+    ----------
+    config : CloneConfig
+        The configuration for cloning the repository.
+    token : str, optional
+        GitHub personal-access token (PAT). Needed when *source* refers to a
+        **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
+        Must start with 'github_pat_' or 'gph_' for GitHub repositories.
+
+    Raises
+    ------
+    ValueError
+        If the repository is not found, if the provided URL is invalid, or if the token format is invalid.
+    """
+    # Extract and validate query parameters
+    url: str = config.url
+    local_path: str = config.local_path
+    commit: Optional[str] = config.commit
+    branch: Optional[str] = config.branch
+    partial_clone: bool = config.subpath != "/"
+
+    # Validate token if provided
+    if token and url.startswith("https://github.com"):
+        validate_github_token(token)
+
+    # Create parent directory if it doesn't exist
+    await ensure_directory(Path(local_path).parent)
+
+    # Check if the repository exists
+    if not await check_repo_exists(url, token=token):
+        raise ValueError("Repository not found. Make sure it is public or that you have provided a valid token.")
+
+    clone_cmd = ["git"]
+    if token and url.startswith("https://github.com"):
+        clone_cmd += ["-c", create_git_auth_header(token)]
+
+    clone_cmd += ["clone", "--single-branch"]
+    # TODO: Re-enable --recurse-submodules when submodule support is needed
+
+    if partial_clone:
+        clone_cmd += ["--filter=blob:none", "--sparse"]
+
+    if not commit:
+        clone_cmd += ["--depth=1"]
+        if branch and branch.lower() not in ("main", "master"):
+            clone_cmd += ["--branch", branch]
+
+    clone_cmd += [url, local_path]
+
+    # Clone the repository
+    await ensure_git_installed()
+    await run_command(*clone_cmd)
+
+    # Checkout the subpath if it is a partial clone
+    if partial_clone:
+        subpath = config.subpath.lstrip("/")
+        if config.blob:
+            # When ingesting from a file url (blob/branch/path/file.txt), we need to remove the file name.
+            subpath = str(Path(subpath).parent.as_posix())
+
+        checkout_cmd = create_git_command(["git"], local_path, url, token)
+        await run_command(*checkout_cmd, "sparse-checkout", "set", subpath)
+
+    # Checkout the commit if it is provided
+    if commit:
+        checkout_cmd = create_git_command(["git"], local_path, url, token)
+        await run_command(*checkout_cmd, "checkout", commit)
+
+
+
+================================================
+FILE: src/gitingest/config.py
+================================================
+"""Configuration file for the project."""
+
+import tempfile
+from pathlib import Path
+
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+MAX_DIRECTORY_DEPTH = 20  # Maximum depth of directory traversal
+MAX_FILES = 10_000  # Maximum number of files to process
+MAX_TOTAL_SIZE_BYTES = 500 * 1024 * 1024  # 500 MB
+DEFAULT_TIMEOUT = 60  # seconds
+
+OUTPUT_FILE_NAME = "digest.txt"
+
+TMP_BASE_PATH = Path(tempfile.gettempdir()) / "gitingest"
+
+
+
+================================================
+FILE: src/gitingest/entrypoint.py
+================================================
+"""Main entry point for ingesting a source and processing its contents."""
+
+import asyncio
+import inspect
+import os
+import shutil
+import sys
+from typing import Optional, Set, Tuple, Union
+
+from gitingest.cloning import clone_repo
+from gitingest.config import TMP_BASE_PATH
+from gitingest.ingestion import ingest_query
+from gitingest.query_parsing import IngestionQuery, parse_query
+from gitingest.utils.ignore_patterns import load_gitignore_patterns
+
+
+async def ingest_async(
+    source: str,
+    max_file_size: int = 10 * 1024 * 1024,  # 10 MB
+    include_patterns: Optional[Union[str, Set[str]]] = None,
+    exclude_patterns: Optional[Union[str, Set[str]]] = None,
+    branch: Optional[str] = None,
+    include_gitignored: bool = False,
+    token: Optional[str] = None,
+    output: Optional[str] = None,
+) -> Tuple[str, str, str]:
+    """
+    Main entry point for ingesting a source and processing its contents.
+
+    This function analyzes a source (URL or local path), clones the corresponding repository (if applicable),
+    and processes its files according to the specified query parameters. It returns a summary, a tree-like
+    structure of the files, and the content of the files. The results can optionally be written to an output file.
+
+    Parameters
+    ----------
+    source : str
+        The source to analyze, which can be a URL (for a Git repository) or a local directory path.
+    max_file_size : int
+        Maximum allowed file size for file ingestion. Files larger than this size are ignored, by default
+        10*1024*1024 (10 MB).
+    include_patterns : Union[str, Set[str]], optional
+        Pattern or set of patterns specifying which files to include. If `None`, all files are included.
+    exclude_patterns : Union[str, Set[str]], optional
+        Pattern or set of patterns specifying which files to exclude. If `None`, no files are excluded.
+    branch : str, optional
+        The branch to clone and ingest. If `None`, the default branch is used.
+    include_gitignored : bool
+        If ``True``, include files ignored by ``.gitignore``. Defaults to ``False``.
+    token : str, optional
+        GitHub personal-access token (PAT). Needed when *source* refers to a
+        **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
+    output : str, optional
+        File path where the summary and content should be written. If `None`, the results are not written to a file.
+
+    Returns
+    -------
+    Tuple[str, str, str]
+        A tuple containing:
+        - A summary string of the analyzed repository or directory.
+        - A tree-like string representation of the file structure.
+        - The content of the files in the repository or directory.
+
+    Raises
+    ------
+    TypeError
+        If `clone_repo` does not return a coroutine, or if the `source` is of an unsupported type.
+    """
+    repo_cloned = False
+
+    if not token:
+        token = os.getenv("GITHUB_TOKEN")
+
+    try:
+        query: IngestionQuery = await parse_query(
+            source=source,
+            max_file_size=max_file_size,
+            from_web=False,
+            include_patterns=include_patterns,
+            ignore_patterns=exclude_patterns,
+            token=token,
+        )
+
+        if not include_gitignored:
+            gitignore_patterns = load_gitignore_patterns(query.local_path)
+            query.ignore_patterns.update(gitignore_patterns)
+
+        if query.url:
+            selected_branch = branch if branch else query.branch  # prioritize branch argument
+            query.branch = selected_branch
+
+            clone_config = query.extract_clone_config()
+            clone_coroutine = clone_repo(clone_config, token=token)
+
+            if inspect.iscoroutine(clone_coroutine):
+                if asyncio.get_event_loop().is_running():
+                    await clone_coroutine
+                else:
+                    asyncio.run(clone_coroutine)
+            else:
+                raise TypeError("clone_repo did not return a coroutine as expected.")
+
+            repo_cloned = True
+
+        summary, tree, content = ingest_query(query)
+
+        if output == "-":
+            loop = asyncio.get_running_loop()
+            output_data = tree + "\n" + content
+            await loop.run_in_executor(None, sys.stdout.write, output_data)
+            await loop.run_in_executor(None, sys.stdout.flush)
+        elif output is not None:
+            with open(output, "w", encoding="utf-8") as f:
+                f.write(tree + "\n" + content)
+
+        return summary, tree, content
+    finally:
+        # Clean up the temporary directory if it was created
+        if repo_cloned:
+            shutil.rmtree(TMP_BASE_PATH, ignore_errors=True)
+
+
+def ingest(
+    source: str,
+    max_file_size: int = 10 * 1024 * 1024,  # 10 MB
+    include_patterns: Optional[Union[str, Set[str]]] = None,
+    exclude_patterns: Optional[Union[str, Set[str]]] = None,
+    branch: Optional[str] = None,
+    include_gitignored: bool = False,
+    token: Optional[str] = None,
+    output: Optional[str] = None,
+) -> Tuple[str, str, str]:
+    """
+    Synchronous version of ingest_async.
+
+    This function analyzes a source (URL or local path), clones the corresponding repository (if applicable),
+    and processes its files according to the specified query parameters. It returns a summary, a tree-like
+    structure of the files, and the content of the files. The results can optionally be written to an output file.
+
+    Parameters
+    ----------
+    source : str
+        The source to analyze, which can be a URL (for a Git repository) or a local directory path.
+    max_file_size : int
+        Maximum allowed file size for file ingestion. Files larger than this size are ignored, by default
+        10*1024*1024 (10 MB).
+    include_patterns : Union[str, Set[str]], optional
+        Pattern or set of patterns specifying which files to include. If `None`, all files are included.
+    exclude_patterns : Union[str, Set[str]], optional
+        Pattern or set of patterns specifying which files to exclude. If `None`, no files are excluded.
+    branch : str, optional
+        The branch to clone and ingest. If `None`, the default branch is used.
+    include_gitignored : bool
+        If ``True``, include files ignored by ``.gitignore``. Defaults to ``False``.
+    token : str, optional
+        GitHub personal-access token (PAT). Needed when *source* refers to a
+        **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
+    output : str, optional
+        File path where the summary and content should be written. If `None`, the results are not written to a file.
+
+    Returns
+    -------
+    Tuple[str, str, str]
+        A tuple containing:
+        - A summary string of the analyzed repository or directory.
+        - A tree-like string representation of the file structure.
+        - The content of the files in the repository or directory.
+
+    See Also
+    --------
+    ingest_async : The asynchronous version of this function.
+    """
+    return asyncio.run(
+        ingest_async(
+            source=source,
+            max_file_size=max_file_size,
+            include_patterns=include_patterns,
+            exclude_patterns=exclude_patterns,
+            branch=branch,
+            include_gitignored=include_gitignored,
+            token=token,
+            output=output,
+        )
+    )
+
+
+
+================================================
+FILE: src/gitingest/ingestion.py
+================================================
+"""Functions to ingest and analyze a codebase directory or single file."""
+
+import warnings
+from pathlib import Path
+from typing import Tuple
+
+from gitingest.config import MAX_DIRECTORY_DEPTH, MAX_FILES, MAX_TOTAL_SIZE_BYTES
+from gitingest.output_formatters import format_node
+from gitingest.query_parsing import IngestionQuery
+from gitingest.schemas import FileSystemNode, FileSystemNodeType, FileSystemStats
+from gitingest.utils.ingestion_utils import _should_exclude, _should_include
+
+try:
+    import tomllib  # type: ignore[import]
+except ImportError:
+    import tomli as tomllib
+
+
+def ingest_query(query: IngestionQuery) -> Tuple[str, str, str]:
+    """
+    Run the ingestion process for a parsed query.
+
+    This is the main entry point for analyzing a codebase directory or single file. It processes the query
+    parameters, reads the file or directory content, and generates a summary, directory structure, and file content,
+    along with token estimations.
+
+    Parameters
+    ----------
+    query : IngestionQuery
+        The parsed query object containing information about the repository and query parameters.
+
+    Returns
+    -------
+    Tuple[str, str, str]
+        A tuple containing the summary, directory structure, and file contents.
+
+    Raises
+    ------
+    ValueError
+        If the path cannot be found, is not a file, or the file has no content.
+    """
+    subpath = Path(query.subpath.strip("/")).as_posix()
+    path = query.local_path / subpath
+
+    apply_gitingest_file(path, query)
+
+    if not path.exists():
+        raise ValueError(f"{query.slug} cannot be found")
+
+    if (query.type and query.type == "blob") or query.local_path.is_file():
+        # TODO: We do this wrong! We should still check the branch and commit!
+        if not path.is_file():
+            raise ValueError(f"Path {path} is not a file")
+
+        relative_path = path.relative_to(query.local_path)
+
+        file_node = FileSystemNode(
+            name=path.name,
+            type=FileSystemNodeType.FILE,
+            size=path.stat().st_size,
+            file_count=1,
+            path_str=str(relative_path),
+            path=path,
+        )
+
+        if not file_node.content:
+            raise ValueError(f"File {file_node.name} has no content")
+
+        return format_node(file_node, query)
+
+    root_node = FileSystemNode(
+        name=path.name,
+        type=FileSystemNodeType.DIRECTORY,
+        path_str=str(path.relative_to(query.local_path)),
+        path=path,
+    )
+
+    stats = FileSystemStats()
+
+    _process_node(
+        node=root_node,
+        query=query,
+        stats=stats,
+    )
+
+    return format_node(root_node, query)
+
+
+def apply_gitingest_file(path: Path, query: IngestionQuery) -> None:
+    """
+    Apply the .gitingest file to the query object.
+
+    This function reads the .gitingest file in the specified path and updates the query object with the ignore
+    patterns found in the file.
+
+    Parameters
+    ----------
+    path : Path
+        The path of the directory to ingest.
+    query : IngestionQuery
+        The parsed query object containing information about the repository and query parameters.
+        It should have an attribute `ignore_patterns` which is either None or a set of strings.
+    """
+    path_gitingest = path / ".gitingest"
+
+    if not path_gitingest.is_file():
+        return
+
+    try:
+        with path_gitingest.open("rb") as f:
+            data = tomllib.load(f)
+    except tomllib.TOMLDecodeError as exc:
+        warnings.warn(f"Invalid TOML in {path_gitingest}: {exc}", UserWarning)
+        return
+
+    config_section = data.get("config", {})
+    ignore_patterns = config_section.get("ignore_patterns")
+
+    if not ignore_patterns:
+        return
+
+    # If a single string is provided, make it a list of one element
+    if isinstance(ignore_patterns, str):
+        ignore_patterns = [ignore_patterns]
+
+    if not isinstance(ignore_patterns, (list, set)):
+        warnings.warn(
+            f"Expected a list/set for 'ignore_patterns', got {type(ignore_patterns)} in {path_gitingest}. Skipping.",
+            UserWarning,
+        )
+        return
+
+    # Filter out duplicated patterns
+    ignore_patterns = set(ignore_patterns)
+
+    # Filter out any non-string entries
+    valid_patterns = {pattern for pattern in ignore_patterns if isinstance(pattern, str)}
+    invalid_patterns = ignore_patterns - valid_patterns
+
+    if invalid_patterns:
+        warnings.warn(f"Ignore patterns {invalid_patterns} are not strings. Skipping.", UserWarning)
+
+    if not valid_patterns:
+        return
+
+    if query.ignore_patterns is None:
+        query.ignore_patterns = valid_patterns
+    else:
+        query.ignore_patterns.update(valid_patterns)
+
+    return
+
+
+def _process_node(
+    node: FileSystemNode,
+    query: IngestionQuery,
+    stats: FileSystemStats,
+) -> None:
+    """
+    Process a file or directory item within a directory.
+
+    This function handles each file or directory item, checking if it should be included or excluded based on the
+    provided patterns. It handles symlinks, directories, and files accordingly.
+
+    Parameters
+    ----------
+    node : FileSystemNode
+        The current directory or file node being processed.
+    query : IngestionQuery
+        The parsed query object containing information about the repository and query parameters.
+    stats : FileSystemStats
+        Statistics tracking object for the total file count and size.
+    """
+
+    if limit_exceeded(stats, node.depth):
+        return
+
+    for sub_path in node.path.iterdir():
+
+        if query.ignore_patterns and _should_exclude(sub_path, query.local_path, query.ignore_patterns):
+            continue
+
+        if query.include_patterns and not _should_include(sub_path, query.local_path, query.include_patterns):
+            continue
+
+        if sub_path.is_symlink():
+            _process_symlink(path=sub_path, parent_node=node, stats=stats, local_path=query.local_path)
+        elif sub_path.is_file():
+            _process_file(path=sub_path, parent_node=node, stats=stats, local_path=query.local_path)
+        elif sub_path.is_dir():
+
+            child_directory_node = FileSystemNode(
+                name=sub_path.name,
+                type=FileSystemNodeType.DIRECTORY,
+                path_str=str(sub_path.relative_to(query.local_path)),
+                path=sub_path,
+                depth=node.depth + 1,
+            )
+
+            _process_node(
+                node=child_directory_node,
+                query=query,
+                stats=stats,
+            )
+
+            if not child_directory_node.children:
+                continue
+
+            node.children.append(child_directory_node)
+            node.size += child_directory_node.size
+            node.file_count += child_directory_node.file_count
+            node.dir_count += 1 + child_directory_node.dir_count
+        else:
+            print(f"Warning: {sub_path} is an unknown file type, skipping")
+
+    node.sort_children()
+
+
+def _process_symlink(path: Path, parent_node: FileSystemNode, stats: FileSystemStats, local_path: Path) -> None:
+    """
+    Process a symlink in the file system.
+
+    This function checks the symlink's target.
+
+    Parameters
+    ----------
+    path : Path
+        The full path of the symlink.
+    parent_node : FileSystemNode
+        The parent directory node.
+    stats : FileSystemStats
+        Statistics tracking object for the total file count and size.
+    local_path : Path
+        The base path of the repository or directory being processed.
+    """
+    child = FileSystemNode(
+        name=path.name,
+        type=FileSystemNodeType.SYMLINK,
+        path_str=str(path.relative_to(local_path)),
+        path=path,
+        depth=parent_node.depth + 1,
+    )
+    stats.total_files += 1
+    parent_node.children.append(child)
+    parent_node.file_count += 1
+
+
+def _process_file(path: Path, parent_node: FileSystemNode, stats: FileSystemStats, local_path: Path) -> None:
+    """
+    Process a file in the file system.
+
+    This function checks the file's size, increments the statistics, and reads its content.
+    If the file size exceeds the maximum allowed, it raises an error.
+
+    Parameters
+    ----------
+    path : Path
+        The full path of the file.
+    parent_node : FileSystemNode
+        The dictionary to accumulate the results.
+    stats : FileSystemStats
+        Statistics tracking object for the total file count and size.
+    local_path : Path
+        The base path of the repository or directory being processed.
+    """
+    file_size = path.stat().st_size
+    if stats.total_size + file_size > MAX_TOTAL_SIZE_BYTES:
+        print(f"Skipping file {path}: would exceed total size limit")
+        return
+
+    stats.total_files += 1
+    stats.total_size += file_size
+
+    if stats.total_files > MAX_FILES:
+        print(f"Maximum file limit ({MAX_FILES}) reached")
+        return
+
+    child = FileSystemNode(
+        name=path.name,
+        type=FileSystemNodeType.FILE,
+        size=file_size,
+        file_count=1,
+        path_str=str(path.relative_to(local_path)),
+        path=path,
+        depth=parent_node.depth + 1,
+    )
+
+    parent_node.children.append(child)
+    parent_node.size += file_size
+    parent_node.file_count += 1
+
+
+def limit_exceeded(stats: FileSystemStats, depth: int) -> bool:
+    """
+    Check if any of the traversal limits have been exceeded.
+
+    This function checks if the current traversal has exceeded any of the configured limits:
+    maximum directory depth, maximum number of files, or maximum total size in bytes.
+
+    Parameters
+    ----------
+    stats : FileSystemStats
+        Statistics tracking object for the total file count and size.
+    depth : int
+        The current depth of directory traversal.
+
+    Returns
+    -------
+    bool
+        True if any limit has been exceeded, False otherwise.
+    """
+    if depth > MAX_DIRECTORY_DEPTH:
+        print(f"Maximum depth limit ({MAX_DIRECTORY_DEPTH}) reached")
+        return True
+
+    if stats.total_files >= MAX_FILES:
+        print(f"Maximum file limit ({MAX_FILES}) reached")
+        return True  # TODO: end recursion
+
+    if stats.total_size >= MAX_TOTAL_SIZE_BYTES:
+        print(f"Maxumum total size limit ({MAX_TOTAL_SIZE_BYTES/1024/1024:.1f}MB) reached")
+        return True  # TODO: end recursion
+
+    return False
+
+
+
+================================================
+FILE: src/gitingest/output_formatters.py
+================================================
+"""Functions to ingest and analyze a codebase directory or single file."""
+
+from typing import Optional, Tuple
+
+import tiktoken
+
+from gitingest.query_parsing import IngestionQuery
+from gitingest.schemas import FileSystemNode, FileSystemNodeType
+
+
+def format_node(node: FileSystemNode, query: IngestionQuery) -> Tuple[str, str, str]:
+    """
+    Generate a summary, directory structure, and file contents for a given file system node.
+
+    If the node represents a directory, the function will recursively process its contents.
+
+    Parameters
+    ----------
+    node : FileSystemNode
+        The file system node to be summarized.
+    query : IngestionQuery
+        The parsed query object containing information about the repository and query parameters.
+
+    Returns
+    -------
+    Tuple[str, str, str]
+        A tuple containing the summary, directory structure, and file contents.
+    """
+    is_single_file = node.type == FileSystemNodeType.FILE
+    summary = _create_summary_prefix(query, single_file=is_single_file)
+
+    if node.type == FileSystemNodeType.DIRECTORY:
+        summary += f"Files analyzed: {node.file_count}\n"
+    elif node.type == FileSystemNodeType.FILE:
+        summary += f"File: {node.name}\n"
+        summary += f"Lines: {len(node.content.splitlines()):,}\n"
+
+    tree = "Directory structure:\n" + _create_tree_structure(query, node)
+    _create_tree_structure(query, node)
+
+    content = _gather_file_contents(node)
+
+    token_estimate = _format_token_count(tree + content)
+    if token_estimate:
+        summary += f"\nEstimated tokens: {token_estimate}"
+
+    return summary, tree, content
+
+
+def _create_summary_prefix(query: IngestionQuery, single_file: bool = False) -> str:
+    """
+    Create a prefix string for summarizing a repository or local directory.
+
+    Includes repository name (if provided), commit/branch details, and subpath if relevant.
+
+    Parameters
+    ----------
+    query : IngestionQuery
+        The parsed query object containing information about the repository and query parameters.
+    single_file : bool
+        A flag indicating whether the summary is for a single file, by default False.
+
+    Returns
+    -------
+    str
+        A summary prefix string containing repository, commit, branch, and subpath details.
+    """
+    parts = []
+
+    if query.user_name:
+        parts.append(f"Repository: {query.user_name}/{query.repo_name}")
+    else:
+        # Local scenario
+        parts.append(f"Directory: {query.slug}")
+
+    if query.commit:
+        parts.append(f"Commit: {query.commit}")
+    elif query.branch and query.branch not in ("main", "master"):
+        parts.append(f"Branch: {query.branch}")
+
+    if query.subpath != "/" and not single_file:
+        parts.append(f"Subpath: {query.subpath}")
+
+    return "\n".join(parts) + "\n"
+
+
+def _gather_file_contents(node: FileSystemNode) -> str:
+    """
+    Recursively gather contents of all files under the given node.
+
+    This function recursively processes a directory node and gathers the contents of all files
+    under that node. It returns the concatenated content of all files as a single string.
+
+    Parameters
+    ----------
+    node : FileSystemNode
+        The current directory or file node being processed.
+
+    Returns
+    -------
+    str
+        The concatenated content of all files under the given node.
+    """
+    if node.type != FileSystemNodeType.DIRECTORY:
+        return node.content_string
+
+    # Recursively gather contents of all files under the current directory
+    return "\n".join(_gather_file_contents(child) for child in node.children)
+
+
+def _create_tree_structure(query: IngestionQuery, node: FileSystemNode, prefix: str = "", is_last: bool = True) -> str:
+    """
+    Generate a tree-like string representation of the file structure.
+
+    This function generates a string representation of the directory structure, formatted
+    as a tree with appropriate indentation for nested directories and files.
+
+    Parameters
+    ----------
+    query : IngestionQuery
+        The parsed query object containing information about the repository and query parameters.
+    node : FileSystemNode
+        The current directory or file node being processed.
+    prefix : str
+        A string used for indentation and formatting of the tree structure, by default "".
+    is_last : bool
+        A flag indicating whether the current node is the last in its directory, by default True.
+
+    Returns
+    -------
+    str
+        A string representing the directory structure formatted as a tree.
+    """
+    if not node.name:
+        # If no name is present, use the slug as the top-level directory name
+        node.name = query.slug
+
+    tree_str = ""
+    current_prefix = "└── " if is_last else "├── "
+
+    # Indicate directories with a trailing slash
+    display_name = node.name
+    if node.type == FileSystemNodeType.DIRECTORY:
+        display_name += "/"
+    elif node.type == FileSystemNodeType.SYMLINK:
+        display_name += " -> " + node.path.readlink().name
+
+    tree_str += f"{prefix}{current_prefix}{display_name}\n"
+
+    if node.type == FileSystemNodeType.DIRECTORY and node.children:
+        prefix += "    " if is_last else "│   "
+        for i, child in enumerate(node.children):
+            tree_str += _create_tree_structure(query, node=child, prefix=prefix, is_last=i == len(node.children) - 1)
+    return tree_str
+
+
+def _format_token_count(text: str) -> Optional[str]:
+    """
+    Return a human-readable string representing the token count of the given text.
+
+    E.g., '120' -> '120', '1200' -> '1.2k', '1200000' -> '1.2M'.
+
+    Parameters
+    ----------
+    text : str
+        The text string for which the token count is to be estimated.
+
+    Returns
+    -------
+    str, optional
+        The formatted number of tokens as a string (e.g., '1.2k', '1.2M'), or `None` if an error occurs.
+    """
+    try:
+        encoding = tiktoken.get_encoding("o200k_base")  # gpt-4o, gpt-4o-mini
+        total_tokens = len(encoding.encode(text, disallowed_special=()))
+    except (ValueError, UnicodeEncodeError) as exc:
+        print(exc)
+        return None
+
+    if total_tokens >= 1_000_000:
+        return f"{total_tokens / 1_000_000:.1f}M"
+
+    if total_tokens >= 1_000:
+        return f"{total_tokens / 1_000:.1f}k"
+
+    return str(total_tokens)
+
+
+
+================================================
+FILE: src/gitingest/query_parsing.py
+================================================
+"""This module contains functions to parse and validate input sources and patterns."""
+
+import re
+import uuid
+import warnings
+from pathlib import Path
+from typing import List, Optional, Set, Union
+from urllib.parse import unquote, urlparse
+
+from gitingest.config import TMP_BASE_PATH
+from gitingest.schemas import IngestionQuery
+from gitingest.utils.exceptions import InvalidPatternError
+from gitingest.utils.git_utils import check_repo_exists, fetch_remote_branch_list
+from gitingest.utils.ignore_patterns import DEFAULT_IGNORE_PATTERNS
+from gitingest.utils.query_parser_utils import (
+    KNOWN_GIT_HOSTS,
+    _get_user_and_repo_from_path,
+    _is_valid_git_commit_hash,
+    _is_valid_pattern,
+    _normalize_pattern,
+    _validate_host,
+    _validate_url_scheme,
+)
+
+
+async def parse_query(
+    source: str,
+    max_file_size: int,
+    from_web: bool,
+    include_patterns: Optional[Union[str, Set[str]]] = None,
+    ignore_patterns: Optional[Union[str, Set[str]]] = None,
+    token: Optional[str] = None,
+) -> IngestionQuery:
+    """
+    Parse the input source (URL or path) to extract relevant details for the query.
+
+    This function parses the input source to extract details such as the username, repository name,
+    commit hash, branch name, and other relevant information. It also processes the include and ignore
+    patterns to filter the files and directories to include or exclude from the query.
+
+    Parameters
+    ----------
+    source : str
+        The source URL or file path to parse.
+    max_file_size : int
+        The maximum file size in bytes to include.
+    from_web : bool
+        Flag indicating whether the source is a web URL.
+    include_patterns : Union[str, Set[str]], optional
+        Patterns to include, by default None. Can be a set of strings or a single string.
+    ignore_patterns : Union[str, Set[str]], optional
+        Patterns to ignore, by default None. Can be a set of strings or a single string.
+    token : str, optional
+        GitHub personal-access token (PAT). Needed when *source* refers to a
+        **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
+        Must start with 'github_pat_' or 'gph_' for GitHub repositories.
+    Returns
+    -------
+    IngestionQuery
+        A dataclass object containing the parsed details of the repository or file path.
+    """
+
+    # Determine the parsing method based on the source type
+    if from_web or urlparse(source).scheme in ("https", "http") or any(h in source for h in KNOWN_GIT_HOSTS):
+        # We either have a full URL or a domain-less slug
+        query = await _parse_remote_repo(source, token=token)
+    else:
+        # Local path scenario
+        query = _parse_local_dir_path(source)
+
+    # Combine default ignore patterns + custom patterns
+    ignore_patterns_set = DEFAULT_IGNORE_PATTERNS.copy()
+    if ignore_patterns:
+        ignore_patterns_set.update(_parse_patterns(ignore_patterns))
+
+    # Process include patterns and override ignore patterns accordingly
+    if include_patterns:
+        parsed_include = _parse_patterns(include_patterns)
+        # Override ignore patterns with include patterns
+        ignore_patterns_set = set(ignore_patterns_set) - set(parsed_include)
+    else:
+        parsed_include = None
+
+    return IngestionQuery(
+        user_name=query.user_name,
+        repo_name=query.repo_name,
+        url=query.url,
+        subpath=query.subpath,
+        local_path=query.local_path,
+        slug=query.slug,
+        id=query.id,
+        type=query.type,
+        branch=query.branch,
+        commit=query.commit,
+        max_file_size=max_file_size,
+        ignore_patterns=ignore_patterns_set,
+        include_patterns=parsed_include,
+    )
+
+
+async def _parse_remote_repo(source: str, token: Optional[str] = None) -> IngestionQuery:
+    """
+    Parse a repository URL into a structured query dictionary.
+
+    If source is:
+      - A fully qualified URL (https://gitlab.com/...), parse & verify that domain
+      - A URL missing 'https://' (gitlab.com/...), add 'https://' and parse
+      - A 'slug' (like 'pandas-dev/pandas'), attempt known domains until we find one that exists.
+
+    Parameters
+    ----------
+    source : str
+        The URL or domain-less slug to parse.
+    token : str, optional
+        GitHub personal-access token (PAT). Needed when *source* refers to a
+        **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
+
+    Returns
+    -------
+    IngestionQuery
+        A dictionary containing the parsed details of the repository.
+    """
+    source = unquote(source)
+
+    # Attempt to parse
+    parsed_url = urlparse(source)
+
+    if parsed_url.scheme:
+        _validate_url_scheme(parsed_url.scheme)
+        _validate_host(parsed_url.netloc.lower())
+
+    else:  # Will be of the form 'host/user/repo' or 'user/repo'
+        tmp_host = source.split("/")[0].lower()
+        if "." in tmp_host:
+            _validate_host(tmp_host)
+        else:
+            # No scheme, no domain => user typed "user/repo", so we'll guess the domain.
+            host = await try_domains_for_user_and_repo(*_get_user_and_repo_from_path(source), token=token)
+            source = f"{host}/{source}"
+
+        source = "https://" + source
+        parsed_url = urlparse(source)
+
+    host = parsed_url.netloc.lower()
+    user_name, repo_name = _get_user_and_repo_from_path(parsed_url.path)
+
+    _id = str(uuid.uuid4())
+    slug = f"{user_name}-{repo_name}"
+    local_path = TMP_BASE_PATH / _id / slug
+    url = f"https://{host}/{user_name}/{repo_name}"
+
+    parsed = IngestionQuery(
+        user_name=user_name,
+        repo_name=repo_name,
+        url=url,
+        local_path=local_path,
+        slug=slug,
+        id=_id,
+    )
+
+    remaining_parts = parsed_url.path.strip("/").split("/")[2:]
+
+    if not remaining_parts:
+        return parsed
+
+    possible_type = remaining_parts.pop(0)  # e.g. 'issues', 'pull', 'tree', 'blob'
+
+    # If no extra path parts, just return
+    if not remaining_parts:
+        return parsed
+
+    # If this is an issues page or pull requests, return early without processing subpath
+    if remaining_parts and possible_type in ("issues", "pull"):
+        return parsed
+
+    parsed.type = possible_type
+
+    # Commit or branch
+    commit_or_branch = remaining_parts[0]
+    if _is_valid_git_commit_hash(commit_or_branch):
+        parsed.commit = commit_or_branch
+        remaining_parts.pop(0)
+    else:
+        parsed.branch = await _configure_branch_and_subpath(remaining_parts, url)
+
+    # Subpath if anything left
+    if remaining_parts:
+        parsed.subpath += "/".join(remaining_parts)
+
+    return parsed
+
+
+async def _configure_branch_and_subpath(remaining_parts: List[str], url: str) -> Optional[str]:
+    """
+    Configure the branch and subpath based on the remaining parts of the URL.
+    Parameters
+    ----------
+    remaining_parts : List[str]
+        The remaining parts of the URL path.
+    url : str
+        The URL of the repository.
+    Returns
+    -------
+    str, optional
+        The branch name if found, otherwise None.
+
+    """
+    try:
+        # Fetch the list of branches from the remote repository
+        branches: List[str] = await fetch_remote_branch_list(url)
+    except RuntimeError as exc:
+        warnings.warn(f"Warning: Failed to fetch branch list: {exc}", RuntimeWarning)
+        return remaining_parts.pop(0)
+
+    branch = []
+    while remaining_parts:
+        branch.append(remaining_parts.pop(0))
+        branch_name = "/".join(branch)
+        if branch_name in branches:
+            return branch_name
+
+    return None
+
+
+def _parse_patterns(pattern: Union[str, Set[str]]) -> Set[str]:
+    """
+    Parse and validate file/directory patterns for inclusion or exclusion.
+
+    Takes either a single pattern string or set of pattern strings and processes them into a normalized list.
+    Patterns are split on commas and spaces, validated for allowed characters, and normalized.
+
+    Parameters
+    ----------
+    pattern : Set[str] | str
+        Pattern(s) to parse - either a single string or set of strings
+
+    Returns
+    -------
+    Set[str]
+        A set of normalized patterns.
+
+    Raises
+    ------
+    InvalidPatternError
+        If any pattern contains invalid characters. Only alphanumeric characters,
+        dash (-), underscore (_), dot (.), forward slash (/), plus (+), and
+        asterisk (*) are allowed.
+    """
+    patterns = pattern if isinstance(pattern, set) else {pattern}
+
+    parsed_patterns: Set[str] = set()
+    for p in patterns:
+        parsed_patterns = parsed_patterns.union(set(re.split(",| ", p)))
+
+    # Remove empty string if present
+    parsed_patterns = parsed_patterns - {""}
+
+    # Normalize Windows paths to Unix-style paths
+    parsed_patterns = {p.replace("\\", "/") for p in parsed_patterns}
+
+    # Validate and normalize each pattern
+    for p in parsed_patterns:
+        if not _is_valid_pattern(p):
+            raise InvalidPatternError(p)
+
+    return {_normalize_pattern(p) for p in parsed_patterns}
+
+
+def _parse_local_dir_path(path_str: str) -> IngestionQuery:
+    """
+    Parse the given file path into a structured query dictionary.
+
+    Parameters
+    ----------
+    path_str : str
+        The file path to parse.
+
+    Returns
+    -------
+    IngestionQuery
+        A dictionary containing the parsed details of the file path.
+    """
+    path_obj = Path(path_str).resolve()
+    slug = path_obj.name if path_str == "." else path_str.strip("/")
+    return IngestionQuery(
+        user_name=None,
+        repo_name=None,
+        url=None,
+        local_path=path_obj,
+        slug=slug,
+        id=str(uuid.uuid4()),
+    )
+
+
+async def try_domains_for_user_and_repo(user_name: str, repo_name: str, token: Optional[str] = None) -> str:
+    """
+    Attempt to find a valid repository host for the given user_name and repo_name.
+
+    Parameters
+    ----------
+    user_name : str
+        The username or owner of the repository.
+    repo_name : str
+        The name of the repository.
+    token : str, optional
+        GitHub personal-access token (PAT). Needed when *source* refers to a
+        **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
+
+    Returns
+    -------
+    str
+        The domain of the valid repository host.
+
+    Raises
+    ------
+    ValueError
+        If no valid repository host is found for the given user_name and repo_name.
+    """
+    for domain in KNOWN_GIT_HOSTS:
+        candidate = f"https://{domain}/{user_name}/{repo_name}"
+        if await check_repo_exists(candidate, token=token if domain == "github.com" else None):
+            return domain
+    raise ValueError(f"Could not find a valid repository host for '{user_name}/{repo_name}'.")
+
+
+
+================================================
+FILE: src/gitingest/schemas/__init__.py
+================================================
+"""This module contains the schemas for the Gitingest package."""
+
+from gitingest.schemas.filesystem_schema import FileSystemNode, FileSystemNodeType, FileSystemStats
+from gitingest.schemas.ingestion_schema import CloneConfig, IngestionQuery
+
+__all__ = ["FileSystemNode", "FileSystemNodeType", "FileSystemStats", "CloneConfig", "IngestionQuery"]
+
+
+
+================================================
+FILE: src/gitingest/schemas/filesystem_schema.py
+================================================
+"""Define the schema for the filesystem representation."""
+
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass, field
+from enum import Enum, auto
+from pathlib import Path
+
+from gitingest.utils.file_utils import get_preferred_encodings, is_text_file
+from gitingest.utils.notebook_utils import process_notebook
+
+SEPARATOR = "=" * 48  # Tiktoken, the tokenizer openai uses, counts 2 tokens if we have more than 48
+
+
+class FileSystemNodeType(Enum):
+    """Enum representing the type of a file system node (directory or file)."""
+
+    DIRECTORY = auto()
+    FILE = auto()
+    SYMLINK = auto()
+
+
+@dataclass
+class FileSystemStats:
+    """Class for tracking statistics during file system traversal."""
+
+    visited: set[Path] = field(default_factory=set)
+    total_files: int = 0
+    total_size: int = 0
+
+
+@dataclass
+class FileSystemNode:  # pylint: disable=too-many-instance-attributes
+    """
+    Class representing a node in the file system (either a file or directory).
+
+    Tracks properties of files/directories for comprehensive analysis.
+    """
+
+    name: str
+    type: FileSystemNodeType
+    path_str: str
+    path: Path
+    size: int = 0
+    file_count: int = 0
+    dir_count: int = 0
+    depth: int = 0
+    children: list[FileSystemNode] = field(default_factory=list)
+
+    def sort_children(self) -> None:
+        """
+        Sort the children nodes of a directory according to a specific order.
+
+        Order of sorting:
+          2. Regular files (not starting with dot)
+          3. Hidden files (starting with dot)
+          4. Regular directories (not starting with dot)
+          5. Hidden directories (starting with dot)
+
+        All groups are sorted alphanumerically within themselves.
+
+        Raises
+        ------
+        ValueError
+            If the node is not a directory.
+        """
+        if self.type != FileSystemNodeType.DIRECTORY:
+            raise ValueError("Cannot sort children of a non-directory node")
+
+        def _sort_key(child: FileSystemNode) -> tuple[int, str]:
+            # returns the priority order for the sort function, 0 is first
+            # Groups: 0=README, 1=regular file, 2=hidden file, 3=regular dir, 4=hidden dir
+            name = child.name.lower()
+            if child.type == FileSystemNodeType.FILE:
+                if name == "readme.md":
+                    return (0, name)
+                return (1 if not name.startswith(".") else 2, name)
+            return (3 if not name.startswith(".") else 4, name)
+
+        self.children.sort(key=_sort_key)
+
+    @property
+    def content_string(self) -> str:
+        """
+        Return the content of the node as a string, including path and content.
+
+        Returns
+        -------
+        str
+            A string representation of the node's content.
+        """
+        parts = [
+            SEPARATOR,
+            f"{self.type.name}: {str(self.path_str).replace(os.sep, '/')}"
+            + (f" -> {self.path.readlink().name}" if self.type == FileSystemNodeType.SYMLINK else ""),
+            SEPARATOR,
+            f"{self.content}",
+        ]
+
+        return "\n".join(parts) + "\n\n"
+
+    @property
+    def content(self) -> str:  # pylint: disable=too-many-return-statements
+        """
+        Read the content of a file if it's text (or a notebook). Return an error message otherwise.
+
+        Returns
+        -------
+        str
+            The content of the file, or an error message if the file could not be read.
+
+        Raises
+        ------
+        ValueError
+            If the node is a directory.
+        """
+        if self.type == FileSystemNodeType.DIRECTORY:
+            raise ValueError("Cannot read content of a directory node")
+
+        if self.type == FileSystemNodeType.SYMLINK:
+            return ""
+
+        if not is_text_file(self.path):
+            return "[Non-text file]"
+
+        if self.path.suffix == ".ipynb":
+            try:
+                return process_notebook(self.path)
+            except Exception as exc:
+                return f"Error processing notebook: {exc}"
+
+        # Try multiple encodings
+        for encoding in get_preferred_encodings():
+            try:
+                with self.path.open(encoding=encoding) as f:
+                    return f.read()
+            except UnicodeDecodeError:
+                continue
+            except UnicodeError:
+                continue
+            except OSError as exc:
+                return f"Error reading file: {exc}"
+
+        return "Error: Unable to decode file with available encodings"
+
+
+
+================================================
+FILE: src/gitingest/schemas/ingestion_schema.py
+================================================
+"""This module contains the dataclasses for the ingestion process."""
+
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Optional, Set
+
+from pydantic import BaseModel, ConfigDict, Field
+
+from gitingest.config import MAX_FILE_SIZE
+
+
+@dataclass
+class CloneConfig:
+    """
+    Configuration for cloning a Git repository.
+
+    This class holds the necessary parameters for cloning a repository to a local path, including
+    the repository's URL, the target local path, and optional parameters for a specific commit or branch.
+
+    Attributes
+    ----------
+    url : str
+        The URL of the Git repository to clone.
+    local_path : str
+        The local directory where the repository will be cloned.
+    commit : str, optional
+        The specific commit hash to check out after cloning (default is None).
+    branch : str, optional
+        The branch to clone (default is None).
+    subpath : str
+        The subpath to clone from the repository (default is "/").
+    blob: bool
+        Whether the repository is a blob (default is False).
+    """
+
+    url: str
+    local_path: str
+    commit: Optional[str] = None
+    branch: Optional[str] = None
+    subpath: str = "/"
+    blob: bool = False
+
+
+class IngestionQuery(BaseModel):  # pylint: disable=too-many-instance-attributes
+    """
+    Pydantic model to store the parsed details of the repository or file path.
+    """
+
+    user_name: Optional[str] = None
+    repo_name: Optional[str] = None
+    local_path: Path
+    url: Optional[str] = None
+    slug: str
+    id: str
+    subpath: str = "/"
+    type: Optional[str] = None
+    branch: Optional[str] = None
+    commit: Optional[str] = None
+    max_file_size: int = Field(default=MAX_FILE_SIZE)
+    ignore_patterns: Optional[Set[str]] = None
+    include_patterns: Optional[Set[str]] = None
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    def extract_clone_config(self) -> CloneConfig:
+        """
+        Extract the relevant fields for the CloneConfig object.
+
+        Returns
+        -------
+        CloneConfig
+            A CloneConfig object containing the relevant fields.
+
+        Raises
+        ------
+        ValueError
+            If the 'url' parameter is not provided.
+        """
+        if not self.url:
+            raise ValueError("The 'url' parameter is required.")
+
+        return CloneConfig(
+            url=self.url,
+            local_path=str(self.local_path),
+            commit=self.commit,
+            branch=self.branch,
+            subpath=self.subpath,
+            blob=self.type == "blob",
+        )
+
+
+
+================================================
+FILE: src/gitingest/utils/__init__.py
+================================================
+
+
+
+================================================
+FILE: src/gitingest/utils/exceptions.py
+================================================
+"""Custom exceptions for the Gitingest package."""
+
+
+class InvalidPatternError(ValueError):
+    """
+    Exception raised when a pattern contains invalid characters.
+    This exception is used to signal that a pattern provided for some operation
+    contains characters that are not allowed. The valid characters for the pattern
+    include alphanumeric characters, dash (-), underscore (_), dot (.), forward slash (/),
+    plus (+), and asterisk (*).
+    Parameters
+    ----------
+    pattern : str
+        The invalid pattern that caused the error.
+    """
+
+    def __init__(self, pattern: str) -> None:
+        super().__init__(
+            f"Pattern '{pattern}' contains invalid characters. Only alphanumeric characters, dash (-), "
+            "underscore (_), dot (.), forward slash (/), plus (+), and asterisk (*) are allowed."
+        )
+
+
+class AsyncTimeoutError(Exception):
+    """
+    Exception raised when an async operation exceeds its timeout limit.
+
+    This exception is used by the `async_timeout` decorator to signal that the wrapped
+    asynchronous function has exceeded the specified time limit for execution.
+    """
+
+
+class InvalidNotebookError(Exception):
+    """Exception raised when a Jupyter notebook is invalid or cannot be processed."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
+class InvalidGitHubTokenError(ValueError):
+    """Exception raised when a GitHub Personal Access Token is malformed."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            "Invalid GitHub token format. Token should start with 'github_pat_' or 'ghp_' "
+            "followed by at least 36 characters of letters, numbers, and underscores."
+        )
+
+
+
+================================================
+FILE: src/gitingest/utils/file_utils.py
+================================================
+"""Utility functions for working with files and directories."""
+
+import locale
+import platform
+from pathlib import Path
+from typing import List
+
+try:
+    locale.setlocale(locale.LC_ALL, "")
+except locale.Error:
+    locale.setlocale(locale.LC_ALL, "C")
+
+
+def get_preferred_encodings() -> List[str]:
+    """
+    Get list of encodings to try, prioritized for the current platform.
+
+    Returns
+    -------
+    List[str]
+        List of encoding names to try in priority order, starting with the
+        platform's default encoding followed by common fallback encodings.
+    """
+    encodings = [locale.getpreferredencoding(), "utf-8", "utf-16", "utf-16le", "utf-8-sig", "latin"]
+    if platform.system() == "Windows":
+        encodings += ["cp1252", "iso-8859-1"]
+    return encodings
+
+
+def is_text_file(path: Path) -> bool:
+    """
+    Determine if the file is likely a text file by trying to decode a small chunk
+    with multiple encodings, and checking for common binary markers.
+
+    Parameters
+    ----------
+    path : Path
+        The path to the file to check.
+
+    Returns
+    -------
+    bool
+        True if the file is likely textual; False if it appears to be binary.
+    """
+
+    # Attempt to read a portion of the file in binary mode
+    try:
+        with path.open("rb") as f:
+            chunk = f.read(1024)
+    except OSError:
+        return False
+
+    # If file is empty, treat as text
+    if not chunk:
+        return True
+
+    # Check obvious binary bytes
+    if b"\x00" in chunk or b"\xff" in chunk:
+        return False
+
+    # Attempt multiple encodings
+    for enc in get_preferred_encodings():
+        try:
+            with path.open(encoding=enc) as f:
+                f.read()
+                return True
+        except UnicodeDecodeError:
+            continue
+        except UnicodeError:
+            continue
+        except OSError:
+            return False
+
+    return False
+
+
+
+================================================
+FILE: src/gitingest/utils/git_utils.py
+================================================
+"""Utility functions for interacting with Git repositories."""
+
+import asyncio
+import base64
+import re
+from typing import List, Optional, Tuple
+
+from gitingest.utils.exceptions import InvalidGitHubTokenError
+
+GITHUB_PAT_PATTERN = r"^(?:github_pat_|ghp_)[A-Za-z0-9_]{36,}$"
+
+
+async def run_command(*args: str) -> Tuple[bytes, bytes]:
+    """
+    Execute a shell command asynchronously and return (stdout, stderr) bytes.
+
+    Parameters
+    ----------
+    *args : str
+        The command and its arguments to execute.
+
+    Returns
+    -------
+    Tuple[bytes, bytes]
+        A tuple containing the stdout and stderr of the command.
+
+    Raises
+    ------
+    RuntimeError
+        If command exits with a non-zero status.
+    """
+    # Execute the requested command
+    proc = await asyncio.create_subprocess_exec(
+        *args,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, stderr = await proc.communicate()
+    if proc.returncode != 0:
+        error_message = stderr.decode().strip()
+        raise RuntimeError(f"Command failed: {' '.join(args)}\nError: {error_message}")
+
+    return stdout, stderr
+
+
+async def ensure_git_installed() -> None:
+    """
+    Ensure Git is installed and accessible on the system.
+
+    Raises
+    ------
+    RuntimeError
+        If Git is not installed or not accessible.
+    """
+    try:
+        await run_command("git", "--version")
+    except RuntimeError as exc:
+        raise RuntimeError("Git is not installed or not accessible. Please install Git first.") from exc
+
+
+async def check_repo_exists(url: str, token: Optional[str] = None) -> bool:
+    """
+    Check if a Git repository exists at the provided URL.
+
+    Parameters
+    ----------
+    url : str
+        The URL of the Git repository to check.
+    token : str, optional
+        GitHub personal-access token (PAT). Needed when *source* refers to a
+        **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
+
+    Returns
+    -------
+    bool
+        True if the repository exists, False otherwise.
+
+    Raises
+    ------
+    RuntimeError
+        If the curl command returns an unexpected status code.
+    """
+    if token and "github.com" in url:
+        return await _check_github_repo_exists(url, token)
+
+    proc = await asyncio.create_subprocess_exec(
+        "curl",
+        "-I",
+        url,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, _ = await proc.communicate()
+
+    if proc.returncode != 0:
+        return False  # likely unreachable or private
+
+    response = stdout.decode()
+    status_line = response.splitlines()[0].strip()
+    parts = status_line.split(" ")
+    if len(parts) >= 2:
+        status_code_str = parts[1]
+        if status_code_str in ("200", "301"):
+            return True
+        if status_code_str in ("302", "404"):
+            return False
+    raise RuntimeError(f"Unexpected status line: {status_line}")
+
+
+async def _check_github_repo_exists(url: str, token: Optional[str] = None) -> bool:
+    """
+    Return True iff the authenticated user can see `url`.
+
+    Parameters
+    ----------
+    url : str
+        The URL of the GitHub repository to check.
+    token : str, optional
+        GitHub personal-access token (PAT). Needed when *source* refers to a
+        **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
+
+    Returns
+    -------
+    bool
+        True if the repository exists, False otherwise.
+
+    Raises
+    ------
+    ValueError
+        If the URL is not a valid GitHub repository URL.
+    RuntimeError
+        If the repository is not found, if the provided URL is invalid, or if the token format is invalid.
+    """
+    m = re.match(r"https?://github\.com/([^/]+)/([^/]+?)(?:\.git)?/?$", url)
+    if not m:
+        raise ValueError(f"Un-recognised GitHub URL: {url!r}")
+    owner, repo = m.groups()
+
+    api = f"https://api.github.com/repos/{owner}/{repo}"
+    cmd = [
+        "curl",
+        "--silent",
+        "--location",
+        "--write-out",
+        "%{http_code}",
+        "-o",
+        "/dev/null",
+        "-H",
+        "Accept: application/vnd.github+json",
+    ]
+    if token:
+        cmd += ["-H", f"Authorization: Bearer {token}"]
+    cmd.append(api)
+
+    proc = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, _ = await proc.communicate()
+    status = stdout.decode()[-3:]  # just the %{http_code}
+
+    if status == "200":
+        return True
+    if status == "404":
+        return False
+    if status in ("401", "403"):
+        raise RuntimeError("Token invalid or lacks permissions")
+    raise RuntimeError(f"GitHub API returned unexpected HTTP {status}")
+
+
+async def fetch_remote_branch_list(url: str, token: Optional[str] = None) -> List[str]:
+    """
+    Fetch the list of branches from a remote Git repository.
+
+    Parameters
+    ----------
+    url : str
+        The URL of the Git repository to fetch branches from.
+    token : str, optional
+        GitHub personal-access token (PAT). Needed when *source* refers to a
+        **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
+
+    Returns
+    -------
+    List[str]
+        A list of branch names available in the remote repository.
+    """
+    fetch_branches_command = ["git"]
+
+    # Add authentication if needed
+    if token and "github.com" in url:
+        fetch_branches_command += ["-c", create_git_auth_header(token)]
+
+    fetch_branches_command += ["ls-remote", "--heads", url]
+
+    await ensure_git_installed()
+    stdout, _ = await run_command(*fetch_branches_command)
+    stdout_decoded = stdout.decode()
+
+    return [
+        line.split("refs/heads/", 1)[1]
+        for line in stdout_decoded.splitlines()
+        if line.strip() and "refs/heads/" in line
+    ]
+
+
+def create_git_command(base_cmd: List[str], local_path: str, url: str, token: Optional[str] = None) -> List[str]:
+    """Create a git command with authentication if needed.
+
+    Parameters
+    ----------
+    base_cmd : List[str]
+        The base git command to start with
+    local_path : str
+        The local path where the git command should be executed
+    url : str
+        The repository URL to check if it's a GitHub repository
+    token : Optional[str]
+        GitHub personal access token for authentication
+
+    Returns
+    -------
+    List[str]
+        The git command with authentication if needed
+    """
+    cmd = base_cmd + ["-C", local_path]
+    if token and url.startswith("https://github.com"):
+        validate_github_token(token)
+        cmd += ["-c", create_git_auth_header(token)]
+    return cmd
+
+
+def create_git_auth_header(token: str) -> str:
+    """Create a Basic authentication header for GitHub git operations.
+
+    Parameters
+    ----------
+    token : str
+        GitHub personal access token
+
+    Returns
+    -------
+    str
+        The git config command for setting the authentication header
+    """
+    basic = base64.b64encode(f"x-oauth-basic:{token}".encode()).decode()
+    return f"http.https://github.com/.extraheader=Authorization: Basic {basic}"
+
+
+def validate_github_token(token: str) -> None:
+    """Validate the format of a GitHub Personal Access Token.
+
+    Parameters
+    ----------
+    token : str
+        The GitHub token to validate
+
+    Raises
+    ------
+    InvalidGitHubTokenError
+        If the token format is invalid
+    """
+    if not re.match(GITHUB_PAT_PATTERN, token):
+        raise InvalidGitHubTokenError()
+
+
+
+================================================
+FILE: src/gitingest/utils/ignore_patterns.py
+================================================
+"""Default ignore patterns for Gitingest."""
+
+import os
+from pathlib import Path
+from typing import Set
+
+DEFAULT_IGNORE_PATTERNS: Set[str] = {
+    # Python
+    "*.pyc",
+    "*.pyo",
+    "*.pyd",
+    "__pycache__",
+    ".pytest_cache",
+    ".coverage",
+    ".tox",
+    ".nox",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".hypothesis",
+    "poetry.lock",
+    "Pipfile.lock",
+    # JavaScript/FileSystemNode
+    "node_modules",
+    "bower_components",
+    "package-lock.json",
+    "yarn.lock",
+    ".npm",
+    ".yarn",
+    ".pnpm-store",
+    "bun.lock",
+    "bun.lockb",
+    # Java
+    "*.class",
+    "*.jar",
+    "*.war",
+    "*.ear",
+    "*.nar",
+    ".gradle/",
+    "build/",
+    ".settings/",
+    ".classpath",
+    "gradle-app.setting",
+    "*.gradle",
+    # IDEs and editors / Java
+    ".project",
+    # C/C++
+    "*.o",
+    "*.obj",
+    "*.dll",
+    "*.dylib",
+    "*.exe",
+    "*.lib",
+    "*.out",
+    "*.a",
+    "*.pdb",
+    # Swift/Xcode
+    ".build/",
+    "*.xcodeproj/",
+    "*.xcworkspace/",
+    "*.pbxuser",
+    "*.mode1v3",
+    "*.mode2v3",
+    "*.perspectivev3",
+    "*.xcuserstate",
+    "xcuserdata/",
+    ".swiftpm/",
+    # Ruby
+    "*.gem",
+    ".bundle/",
+    "vendor/bundle",
+    "Gemfile.lock",
+    ".ruby-version",
+    ".ruby-gemset",
+    ".rvmrc",
+    # Rust
+    "Cargo.lock",
+    "**/*.rs.bk",
+    # Java / Rust
+    "target/",
+    # Go
+    "pkg/",
+    # .NET/C#
+    "obj/",
+    "*.suo",
+    "*.user",
+    "*.userosscache",
+    "*.sln.docstates",
+    "packages/",
+    "*.nupkg",
+    # Go / .NET / C#
+    "bin/",
+    # Version control
+    ".git",
+    ".svn",
+    ".hg",
+    ".gitignore",
+    ".gitattributes",
+    ".gitmodules",
+    # Images and media
+    "*.svg",
+    "*.png",
+    "*.jpg",
+    "*.jpeg",
+    "*.gif",
+    "*.ico",
+    "*.pdf",
+    "*.mov",
+    "*.mp4",
+    "*.mp3",
+    "*.wav",
+    # Virtual environments
+    "venv",
+    ".venv",
+    "env",
+    ".env",
+    "virtualenv",
+    # IDEs and editors
+    ".idea",
+    ".vscode",
+    ".vs",
+    "*.swo",
+    "*.swn",
+    ".settings",
+    "*.sublime-*",
+    # Temporary and cache files
+    "*.log",
+    "*.bak",
+    "*.swp",
+    "*.tmp",
+    "*.temp",
+    ".cache",
+    ".sass-cache",
+    ".eslintcache",
+    ".DS_Store",
+    "Thumbs.db",
+    "desktop.ini",
+    # Build directories and artifacts
+    "build",
+    "dist",
+    "target",
+    "out",
+    "*.egg-info",
+    "*.egg",
+    "*.whl",
+    "*.so",
+    # Documentation
+    "site-packages",
+    ".docusaurus",
+    ".next",
+    ".nuxt",
+    # Other common patterns
+    ## Minified files
+    "*.min.js",
+    "*.min.css",
+    ## Source maps
+    "*.map",
+    ## Terraform
+    ".terraform",
+    "*.tfstate*",
+    ## Dependencies in various languages
+    "vendor/",
+    # Gitingest
+    "digest.txt",
+}
+
+
+def load_gitignore_patterns(root: Path) -> Set[str]:
+    """
+    Recursively load ignore patterns from all .gitignore files under the given root directory.
+
+    Parameters
+    ----------
+    root : Path
+        The root directory to search for .gitignore files.
+
+    Returns
+    -------
+    Set[str]
+        A set of ignore patterns extracted from all .gitignore files found under the root directory.
+    """
+    patterns: Set[str] = set()
+    for dirpath, _, filenames in os.walk(root):
+        if ".gitignore" not in filenames:
+            continue
+
+        gitignore_path = Path(dirpath) / ".gitignore"
+        with gitignore_path.open("r", encoding="utf-8") as f:
+            for line in f:
+                stripped = line.strip()
+
+                if not stripped or stripped.startswith("#"):
+                    continue
+
+                negated = stripped.startswith("!")
+                if negated:
+                    stripped = stripped[1:]
+
+                rel_dir = os.path.relpath(dirpath, root)
+                if stripped.startswith("/"):
+                    pattern_body = os.path.join(rel_dir, stripped.lstrip("/"))
+                else:
+                    pattern_body = os.path.join(rel_dir, stripped) if rel_dir != "." else stripped
+
+                pattern_body = pattern_body.replace("\\", "/")
+                pattern = f"!{pattern_body}" if negated else pattern_body
+                patterns.add(pattern)
+
+    return patterns
+
+
+
+================================================
+FILE: src/gitingest/utils/ingestion_utils.py
+================================================
+"""Utility functions for the ingestion process."""
+
+from pathlib import Path
+from typing import Set
+
+from pathspec import PathSpec
+
+
+def _should_include(path: Path, base_path: Path, include_patterns: Set[str]) -> bool:
+    """
+    Determine if the given file or directory path matches any of the include patterns.
+
+    This function checks whether the relative path of a file or directory matches any of the specified patterns. If a
+    match is found, it returns `True`, indicating that the file or directory should be included in further processing.
+
+    Parameters
+    ----------
+    path : Path
+        The absolute path of the file or directory to check.
+    base_path : Path
+        The base directory from which the relative path is calculated.
+    include_patterns : Set[str]
+        A set of patterns to check against the relative path.
+
+    Returns
+    -------
+    bool
+        `True` if the path matches any of the include patterns, `False` otherwise.
+    """
+    try:
+        rel_path = path.relative_to(base_path)
+    except ValueError:
+        # If path is not under base_path at all
+        return False
+
+    rel_str = str(rel_path)
+
+    # if path is a directory, include it by default
+    if path.is_dir():
+        return True
+
+    spec = PathSpec.from_lines("gitwildmatch", include_patterns)
+    return spec.match_file(rel_str)
+
+
+def _should_exclude(path: Path, base_path: Path, ignore_patterns: Set[str]) -> bool:
+    """
+    Determine if the given file or directory path matches any of the ignore patterns.
+
+    This function checks whether the relative path of a file or directory matches
+    any of the specified ignore patterns. If a match is found, it returns `True`, indicating
+    that the file or directory should be excluded from further processing.
+
+    Parameters
+    ----------
+    path : Path
+        The absolute path of the file or directory to check.
+    base_path : Path
+        The base directory from which the relative path is calculated.
+    ignore_patterns : Set[str]
+        A set of patterns to check against the relative path.
+
+    Returns
+    -------
+    bool
+        `True` if the path matches any of the ignore patterns, `False` otherwise.
+    """
+    try:
+        rel_path = path.relative_to(base_path)
+    except ValueError:
+        # If path is not under base_path at all
+        return True
+
+    rel_str = str(rel_path)
+    spec = PathSpec.from_lines("gitwildmatch", ignore_patterns)
+    return spec.match_file(rel_str)
+
+
+
+================================================
+FILE: src/gitingest/utils/notebook_utils.py
+================================================
+"""Utilities for processing Jupyter notebooks."""
+
+import json
+import warnings
+from itertools import chain
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from gitingest.utils.exceptions import InvalidNotebookError
+
+
+def process_notebook(file: Path, include_output: bool = True) -> str:
+    """
+    Process a Jupyter notebook file and return an executable Python script as a string.
+
+    Parameters
+    ----------
+    file : Path
+        The path to the Jupyter notebook file.
+    include_output : bool
+        Whether to include cell outputs in the generated script, by default True.
+
+    Returns
+    -------
+    str
+        The executable Python script as a string.
+
+    Raises
+    ------
+    InvalidNotebookError
+        If the notebook file is invalid or cannot be processed.
+    """
+    try:
+        with file.open(encoding="utf-8") as f:
+            notebook: Dict[str, Any] = json.load(f)
+    except json.JSONDecodeError as exc:
+        raise InvalidNotebookError(f"Invalid JSON in notebook: {file}") from exc
+
+    # Check if the notebook contains worksheets
+    worksheets = notebook.get("worksheets")
+    if worksheets:
+        warnings.warn(
+            "Worksheets are deprecated as of IPEP-17. Consider updating the notebook. "
+            "(See: https://github.com/jupyter/nbformat and "
+            "https://github.com/ipython/ipython/wiki/IPEP-17:-Notebook-Format-4#remove-multiple-worksheets "
+            "for more information.)",
+            DeprecationWarning,
+        )
+
+        if len(worksheets) > 1:
+            warnings.warn("Multiple worksheets detected. Combining all worksheets into a single script.", UserWarning)
+
+        cells = list(chain.from_iterable(ws["cells"] for ws in worksheets))
+
+    else:
+        cells = notebook["cells"]
+
+    result = ["# Jupyter notebook converted to Python script."]
+
+    for cell in cells:
+        cell_str = _process_cell(cell, include_output=include_output)
+        if cell_str:
+            result.append(cell_str)
+
+    return "\n\n".join(result) + "\n"
+
+
+def _process_cell(cell: Dict[str, Any], include_output: bool) -> Optional[str]:
+    """
+    Process a Jupyter notebook cell and return the cell content as a string.
+
+    Parameters
+    ----------
+    cell : Dict[str, Any]
+        The cell dictionary from a Jupyter notebook.
+    include_output : bool
+        Whether to include cell outputs in the generated script
+
+    Returns
+    -------
+    str, optional
+        The cell content as a string, or None if the cell is empty.
+
+    Raises
+    ------
+    ValueError
+        If an unexpected cell type is encountered.
+    """
+    cell_type = cell["cell_type"]
+
+    # Validate cell type and handle unexpected types
+    if cell_type not in ("markdown", "code", "raw"):
+        raise ValueError(f"Unknown cell type: {cell_type}")
+
+    cell_str = "".join(cell["source"])
+
+    # Skip empty cells
+    if not cell_str:
+        return None
+
+    # Convert Markdown and raw cells to multi-line comments
+    if cell_type in ("markdown", "raw"):
+        return f'"""\n{cell_str}\n"""'
+
+    # Add cell output as comments
+    outputs = cell.get("outputs")
+    if include_output and outputs:
+
+        # Include cell outputs as comments
+        output_lines = []
+
+        for output in outputs:
+            output_lines += _extract_output(output)
+
+        for output_line in output_lines:
+            if not output_line.endswith("\n"):
+                output_line += "\n"
+
+        cell_str += "\n# Output:\n#   " + "\n#   ".join(output_lines)
+
+    return cell_str
+
+
+def _extract_output(output: Dict[str, Any]) -> List[str]:
+    """
+    Extract the output from a Jupyter notebook cell.
+
+    Parameters
+    ----------
+    output : Dict[str, Any]
+        The output dictionary from a Jupyter notebook cell.
+
+    Returns
+    -------
+    List[str]
+        The output as a list of strings.
+
+    Raises
+    ------
+    ValueError
+        If an unknown output type is encountered.
+    """
+    output_type = output["output_type"]
+
+    if output_type == "stream":
+        return output["text"]
+
+    if output_type in ("execute_result", "display_data"):
+        return output["data"]["text/plain"]
+
+    if output_type == "error":
+        return [f"Error: {output['ename']}: {output['evalue']}"]
+
+    raise ValueError(f"Unknown output type: {output_type}")
+
+
+
+================================================
+FILE: src/gitingest/utils/os_utils.py
+================================================
+"""Utility functions for working with the operating system."""
+
+import os
+from pathlib import Path
+
+
+async def ensure_directory(path: Path) -> None:
+    """
+    Ensure the directory exists, creating it if necessary.
+
+    Parameters
+    ----------
+    path : Path
+        The path to ensure exists
+
+    Raises
+    ------
+    OSError
+        If the directory cannot be created
+    """
+    try:
+        os.makedirs(path, exist_ok=True)
+    except OSError as exc:
+        raise OSError(f"Failed to create directory {path}: {exc}") from exc
+
+
+
+================================================
+FILE: src/gitingest/utils/path_utils.py
+================================================
+"""Utility functions for working with file paths."""
+
+import os
+import platform
+from pathlib import Path
+
+
+def _is_safe_symlink(symlink_path: Path, base_path: Path) -> bool:
+    """
+    Check if a symlink points to a location within the base directory.
+
+    This function resolves the target of a symlink and ensures it is within the specified
+    base directory, returning `True` if it is safe, or `False` if the symlink points outside
+    the base directory.
+
+    Parameters
+    ----------
+    symlink_path : Path
+        The path of the symlink to check.
+    base_path : Path
+        The base directory to ensure the symlink points within.
+
+    Returns
+    -------
+    bool
+        `True` if the symlink points within the base directory, `False` otherwise.
+    """
+    try:
+        if platform.system() == "Windows":
+            if not os.path.islink(str(symlink_path)):
+                return False
+
+        target_path = symlink_path.resolve()
+        base_resolved = base_path.resolve()
+
+        return base_resolved in target_path.parents or target_path == base_resolved
+    except (OSError, ValueError):
+        # If there's any error resolving the paths, consider it unsafe
+        return False
+
+
+
+================================================
+FILE: src/gitingest/utils/query_parser_utils.py
+================================================
+"""Utility functions for parsing and validating query parameters."""
+
+import os
+import string
+from typing import List, Set, Tuple
+
+HEX_DIGITS: Set[str] = set(string.hexdigits)
+
+
+KNOWN_GIT_HOSTS: List[str] = [
+    "github.com",
+    "gitlab.com",
+    "bitbucket.org",
+    "gitea.com",
+    "codeberg.org",
+    "gist.github.com",
+]
+
+
+def _is_valid_git_commit_hash(commit: str) -> bool:
+    """
+    Validate if the provided string is a valid Git commit hash.
+
+    This function checks if the commit hash is a 40-character string consisting only
+    of hexadecimal digits, which is the standard format for Git commit hashes.
+
+    Parameters
+    ----------
+    commit : str
+        The string to validate as a Git commit hash.
+
+    Returns
+    -------
+    bool
+        True if the string is a valid 40-character Git commit hash, otherwise False.
+    """
+    return len(commit) == 40 and all(c in HEX_DIGITS for c in commit)
+
+
+def _is_valid_pattern(pattern: str) -> bool:
+    """
+    Validate if the given pattern contains only valid characters.
+
+    This function checks if the pattern contains only alphanumeric characters or one
+    of the following allowed characters: dash (`-`), underscore (`_`), dot (`.`),
+    forward slash (`/`), plus (`+`), asterisk (`*`), or the at sign (`@`).
+
+    Parameters
+    ----------
+    pattern : str
+        The pattern to validate.
+
+    Returns
+    -------
+    bool
+        True if the pattern is valid, otherwise False.
+    """
+    return all(c.isalnum() or c in "-_./+*@" for c in pattern)
+
+
+def _validate_host(host: str) -> None:
+    """
+    Validate a hostname.
+
+    The host is accepted if it is either present in the hard-coded `KNOWN_GIT_HOSTS` list or if it satisfies the
+    simple heuristics in `_looks_like_git_host`, which try to recognise common self-hosted Git services (e.g. GitLab
+    instances on sub-domains such as `gitlab.example.com` or `git.example.com`).
+
+    Parameters
+    ----------
+    host : str
+        Hostname (case-insensitive).
+
+    Raises
+    ------
+    ValueError
+        If the host cannot be recognised as a probable Git hosting domain.
+    """
+    host = host.lower()
+    if host not in KNOWN_GIT_HOSTS and not _looks_like_git_host(host):
+        raise ValueError(f"Unknown domain '{host}' in URL")
+
+
+def _looks_like_git_host(host: str) -> bool:
+    """
+    Check if the given host looks like a Git host.
+
+    The current heuristic returns `True` when the host starts with `git.` (e.g. `git.example.com`) or starts with
+    `gitlab.` (e.g. `gitlab.company.com`).
+
+    Parameters
+    ----------
+    host : str
+        Hostname (case-insensitive).
+
+    Returns
+    -------
+    bool
+        True if the host looks like a Git host, otherwise False.
+    """
+    host = host.lower()
+    return host.startswith(("git.", "gitlab."))
+
+
+def _validate_url_scheme(scheme: str) -> None:
+    """
+    Validate the given scheme against the known schemes.
+
+    Parameters
+    ----------
+    scheme : str
+        The scheme to validate.
+
+    Raises
+    ------
+    ValueError
+        If the scheme is not 'http' or 'https'.
+    """
+    scheme = scheme.lower()
+    if scheme not in ("https", "http"):
+        raise ValueError(f"Invalid URL scheme '{scheme}' in URL")
+
+
+def _get_user_and_repo_from_path(path: str) -> Tuple[str, str]:
+    """
+    Extract the user and repository names from a given path.
+
+    Parameters
+    ----------
+    path : str
+        The path to extract the user and repository names from.
+
+    Returns
+    -------
+    Tuple[str, str]
+        A tuple containing the user and repository names.
+
+    Raises
+    ------
+    ValueError
+        If the path does not contain at least two parts.
+    """
+    path_parts = path.lower().strip("/").split("/")
+    if len(path_parts) < 2:
+        raise ValueError(f"Invalid repository URL '{path}'")
+    return path_parts[0], path_parts[1]
+
+
+def _normalize_pattern(pattern: str) -> str:
+    """
+    Normalize the given pattern by removing leading separators and appending a wildcard.
+
+    This function processes the pattern string by stripping leading directory separators
+    and appending a wildcard (`*`) if the pattern ends with a separator.
+
+    Parameters
+    ----------
+    pattern : str
+        The pattern to normalize.
+
+    Returns
+    -------
+    str
+        The normalized pattern.
+    """
+    pattern = pattern.lstrip(os.sep)
+    if pattern.endswith(os.sep):
+        pattern += "*"
+    return pattern
+
+
+
+================================================
+FILE: src/gitingest/utils/timeout_wrapper.py
+================================================
+"""Utility functions for the Gitingest package."""
+
+import asyncio
+import functools
+from typing import Any, Awaitable, Callable, TypeVar
+
+from gitingest.utils.exceptions import AsyncTimeoutError
+
+T = TypeVar("T")
+
+
+def async_timeout(seconds) -> Callable[[Callable[..., Awaitable[T]]], Callable[..., Awaitable[T]]]:
+    """
+    Async Timeout decorator.
+
+    This decorator wraps an asynchronous function and ensures it does not run for
+    longer than the specified number of seconds. If the function execution exceeds
+    this limit, it raises an `AsyncTimeoutError`.
+
+    Parameters
+    ----------
+    seconds : int
+        The maximum allowed time (in seconds) for the asynchronous function to complete.
+
+    Returns
+    -------
+    Callable[[Callable[..., Awaitable[T]]], Callable[..., Awaitable[T]]]
+        A decorator that, when applied to an async function, ensures the function
+        completes within the specified time limit. If the function takes too long,
+        an `AsyncTimeoutError` is raised.
+    """
+
+    def decorator(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]:
+        @functools.wraps(func)
+        async def wrapper(*args: Any, **kwargs: Any) -> T:
+            try:
+                return await asyncio.wait_for(func(*args, **kwargs), timeout=seconds)
+            except asyncio.TimeoutError as exc:
+                raise AsyncTimeoutError(f"Operation timed out after {seconds} seconds") from exc
+
+        return wrapper
+
+    return decorator
+
+
+
+================================================
+FILE: src/server/__init__.py
+================================================
+
+
+
+================================================
+FILE: src/server/main.py
+================================================
+"""Main module for the FastAPI application."""
+
+import os
+from pathlib import Path
+from typing import Dict
+
+from dotenv import load_dotenv
+from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from slowapi.errors import RateLimitExceeded
+from starlette.middleware.trustedhost import TrustedHostMiddleware
+
+from server.routers import download, dynamic, index
+from server.server_config import templates
+from server.server_utils import lifespan, limiter, rate_limit_exception_handler
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Initialize the FastAPI application with lifespan
+app = FastAPI(lifespan=lifespan)
+app.state.limiter = limiter
+
+# Register the custom exception handler for rate limits
+app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
+
+
+# Mount static files dynamically to serve CSS, JS, and other static assets
+static_dir = Path(__file__).parent.parent / "static"
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+
+# Fetch allowed hosts from the environment or use the default values
+allowed_hosts = os.getenv("ALLOWED_HOSTS")
+if allowed_hosts:
+    allowed_hosts = allowed_hosts.split(",")
+else:
+    # Define the default allowed hosts for the application
+    default_allowed_hosts = ["gitingest.com", "*.gitingest.com", "localhost", "127.0.0.1"]
+    allowed_hosts = default_allowed_hosts
+
+# Add middleware to enforce allowed hosts
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
+
+
+@app.get("/health")
+async def health_check() -> Dict[str, str]:
+    """
+    Health check endpoint to verify that the server is running.
+
+    Returns
+    -------
+    Dict[str, str]
+        A JSON object with a "status" key indicating the server's health status.
+    """
+    return {"status": "healthy"}
+
+
+@app.head("/")
+async def head_root() -> HTMLResponse:
+    """
+    Respond to HTTP HEAD requests for the root URL.
+
+    Mirrors the headers and status code of the index page.
+
+    Returns
+    -------
+    HTMLResponse
+        An empty HTML response with appropriate headers.
+    """
+    return HTMLResponse(content=None, headers={"content-type": "text/html; charset=utf-8"})
+
+
+@app.get("/api/", response_class=HTMLResponse)
+@app.get("/api", response_class=HTMLResponse)
+async def api_docs(request: Request) -> HTMLResponse:
+    """
+    Render the API documentation page.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming HTTP request.
+
+    Returns
+    -------
+    HTMLResponse
+        A rendered HTML page displaying API documentation.
+    """
+    return templates.TemplateResponse("api.jinja", {"request": request})
+
+
+@app.get("/robots.txt")
+async def robots() -> FileResponse:
+    """
+    Serve the `robots.txt` file to guide search engine crawlers.
+
+    Returns
+    -------
+    FileResponse
+        The `robots.txt` file located in the static directory.
+    """
+    return FileResponse("static/robots.txt")
+
+
+@app.get("/llm.txt")
+async def llm_txt() -> FileResponse:
+    """
+    Serve the `llm.txt` file to provide information about the site to LLMs.
+
+    Returns
+    -------
+    FileResponse
+        The `llm.txt` file located in the static directory.
+    """
+    return FileResponse("static/llm.txt")
+
+
+# Include routers for modular endpoints
+app.include_router(index)
+app.include_router(download)
+app.include_router(dynamic)
+
+
+
+================================================
+FILE: src/server/query_processor.py
+================================================
+"""Process a query by parsing input, cloning a repository, and generating a summary."""
+
+from functools import partial
+from typing import Optional
+
+from fastapi import Request
+from starlette.templating import _TemplateResponse
+
+from gitingest.cloning import clone_repo
+from gitingest.ingestion import ingest_query
+from gitingest.query_parsing import IngestionQuery, parse_query
+from server.server_config import EXAMPLE_REPOS, MAX_DISPLAY_SIZE, templates
+from server.server_utils import Colors, log_slider_to_size
+
+
+async def process_query(
+    request: Request,
+    input_text: str,
+    slider_position: int,
+    pattern_type: str = "exclude",
+    pattern: str = "",
+    is_index: bool = False,
+    token: Optional[str] = None,
+) -> _TemplateResponse:
+    """
+    Process a query by parsing input, cloning a repository, and generating a summary.
+
+    Handle user input, process Git repository data, and prepare
+    a response for rendering a template with the processed results or an error message.
+
+    Parameters
+    ----------
+    request : Request
+        The HTTP request object.
+    input_text : str
+        Input text provided by the user, typically a Git repository URL or slug.
+    slider_position : int
+        Position of the slider, representing the maximum file size in the query.
+    pattern_type : str
+        Type of pattern to use, either "include" or "exclude" (default is "exclude").
+    pattern : str
+        Pattern to include or exclude in the query, depending on the pattern type.
+    is_index : bool
+        Flag indicating whether the request is for the index page (default is False).
+    token : str, optional
+        GitHub personal-access token (PAT). Needed when *input_text* refers to a
+        **private** repository.
+
+    Returns
+    -------
+    _TemplateResponse
+        Rendered template response containing the processed results or an error message.
+
+    Raises
+    ------
+    ValueError
+        If an invalid pattern type is provided.
+    """
+    if pattern_type == "include":
+        include_patterns = pattern
+        exclude_patterns = None
+    elif pattern_type == "exclude":
+        exclude_patterns = pattern
+        include_patterns = None
+    else:
+        raise ValueError(f"Invalid pattern type: {pattern_type}")
+
+    template = "index.jinja" if is_index else "git.jinja"
+    template_response = partial(templates.TemplateResponse, name=template)
+    max_file_size = log_slider_to_size(slider_position)
+
+    context = {
+        "request": request,
+        "repo_url": input_text,
+        "examples": EXAMPLE_REPOS if is_index else [],
+        "default_file_size": slider_position,
+        "pattern_type": pattern_type,
+        "pattern": pattern,
+        "token": token,
+    }
+
+    try:
+        query: IngestionQuery = await parse_query(
+            source=input_text,
+            max_file_size=max_file_size,
+            from_web=True,
+            include_patterns=include_patterns,
+            ignore_patterns=exclude_patterns,
+            token=token,
+        )
+        if not query.url:
+            raise ValueError("The 'url' parameter is required.")
+
+        # Sets the "<user>/<repo>" for the page title
+        context["short_repo_url"] = f"{query.user_name}/{query.repo_name}"
+
+        clone_config = query.extract_clone_config()
+        await clone_repo(clone_config, token=token)
+        summary, tree, content = ingest_query(query)
+        with open(f"{clone_config.local_path}.txt", "w", encoding="utf-8") as f:
+            f.write(tree + "\n" + content)
+    except Exception as exc:
+        # hack to print error message when query is not defined
+        if "query" in locals() and query is not None and isinstance(query, dict):
+            _print_error(query["url"], exc, max_file_size, pattern_type, pattern)
+        else:
+            print(f"{Colors.BROWN}WARN{Colors.END}: {Colors.RED}<-  {Colors.END}", end="")
+            print(f"{Colors.RED}{exc}{Colors.END}")
+
+        context["error_message"] = f"Error: {exc}"
+        if "405" in str(exc):
+            context["error_message"] = (
+                "Repository not found. Please make sure it is public (private repositories will be supported soon)"
+            )
+        return template_response(context=context)
+
+    if len(content) > MAX_DISPLAY_SIZE:
+        content = (
+            f"(Files content cropped to {int(MAX_DISPLAY_SIZE / 1_000)}k characters, "
+            "download full ingest to see more)\n" + content[:MAX_DISPLAY_SIZE]
+        )
+
+    _print_success(
+        url=query.url,
+        max_file_size=max_file_size,
+        pattern_type=pattern_type,
+        pattern=pattern,
+        summary=summary,
+    )
+
+    context.update(
+        {
+            "result": True,
+            "summary": summary,
+            "tree": tree,
+            "content": content,
+            "ingest_id": query.id,
+        }
+    )
+
+    return template_response(context=context)
+
+
+def _print_query(url: str, max_file_size: int, pattern_type: str, pattern: str) -> None:
+    """
+    Print a formatted summary of the query details, including the URL, file size,
+    and pattern information, for easier debugging or logging.
+
+    Parameters
+    ----------
+    url : str
+        The URL associated with the query.
+    max_file_size : int
+        The maximum file size allowed for the query, in bytes.
+    pattern_type : str
+        Specifies the type of pattern to use, either "include" or "exclude".
+    pattern : str
+        The actual pattern string to include or exclude in the query.
+    """
+    print(f"{Colors.WHITE}{url:<20}{Colors.END}", end="")
+    if int(max_file_size / 1024) != 50:
+        print(f" | {Colors.YELLOW}Size: {int(max_file_size/1024)}kb{Colors.END}", end="")
+    if pattern_type == "include" and pattern != "":
+        print(f" | {Colors.YELLOW}Include {pattern}{Colors.END}", end="")
+    elif pattern_type == "exclude" and pattern != "":
+        print(f" | {Colors.YELLOW}Exclude {pattern}{Colors.END}", end="")
+
+
+def _print_error(url: str, e: Exception, max_file_size: int, pattern_type: str, pattern: str) -> None:
+    """
+    Print a formatted error message including the URL, file size, pattern details, and the exception encountered,
+    for debugging or logging purposes.
+
+    Parameters
+    ----------
+    url : str
+        The URL associated with the query that caused the error.
+    e : Exception
+        The exception raised during the query or process.
+    max_file_size : int
+        The maximum file size allowed for the query, in bytes.
+    pattern_type : str
+        Specifies the type of pattern to use, either "include" or "exclude".
+    pattern : str
+        The actual pattern string to include or exclude in the query.
+    """
+    print(f"{Colors.BROWN}WARN{Colors.END}: {Colors.RED}<-  {Colors.END}", end="")
+    _print_query(url, max_file_size, pattern_type, pattern)
+    print(f" | {Colors.RED}{e}{Colors.END}")
+
+
+def _print_success(url: str, max_file_size: int, pattern_type: str, pattern: str, summary: str) -> None:
+    """
+    Print a formatted success message, including the URL, file size, pattern details, and a summary with estimated
+    tokens, for debugging or logging purposes.
+
+    Parameters
+    ----------
+    url : str
+        The URL associated with the successful query.
+    max_file_size : int
+        The maximum file size allowed for the query, in bytes.
+    pattern_type : str
+        Specifies the type of pattern to use, either "include" or "exclude".
+    pattern : str
+        The actual pattern string to include or exclude in the query.
+    summary : str
+        A summary of the query result, including details like estimated tokens.
+    """
+    estimated_tokens = summary[summary.index("Estimated tokens:") + len("Estimated ") :]
+    print(f"{Colors.GREEN}INFO{Colors.END}: {Colors.GREEN}<-  {Colors.END}", end="")
+    _print_query(url, max_file_size, pattern_type, pattern)
+    print(f" | {Colors.PURPLE}{estimated_tokens}{Colors.END}")
+
+
+
+================================================
+FILE: src/server/server_config.py
+================================================
+"""Configuration for the server."""
+
+from typing import Dict, List
+
+from fastapi.templating import Jinja2Templates
+
+MAX_DISPLAY_SIZE: int = 300_000
+DELETE_REPO_AFTER: int = 60 * 60  # In seconds
+
+
+EXAMPLE_REPOS: List[Dict[str, str]] = [
+    {"name": "Gitingest", "url": "https://github.com/cyclotruc/gitingest"},
+    {"name": "FastAPI", "url": "https://github.com/tiangolo/fastapi"},
+    {"name": "Flask", "url": "https://github.com/pallets/flask"},
+    {"name": "Excalidraw", "url": "https://github.com/excalidraw/excalidraw"},
+    {"name": "ApiAnalytics", "url": "https://github.com/tom-draper/api-analytics"},
+]
+
+templates = Jinja2Templates(directory="server/templates")
+
+
+
+================================================
+FILE: src/server/server_utils.py
+================================================
+"""Utility functions for the server."""
+
+import asyncio
+import math
+import shutil
+import time
+from contextlib import asynccontextmanager
+from pathlib import Path
+
+from fastapi import FastAPI, Request
+from fastapi.responses import Response
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
+
+from gitingest.config import TMP_BASE_PATH
+from server.server_config import DELETE_REPO_AFTER
+
+# Initialize a rate limiter
+limiter = Limiter(key_func=get_remote_address)
+
+
+async def rate_limit_exception_handler(request: Request, exc: Exception) -> Response:
+    """
+    Custom exception handler for rate-limiting errors.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming HTTP request.
+    exc : Exception
+        The exception raised, expected to be RateLimitExceeded.
+
+    Returns
+    -------
+    Response
+        A response indicating that the rate limit has been exceeded.
+
+    Raises
+    ------
+    exc
+        If the exception is not a RateLimitExceeded error, it is re-raised.
+    """
+    if isinstance(exc, RateLimitExceeded):
+        # Delegate to the default rate limit handler
+        return _rate_limit_exceeded_handler(request, exc)
+    # Re-raise other exceptions
+    raise exc
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    """
+    Lifecycle manager for handling startup and shutdown events for the FastAPI application.
+
+    Parameters
+    ----------
+    _ : FastAPI
+        The FastAPI application instance (unused).
+
+    Yields
+    -------
+    None
+        Yields control back to the FastAPI application while the background task runs.
+    """
+    task = asyncio.create_task(_remove_old_repositories())
+
+    yield
+    # Cancel the background task on shutdown
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+
+
+async def _remove_old_repositories():
+    """
+    Periodically remove old repository folders.
+
+    Background task that runs periodically to clean up old repository directories.
+
+    This task:
+    - Scans the TMP_BASE_PATH directory every 60 seconds
+    - Removes directories older than DELETE_REPO_AFTER seconds
+    - Before deletion, logs repository URLs to history.txt if a matching .txt file exists
+    - Handles errors gracefully if deletion fails
+
+    The repository URL is extracted from the first .txt file in each directory,
+    assuming the filename format: "owner-repository.txt"
+    """
+    while True:
+        try:
+            if not TMP_BASE_PATH.exists():
+                await asyncio.sleep(60)
+                continue
+
+            current_time = time.time()
+
+            for folder in TMP_BASE_PATH.iterdir():
+                # Skip if folder is not old enough
+                if current_time - folder.stat().st_ctime <= DELETE_REPO_AFTER:
+                    continue
+
+                await _process_folder(folder)
+
+        except Exception as exc:
+            print(f"Error in _remove_old_repositories: {exc}")
+
+        await asyncio.sleep(60)
+
+
+async def _process_folder(folder: Path) -> None:
+    """
+    Process a single folder for deletion and logging.
+
+    Parameters
+    ----------
+    folder : Path
+        The path to the folder to be processed.
+    """
+    # Try to log repository URL before deletion
+    try:
+        txt_files = [f for f in folder.iterdir() if f.suffix == ".txt"]
+
+        # Extract owner and repository name from the filename
+        filename = txt_files[0].stem
+        if txt_files and "-" in filename:
+            owner, repo = filename.split("-", 1)
+            repo_url = f"{owner}/{repo}"
+
+            with open("history.txt", mode="a", encoding="utf-8") as history:
+                history.write(f"{repo_url}\n")
+
+    except Exception as exc:
+        print(f"Error logging repository URL for {folder}: {exc}")
+
+    # Delete the folder
+    try:
+        shutil.rmtree(folder)
+    except Exception as exc:
+        print(f"Error deleting {folder}: {exc}")
+
+
+def log_slider_to_size(position: int) -> int:
+    """
+    Convert a slider position to a file size in bytes using a logarithmic scale.
+
+    Parameters
+    ----------
+    position : int
+        Slider position ranging from 0 to 500.
+
+    Returns
+    -------
+    int
+        File size in bytes corresponding to the slider position.
+    """
+    maxp = 500
+    minv = math.log(1)
+    maxv = math.log(102_400)
+    return round(math.exp(minv + (maxv - minv) * pow(position / maxp, 1.5))) * 1024
+
+
+## Color printing utility
+class Colors:
+    """ANSI color codes"""
+
+    BLACK = "\033[0;30m"
+    RED = "\033[0;31m"
+    GREEN = "\033[0;32m"
+    BROWN = "\033[0;33m"
+    BLUE = "\033[0;34m"
+    PURPLE = "\033[0;35m"
+    CYAN = "\033[0;36m"
+    LIGHT_GRAY = "\033[0;37m"
+    DARK_GRAY = "\033[1;30m"
+    LIGHT_RED = "\033[1;31m"
+    LIGHT_GREEN = "\033[1;32m"
+    YELLOW = "\033[1;33m"
+    LIGHT_BLUE = "\033[1;34m"
+    LIGHT_PURPLE = "\033[1;35m"
+    LIGHT_CYAN = "\033[1;36m"
+    WHITE = "\033[1;37m"
+    BOLD = "\033[1m"
+    FAINT = "\033[2m"
+    ITALIC = "\033[3m"
+    UNDERLINE = "\033[4m"
+    BLINK = "\033[5m"
+    NEGATIVE = "\033[7m"
+    CROSSED = "\033[9m"
+    END = "\033[0m"
+
+
+
+================================================
+FILE: src/server/routers/__init__.py
+================================================
+"""This module contains the routers for the FastAPI application."""
+
+from server.routers.download import router as download
+from server.routers.dynamic import router as dynamic
+from server.routers.index import router as index
+
+__all__ = ["download", "dynamic", "index"]
+
+
+
+================================================
+FILE: src/server/routers/download.py
+================================================
+"""This module contains the FastAPI router for downloading a digest file."""
+
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import Response
+
+from gitingest.config import TMP_BASE_PATH
+
+router = APIRouter()
+
+
+@router.get("/download/{digest_id}")
+async def download_ingest(digest_id: str) -> Response:
+    """
+    Download a .txt file associated with a given digest ID.
+
+    This function searches for a `.txt` file in a directory corresponding to the provided
+    digest ID. If a file is found, it is read and returned as a downloadable attachment.
+    If no `.txt` file is found, an error is raised.
+
+    Parameters
+    ----------
+    digest_id : str
+        The unique identifier for the digest. It is used to find the corresponding directory
+        and locate the .txt file within that directory.
+
+    Returns
+    -------
+    Response
+        A FastAPI Response object containing the content of the found `.txt` file. The file is
+        sent with the appropriate media type (`text/plain`) and the correct `Content-Disposition`
+        header to prompt a file download.
+
+    Raises
+    ------
+    HTTPException
+        If the digest directory is not found or if no `.txt` file exists in the directory.
+    """
+    directory = TMP_BASE_PATH / digest_id
+
+    try:
+        if not directory.exists():
+            raise FileNotFoundError("Directory not found")
+
+        txt_files = [f for f in directory.iterdir() if f.suffix == ".txt"]
+        if not txt_files:
+            raise FileNotFoundError("No .txt file found")
+
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Digest not found") from exc
+
+    # Find the first .txt file in the directory
+    first_file = txt_files[0]
+
+    with first_file.open(encoding="utf-8") as f:
+        content = f.read()
+
+    return Response(
+        content=content,
+        media_type="text/plain",
+        headers={"Content-Disposition": f"attachment; filename={first_file.name}"},
+    )
+
+
+
+================================================
+FILE: src/server/routers/dynamic.py
+================================================
+"""This module defines the dynamic router for handling dynamic path requests."""
+
+from fastapi import APIRouter, Form, Request
+from fastapi.responses import HTMLResponse
+
+from server.query_processor import process_query
+from server.server_config import templates
+from server.server_utils import limiter
+
+router = APIRouter()
+
+
+@router.get("/{full_path:path}")
+async def catch_all(request: Request, full_path: str) -> HTMLResponse:
+    """
+    Render a page with a Git URL based on the provided path.
+
+    This endpoint catches all GET requests with a dynamic path, constructs a Git URL
+    using the `full_path` parameter, and renders the `git.jinja` template with that URL.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming request object, which provides context for rendering the response.
+    full_path : str
+        The full path extracted from the URL, which is used to build the Git URL.
+
+    Returns
+    -------
+    HTMLResponse
+        An HTML response containing the rendered template, with the Git URL
+        and other default parameters such as loading state and file size.
+    """
+    return templates.TemplateResponse(
+        "git.jinja",
+        {
+            "request": request,
+            "repo_url": full_path,
+            "loading": True,
+            "default_file_size": 243,
+        },
+    )
+
+
+@router.post("/{full_path:path}", response_class=HTMLResponse)
+@limiter.limit("10/minute")
+async def process_catch_all(
+    request: Request,
+    input_text: str = Form(...),
+    max_file_size: int = Form(...),
+    pattern_type: str = Form(...),
+    pattern: str = Form(...),
+    token: str = Form(...),
+) -> HTMLResponse:
+    """
+    Process the form submission with user input for query parameters.
+
+    This endpoint handles POST requests, processes the input parameters (e.g., text, file size, pattern),
+    and calls the `process_query` function to handle the query logic, returning the result as an HTML response.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming request object, which provides context for rendering the response.
+    input_text : str
+        The input text provided by the user for processing, by default taken from the form.
+    max_file_size : int
+        The maximum allowed file size for the input, specified by the user.
+    pattern_type : str
+        The type of pattern used for the query, specified by the user.
+    pattern : str
+        The pattern string used in the query, specified by the user.
+    token : str
+        GitHub personal-access token (PAT). Needed when *input_text* refers to a
+        **private** repository.
+    Returns
+    -------
+    HTMLResponse
+        An HTML response generated after processing the form input and query logic,
+        which will be rendered and returned to the user.
+    """
+    resolved_token = None if token == "" else token
+    return await process_query(
+        request,
+        input_text,
+        max_file_size,
+        pattern_type,
+        pattern,
+        is_index=False,
+        token=resolved_token,
+    )
+
+
+
+================================================
+FILE: src/server/routers/index.py
+================================================
+"""This module defines the FastAPI router for the home page of the application."""
+
+from fastapi import APIRouter, Form, Request
+from fastapi.responses import HTMLResponse
+
+from server.query_processor import process_query
+from server.server_config import EXAMPLE_REPOS, templates
+from server.server_utils import limiter
+
+router = APIRouter()
+
+
+@router.get("/", response_class=HTMLResponse)
+async def home(request: Request) -> HTMLResponse:
+    """
+    Render the home page with example repositories and default parameters.
+
+    This endpoint serves the home page of the application, rendering the `index.jinja` template
+    and providing it with a list of example repositories and default file size values.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming request object, which provides context for rendering the response.
+
+    Returns
+    -------
+    HTMLResponse
+        An HTML response containing the rendered home page template, with example repositories
+        and other default parameters such as file size.
+    """
+    return templates.TemplateResponse(
+        "index.jinja",
+        {
+            "request": request,
+            "examples": EXAMPLE_REPOS,
+            "default_file_size": 243,
+        },
+    )
+
+
+@router.post("/", response_class=HTMLResponse)
+@limiter.limit("10/minute")
+async def index_post(
+    request: Request,
+    input_text: str = Form(...),
+    max_file_size: int = Form(...),
+    pattern_type: str = Form(...),
+    pattern: str = Form(...),
+    token: str = Form(...),
+) -> HTMLResponse:
+    """
+    Process the form submission with user input for query parameters.
+
+    This endpoint handles POST requests from the home page form. It processes the user-submitted
+    input (e.g., text, file size, pattern type) and invokes the `process_query` function to handle
+    the query logic, returning the result as an HTML response.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming request object, which provides context for rendering the response.
+    input_text : str
+        The input text provided by the user for processing, by default taken from the form.
+    max_file_size : int
+        The maximum allowed file size for the input, specified by the user.
+    pattern_type : str
+        The type of pattern used for the query, specified by the user.
+    pattern : str
+        The pattern string used in the query, specified by the user.
+    token : str
+        GitHub personal-access token (PAT). Needed when *input_text* refers to a
+        **private** repository.
+    Returns
+    -------
+    HTMLResponse
+        An HTML response containing the results of processing the form input and query logic,
+        which will be rendered and returned to the user.
+    """
+    resolved_token = None if token == "" else token
+    return await process_query(
+        request,
+        input_text,
+        max_file_size,
+        pattern_type,
+        pattern,
+        is_index=True,
+        token=resolved_token,
+    )
+
+
+
+================================================
+FILE: tests/__init__.py
+================================================
+
+
+
+================================================
+FILE: tests/conftest.py
+================================================
+"""
+Fixtures for tests.
+
+This file provides shared fixtures for creating sample queries, a temporary directory structure, and a helper function
+to write `.ipynb` notebooks for testing notebook utilities.
+"""
+
+import json
+from pathlib import Path
+from typing import Any, Callable, Dict, List
+from unittest.mock import AsyncMock
+
+import pytest
+from pytest_mock import MockerFixture
+
+from gitingest.query_parsing import IngestionQuery
+
+WriteNotebookFunc = Callable[[str, Dict[str, Any]], Path]
+
+DEMO_URL = "https://github.com/user/repo"
+LOCAL_REPO_PATH = "/tmp/repo"
+
+
+@pytest.fixture
+def sample_query() -> IngestionQuery:
+    """
+    Provide a default `IngestionQuery` object for use in tests.
+
+    This fixture returns a `IngestionQuery` pre-populated with typical fields and some default ignore patterns.
+
+    Returns
+    -------
+    IngestionQuery
+        The sample `IngestionQuery` object.
+    """
+    return IngestionQuery(
+        user_name="test_user",
+        repo_name="test_repo",
+        url=None,
+        subpath="/",
+        local_path=Path("/tmp/test_repo").resolve(),
+        slug="test_user/test_repo",
+        id="id",
+        branch="main",
+        max_file_size=1_000_000,
+        ignore_patterns={"*.pyc", "__pycache__", ".git"},
+        include_patterns=None,
+    )
+
+
+@pytest.fixture
+def temp_directory(tmp_path: Path) -> Path:
+    """
+    Create a temporary directory structure for testing repository scanning.
+
+    The structure includes:
+    test_repo/
+    ├── file1.txt
+    ├── file2.py
+    ├── src/
+    │   ├── subfile1.txt
+    │   ├── subfile2.py
+    │   └── subdir/
+    │       ├── file_subdir.txt
+    │       └── file_subdir.py
+    ├── dir1/
+    │   └── file_dir1.txt
+    └── dir2/
+        └── file_dir2.txt
+
+    Parameters
+    ----------
+    tmp_path : Path
+        The temporary directory path provided by the `tmp_path` fixture.
+
+    Returns
+    -------
+    Path
+        The path to the created `test_repo` directory.
+    """
+    test_dir = tmp_path / "test_repo"
+    test_dir.mkdir()
+
+    # Root files
+    (test_dir / "file1.txt").write_text("Hello World")
+    (test_dir / "file2.py").write_text("print('Hello')")
+
+    # src directory and its files
+    src_dir = test_dir / "src"
+    src_dir.mkdir()
+    (src_dir / "subfile1.txt").write_text("Hello from src")
+    (src_dir / "subfile2.py").write_text("print('Hello from src')")
+
+    # src/subdir and its files
+    subdir = src_dir / "subdir"
+    subdir.mkdir()
+    (subdir / "file_subdir.txt").write_text("Hello from subdir")
+    (subdir / "file_subdir.py").write_text("print('Hello from subdir')")
+
+    # dir1 and its file
+    dir1 = test_dir / "dir1"
+    dir1.mkdir()
+    (dir1 / "file_dir1.txt").write_text("Hello from dir1")
+
+    # dir2 and its file
+    dir2 = test_dir / "dir2"
+    dir2.mkdir()
+    (dir2 / "file_dir2.txt").write_text("Hello from dir2")
+
+    return test_dir
+
+
+@pytest.fixture
+def write_notebook(tmp_path: Path) -> WriteNotebookFunc:
+    """
+    Provide a helper function to write a `.ipynb` notebook file with the given content.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        The temporary directory path provided by the `tmp_path` fixture.
+
+    Returns
+    -------
+    WriteNotebookFunc
+        A callable that accepts a filename and a dictionary (representing JSON notebook data), writes it to a `.ipynb`
+        file, and returns the path to the file.
+    """
+
+    def _write_notebook(name: str, content: Dict[str, Any]) -> Path:
+        notebook_path = tmp_path / name
+        with notebook_path.open(mode="w", encoding="utf-8") as f:
+            json.dump(content, f)
+        return notebook_path
+
+    return _write_notebook
+
+
+@pytest.fixture
+def stub_branches(mocker: MockerFixture) -> Callable[[List[str]], None]:
+    """Return a function that stubs git branch discovery to *branches*."""
+
+    def _factory(branches: List[str]) -> None:
+        mocker.patch(
+            "gitingest.utils.git_utils.run_command",
+            new_callable=AsyncMock,
+            return_value=("\n".join(f"refs/heads/{b}" for b in branches).encode() + b"\n", b""),
+        )
+        mocker.patch(
+            "gitingest.utils.git_utils.fetch_remote_branch_list",
+            new_callable=AsyncMock,
+            return_value=branches,
+        )
+
+    return _factory
+
+
+@pytest.fixture
+def repo_exists_true(mocker: MockerFixture) -> AsyncMock:
+    """Patch `gitingest.cloning.check_repo_exists` to always return ``True``.
+
+    Many cloning-related tests assume that the remote repository exists. This fixture centralises
+    that behaviour so individual tests no longer need to repeat the same ``mocker.patch`` call.
+    The mock object is returned so that tests can make assertions on how it was used or override
+    its behaviour when needed.
+    """
+    return mocker.patch("gitingest.cloning.check_repo_exists", return_value=True)
+
+
+@pytest.fixture
+def run_command_mock(mocker: MockerFixture) -> AsyncMock:
+    """Patch `gitingest.cloning.run_command` with an ``AsyncMock``.
+
+    The mocked function returns a dummy process whose ``communicate`` method yields generic
+    *stdout* / *stderr* bytes. Tests can still access / tweak the mock via the fixture argument.
+    """
+    mock_exec = mocker.patch("gitingest.cloning.run_command", new_callable=AsyncMock)
+
+    # Provide a default dummy process so most tests don't have to create one.
+    dummy_process = AsyncMock()
+    dummy_process.communicate.return_value = (b"output", b"error")
+    mock_exec.return_value = dummy_process
+
+    return mock_exec
+
+
+
+================================================
+FILE: tests/test_cli.py
+================================================
+"""Tests for the Gitingest CLI."""
+
+import os
+from inspect import signature
+from pathlib import Path
+from typing import List
+
+import pytest
+from _pytest.monkeypatch import MonkeyPatch
+from click.testing import CliRunner, Result
+
+from gitingest.cli import main
+from gitingest.config import MAX_FILE_SIZE, OUTPUT_FILE_NAME
+
+
+@pytest.mark.parametrize(
+    "cli_args, expect_file",
+    [
+        pytest.param(["./"], True, id="default-options"),
+        pytest.param(
+            [
+                "./",
+                "--output",
+                str(OUTPUT_FILE_NAME),
+                "--max-size",
+                str(MAX_FILE_SIZE),
+                "--exclude-pattern",
+                "tests/",
+                "--include-pattern",
+                "src/",
+            ],
+            True,
+            id="custom-options",
+        ),
+    ],
+)
+def test_cli_writes_file(tmp_path: Path, monkeypatch: MonkeyPatch, cli_args: List[str], expect_file: bool) -> None:
+    """Run the CLI and verify that the SARIF file is created (or not)."""
+    # Work inside an isolated temp directory
+    monkeypatch.chdir(tmp_path)
+
+    result = _invoke_isolated_cli_runner(cli_args)
+
+    assert result.exit_code == 0, result.stderr
+
+    # Summary line should be on STDOUT
+    stdout_lines = result.stdout.splitlines()
+    assert f"Analysis complete! Output written to: {OUTPUT_FILE_NAME}" in stdout_lines
+
+    # File side-effect
+    sarif_file = tmp_path / OUTPUT_FILE_NAME
+    assert sarif_file.exists() is expect_file, f"{OUTPUT_FILE_NAME} existence did not match expectation"
+
+
+def test_cli_with_stdout_output() -> None:
+    """Test CLI invocation with output directed to STDOUT."""
+    # Clean up any existing digest.txt file before test
+    if os.path.exists(OUTPUT_FILE_NAME):
+        os.remove(OUTPUT_FILE_NAME)
+
+    try:
+        result = _invoke_isolated_cli_runner(["./", "--output", "-", "--exclude-pattern", "tests/"])
+
+        # ─── core expectations (stdout) ────────────────────────────────────-
+        assert result.exit_code == 0, f"CLI exited with code {result.exit_code}, stderr: {result.stderr}"
+        assert "---" in result.stdout, "Expected file separator '---' not found in STDOUT"
+        assert (
+            "src/gitingest/cli.py" in result.stdout
+        ), "Expected content (e.g., src/gitingest/cli.py) not found in STDOUT"
+        assert not os.path.exists(OUTPUT_FILE_NAME), f"Output file {OUTPUT_FILE_NAME} was unexpectedly created."
+
+        # ─── the summary must *not* pollute STDOUT, must appear on STDERR ───
+        summary = "Analysis complete! Output sent to stdout."
+        stdout_lines = result.stdout.splitlines()
+        stderr_lines = result.stderr.splitlines()
+        assert summary not in stdout_lines, "Unexpected summary message found in STDOUT"
+        assert summary in stderr_lines, "Expected summary message not found in STDERR"
+        assert f"Output written to: {OUTPUT_FILE_NAME}" not in stderr_lines
+    finally:
+        # Clean up any digest.txt file that might have been created during test
+        if os.path.exists(OUTPUT_FILE_NAME):
+            os.remove(OUTPUT_FILE_NAME)
+
+
+def _invoke_isolated_cli_runner(args: List[str]) -> Result:
+    """Return a CliRunner that keeps stderr apart on Click 8.0-8.1."""
+    kwargs = {}
+    if "mix_stderr" in signature(CliRunner.__init__).parameters:
+        kwargs["mix_stderr"] = False  # Click 8.0–8.1
+    runner = CliRunner(**kwargs)
+    return runner.invoke(main, args)
+
+
+
+================================================
+FILE: tests/test_flow_integration.py
+================================================
+"""Integration tests covering core functionalities, edge cases, and concurrency handling."""
+
+import shutil
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+from typing import Generator
+
+import pytest
+from fastapi.testclient import TestClient
+from pytest import FixtureRequest
+from pytest_mock import MockerFixture
+
+from src.server.main import app
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+TEMPLATE_DIR = BASE_DIR / "src" / "templates"
+
+
+@pytest.fixture(scope="module")
+def test_client() -> Generator[TestClient, None, None]:
+    """Create a test client fixture."""
+    with TestClient(app) as client_instance:
+        client_instance.headers.update({"Host": "localhost"})
+        yield client_instance
+
+
+@pytest.fixture(autouse=True)
+def mock_static_files(mocker: MockerFixture) -> Generator[None, None, None]:
+    """Mock the static file mount to avoid directory errors."""
+    mock_static = mocker.patch("src.server.main.StaticFiles", autospec=True)
+    mock_static.return_value = None
+    yield mock_static
+
+
+@pytest.fixture(autouse=True)
+def mock_templates(mocker: MockerFixture) -> Generator[None, None, None]:
+    """Mock Jinja2 template rendering to bypass actual file loading."""
+    mock_template = mocker.patch("starlette.templating.Jinja2Templates.TemplateResponse", autospec=True)
+    mock_template.return_value = "Mocked Template Response"
+    yield mock_template
+
+
+@pytest.fixture(scope="module", autouse=True)
+def cleanup_tmp_dir() -> Generator[None, None, None]:
+    """Remove /tmp/gitingest after this test-module is done."""
+    yield  # run tests
+    temp_dir = Path("/tmp/gitingest")
+    if temp_dir.exists():
+        try:
+            shutil.rmtree(temp_dir)
+        except PermissionError as exc:
+            print(f"Error cleaning up {temp_dir}: {exc}")
+
+
+@pytest.mark.asyncio
+async def test_remote_repository_analysis(request: FixtureRequest) -> None:
+    """Test the complete flow of analyzing a remote repository."""
+    client = request.getfixturevalue("test_client")
+    form_data = {
+        "input_text": "https://github.com/octocat/Hello-World",
+        "max_file_size": "243",
+        "pattern_type": "exclude",
+        "pattern": "",
+        "token": "",
+    }
+
+    response = client.post("/", data=form_data)
+    assert response.status_code == 200, f"Form submission failed: {response.text}"
+    assert "Mocked Template Response" in response.text
+
+
+@pytest.mark.asyncio
+async def test_invalid_repository_url(request: FixtureRequest) -> None:
+    """Test handling of an invalid repository URL."""
+    client = request.getfixturevalue("test_client")
+    form_data = {
+        "input_text": "https://github.com/nonexistent/repo",
+        "max_file_size": "243",
+        "pattern_type": "exclude",
+        "pattern": "",
+        "token": "",
+    }
+
+    response = client.post("/", data=form_data)
+    assert response.status_code == 200, f"Request failed: {response.text}"
+    assert "Mocked Template Response" in response.text
+
+
+@pytest.mark.asyncio
+async def test_large_repository(request: FixtureRequest) -> None:
+    """Simulate analysis of a large repository with nested folders."""
+    client = request.getfixturevalue("test_client")
+    form_data = {
+        "input_text": "https://github.com/large/repo-with-many-files",
+        "max_file_size": "243",
+        "pattern_type": "exclude",
+        "pattern": "",
+        "token": "",
+    }
+
+    response = client.post("/", data=form_data)
+    assert response.status_code == 200, f"Request failed: {response.text}"
+    assert "Mocked Template Response" in response.text
+
+
+@pytest.mark.asyncio
+async def test_concurrent_requests(request: FixtureRequest) -> None:
+    """Test handling of multiple concurrent requests."""
+    client = request.getfixturevalue("test_client")
+
+    def make_request():
+        form_data = {
+            "input_text": "https://github.com/octocat/Hello-World",
+            "max_file_size": "243",
+            "pattern_type": "exclude",
+            "pattern": "",
+            "token": "",
+        }
+        response = client.post("/", data=form_data)
+        assert response.status_code == 200, f"Request failed: {response.text}"
+        assert "Mocked Template Response" in response.text
+
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        futures = [executor.submit(make_request) for _ in range(5)]
+        for future in futures:
+            future.result()
+
+
+@pytest.mark.asyncio
+async def test_large_file_handling(request: FixtureRequest) -> None:
+    """Test handling of repositories with large files."""
+    client = request.getfixturevalue("test_client")
+    form_data = {
+        "input_text": "https://github.com/octocat/Hello-World",
+        "max_file_size": "1",
+        "pattern_type": "exclude",
+        "pattern": "",
+        "token": "",
+    }
+
+    response = client.post("/", data=form_data)
+    assert response.status_code == 200, f"Request failed: {response.text}"
+    assert "Mocked Template Response" in response.text
+
+
+@pytest.mark.asyncio
+async def test_repository_with_patterns(request: FixtureRequest) -> None:
+    """Test repository analysis with include/exclude patterns."""
+    client = request.getfixturevalue("test_client")
+    form_data = {
+        "input_text": "https://github.com/octocat/Hello-World",
+        "max_file_size": "243",
+        "pattern_type": "include",
+        "pattern": "*.md",
+        "token": "",
+    }
+
+    response = client.post("/", data=form_data)
+    assert response.status_code == 200, f"Request failed: {response.text}"
+    assert "Mocked Template Response" in response.text
+
+
+
+================================================
+FILE: tests/test_git_utils.py
+================================================
+"""
+Tests for the `git_utils` module.
+
+These tests validate the `validate_github_token` function, which ensures that
+GitHub personal access tokens (PATs) are properly formatted.
+"""
+
+import base64
+
+import pytest
+
+from gitingest.utils.exceptions import InvalidGitHubTokenError
+from gitingest.utils.git_utils import (
+    create_git_auth_header,
+    create_git_command,
+    validate_github_token,
+)
+
+
+@pytest.mark.parametrize(
+    "token",
+    [
+        # Valid tokens: correct prefixes and at least 36 allowed characters afterwards
+        "github_pat_" + "a" * 36,
+        "ghp_" + "A" * 36,
+        "github_pat_1234567890abcdef1234567890abcdef1234",
+    ],
+)
+def test_validate_github_token_valid(token):
+    """validate_github_token should accept properly-formatted tokens."""
+    # Should not raise any exception
+    validate_github_token(token)
+
+
+@pytest.mark.parametrize(
+    "token",
+    [
+        "github_pat_short",  # Too short after prefix
+        "ghp_" + "b" * 35,  # one character short
+        "invalidprefix_" + "c" * 36,  # Wrong prefix
+        "github_pat_" + "!" * 36,  # Disallowed characters
+        "",  # Empty string
+    ],
+)
+def test_validate_github_token_invalid(token):
+    """validate_github_token should raise ValueError on malformed tokens."""
+    with pytest.raises(InvalidGitHubTokenError):
+        validate_github_token(token)
+
+
+@pytest.mark.parametrize(
+    "base_cmd, local_path, url, token, expected_suffix",
+    [
+        (
+            ["git", "clone"],
+            "/some/path",
+            "https://github.com/owner/repo.git",
+            None,
+            [],  # No auth header expected when token is None
+        ),
+        (
+            ["git", "clone"],
+            "/some/path",
+            "https://github.com/owner/repo.git",
+            "ghp_" + "d" * 36,
+            [
+                "-c",
+                create_git_auth_header("ghp_" + "d" * 36),
+            ],  # Auth header expected for GitHub URL + token
+        ),
+        (
+            ["git", "clone"],
+            "/some/path",
+            "https://gitlab.com/owner/repo.git",
+            "ghp_" + "e" * 36,
+            [],  # No auth header for non-GitHub URL even if token provided
+        ),
+    ],
+)
+def test_create_git_command(base_cmd, local_path, url, token, expected_suffix):
+    """create_git_command should build the correct command list based on inputs."""
+    cmd = create_git_command(base_cmd, local_path, url, token)
+
+    # The command should start with base_cmd and the -C option
+    expected_prefix = base_cmd + ["-C", local_path]
+    assert cmd[: len(expected_prefix)] == expected_prefix
+
+    # The suffix (anything after prefix) should match expected
+    assert cmd[len(expected_prefix) :] == expected_suffix
+
+
+def test_create_git_command_invalid_token():
+    """Supplying an invalid token for a GitHub URL should raise ValueError."""
+    with pytest.raises(InvalidGitHubTokenError):
+        create_git_command(
+            ["git", "clone"],
+            "/some/path",
+            "https://github.com/owner/repo.git",
+            "invalid_token",
+        )
+
+
+@pytest.mark.parametrize(
+    "token",
+    [
+        "ghp_abcdefghijklmnopqrstuvwxyz012345",  # typical ghp_ token
+        "github_pat_1234567890abcdef1234567890abcdef1234",
+    ],
+)
+def test_create_git_auth_header(token):
+    """create_git_auth_header should produce correct base64-encoded header."""
+    header = create_git_auth_header(token)
+    expected_basic = base64.b64encode(f"x-oauth-basic:{token}".encode()).decode()
+    expected = f"http.https://github.com/.extraheader=Authorization: Basic {expected_basic}"
+    assert header == expected
+
+
+@pytest.mark.parametrize(
+    "url, token, should_call",
+    [
+        ("https://github.com/foo/bar.git", "ghp_" + "f" * 36, True),
+        ("https://github.com/foo/bar.git", None, False),
+        ("https://gitlab.com/foo/bar.git", "ghp_" + "g" * 36, False),
+    ],
+)
+def test_create_git_command_helper_calls(mocker, url, token, should_call):
+    """Verify validate_github_token & create_git_auth_header are invoked only when appropriate."""
+
+    validate_mock = mocker.patch("gitingest.utils.git_utils.validate_github_token")
+    header_mock = mocker.patch("gitingest.utils.git_utils.create_git_auth_header", return_value="HEADER")
+
+    cmd = create_git_command(["git", "clone"], "/tmp", url, token)
+
+    if should_call:
+        validate_mock.assert_called_once_with(token)
+        header_mock.assert_called_once_with(token)
+        assert "HEADER" in cmd
+    else:
+        validate_mock.assert_not_called()
+        header_mock.assert_not_called()
+        # HEADER should not be included in command list
+        assert "HEADER" not in cmd
+
+
+
+================================================
+FILE: tests/test_gitignore_feature.py
+================================================
+"""
+Tests for the gitignore functionality in Gitingest.
+"""
+
+from pathlib import Path
+
+import pytest
+
+from gitingest.entrypoint import ingest_async
+from gitingest.utils.ignore_patterns import load_gitignore_patterns
+
+
+@pytest.fixture(name="repo_path")
+def repo_fixture(tmp_path: Path) -> Path:
+    """
+    Create a temporary repository structure with:
+      - A .gitignore that excludes 'exclude.txt'
+      - 'include.txt' (should be processed)
+      - 'exclude.txt' (should be skipped when gitignore rules are respected)
+    """
+    # Create a .gitignore file that excludes 'exclude.txt'
+    gitignore_file = tmp_path / ".gitignore"
+    gitignore_file.write_text("exclude.txt\n")
+
+    # Create a file that should be included
+    include_file = tmp_path / "include.txt"
+    include_file.write_text("This file should be included.")
+
+    # Create a file that should be excluded
+    exclude_file = tmp_path / "exclude.txt"
+    exclude_file.write_text("This file should be excluded.")
+
+    return tmp_path
+
+
+def test_load_gitignore_patterns(tmp_path: Path):
+    """
+    Test that load_gitignore_patterns() correctly loads patterns from a .gitignore file.
+    """
+    gitignore = tmp_path / ".gitignore"
+    # Write some sample patterns with a comment line included
+    gitignore.write_text("exclude.txt\n*.log\n# a comment\n")
+
+    patterns = load_gitignore_patterns(tmp_path)
+
+    # Check that the expected patterns are loaded
+    assert "exclude.txt" in patterns
+    assert "*.log" in patterns
+    # Ensure that comment lines are not added
+    for pattern in patterns:
+        assert not pattern.startswith("#")
+
+
+@pytest.mark.asyncio
+async def test_ingest_with_gitignore(repo_path: Path):
+    """
+    Integration test for ingest_async() respecting .gitignore rules.
+
+    When ``include_gitignored`` is ``False`` (default), the content of 'exclude.txt' should be omitted.
+    When ``include_gitignored`` is ``True``, both files should be present.
+    """
+    # Run ingestion with the gitignore functionality enabled.
+    _, _, content_with_ignore = await ingest_async(source=str(repo_path))
+    # 'exclude.txt' should be skipped.
+    assert "This file should be excluded." not in content_with_ignore
+    # 'include.txt' should be processed.
+    assert "This file should be included." in content_with_ignore
+
+    # Run ingestion with the gitignore functionality disabled.
+    _, _, content_without_ignore = await ingest_async(source=str(repo_path), include_gitignored=True)
+    # Now both files should be present.
+    assert "This file should be excluded." in content_without_ignore
+    assert "This file should be included." in content_without_ignore
+
+
+
+================================================
+FILE: tests/test_ingestion.py
+================================================
+"""
+Tests for the `query_ingestion` module.
+
+These tests validate directory scanning, file content extraction, notebook handling, and the overall ingestion logic,
+including filtering patterns and subpaths.
+"""
+
+import re
+from pathlib import Path
+from typing import Set, TypedDict
+
+import pytest
+
+from gitingest.ingestion import ingest_query
+from gitingest.query_parsing import IngestionQuery
+
+
+def test_run_ingest_query(temp_directory: Path, sample_query: IngestionQuery) -> None:
+    """
+    Test `ingest_query` to ensure it processes the directory and returns expected results.
+
+    Given a directory with .txt and .py files:
+    When `ingest_query` is invoked,
+    Then it should produce a summary string listing the files analyzed and a combined content string.
+    """
+    sample_query.local_path = temp_directory
+    sample_query.subpath = "/"
+    sample_query.type = None
+
+    summary, _, content = ingest_query(sample_query)
+
+    assert "Repository: test_user/test_repo" in summary
+    assert "Files analyzed: 8" in summary
+
+    # Check presence of key files in the content
+    assert "src/subfile1.txt" in content
+    assert "src/subfile2.py" in content
+    assert "src/subdir/file_subdir.txt" in content
+    assert "src/subdir/file_subdir.py" in content
+    assert "file1.txt" in content
+    assert "file2.py" in content
+    assert "dir1/file_dir1.txt" in content
+    assert "dir2/file_dir2.txt" in content
+
+
+# TODO: Additional tests:
+# - Multiple include patterns, e.g. ["*.txt", "*.py"] or ["/src/*", "*.txt"].
+# - Edge cases with weird file names or deep subdirectory structures.
+# TODO : def test_include_nonexistent_extension
+
+
+class PatternScenario(TypedDict):
+    include_patterns: Set[str]
+    ignore_patterns: Set[str]
+    expected_num_files: int
+    expected_content: Set[str]
+    expected_structure: Set[str]
+    expected_not_structure: Set[str]
+
+
+@pytest.mark.parametrize(
+    "pattern_scenario",
+    [
+        pytest.param(
+            PatternScenario(
+                {
+                    "include_patterns": {"file2.py", "dir2/file_dir2.txt"},
+                    "ignore_patterns": {*()},
+                    "expected_num_files": 2,
+                    "expected_content": {"file2.py", "dir2/file_dir2.txt"},
+                    "expected_structure": {"test_repo/", "dir2/"},
+                    "expected_not_structure": {"src/", "subdir/", "dir1/"},
+                }
+            ),
+            id="include-explicit-files",
+        ),
+        pytest.param(
+            PatternScenario(
+                {
+                    "include_patterns": {
+                        "file1.txt",
+                        "file2.py",
+                        "file_dir1.txt",
+                        "*/file_dir2.txt",
+                    },
+                    "ignore_patterns": {*()},
+                    "expected_num_files": 4,
+                    "expected_content": {"file1.txt", "file2.py", "dir1/file_dir1.txt", "dir2/file_dir2.txt"},
+                    "expected_structure": {"test_repo/", "dir1/", "dir2/"},
+                    "expected_not_structure": {"src/", "subdir/"},
+                }
+            ),
+            id="include-wildcard-directory",
+        ),
+        pytest.param(
+            PatternScenario(
+                {
+                    "include_patterns": {"*.py"},
+                    "ignore_patterns": {*()},
+                    "expected_num_files": 3,
+                    "expected_content": {
+                        "file2.py",
+                        "src/subfile2.py",
+                        "src/subdir/file_subdir.py",
+                    },
+                    "expected_structure": {"test_repo/", "src/", "subdir/"},
+                    "expected_not_structure": {"dir1/", "dir2/"},
+                }
+            ),
+            id="include-wildcard-files",
+        ),
+        pytest.param(
+            PatternScenario(
+                {
+                    "include_patterns": {"**/file_dir2.txt", "src/**/*.py"},
+                    "ignore_patterns": {*()},
+                    "expected_num_files": 3,
+                    "expected_content": {
+                        "dir2/file_dir2.txt",
+                        "src/subfile2.py",
+                        "src/subdir/file_subdir.py",
+                    },
+                    "expected_structure": {"test_repo/", "dir2/", "src/", "subdir/"},
+                    "expected_not_structure": {"dir1/"},
+                }
+            ),
+            id="include-recursive-wildcard",
+        ),
+        pytest.param(
+            PatternScenario(
+                {
+                    "include_patterns": {*()},
+                    "ignore_patterns": {"file2.py", "dir2/file_dir2.txt"},
+                    "expected_num_files": 6,
+                    "expected_content": {
+                        "file1.txt",
+                        "src/subfile1.txt",
+                        "src/subfile2.py",
+                        "src/subdir/file_subdir.txt",
+                        "src/subdir/file_subdir.py",
+                        "dir1/file_dir1.txt",
+                    },
+                    "expected_structure": {"test_repo/", "src/", "subdir/", "dir1/"},
+                    "expected_not_structure": {"dir2/"},
+                }
+            ),
+            id="exclude-explicit-files",
+        ),
+        pytest.param(
+            PatternScenario(
+                {
+                    "include_patterns": {*()},
+                    "ignore_patterns": {"file1.txt", "file2.py", "*/file_dir1.txt"},
+                    "expected_num_files": 5,
+                    "expected_content": {
+                        "src/subfile1.txt",
+                        "src/subfile2.py",
+                        "src/subdir/file_subdir.txt",
+                        "src/subdir/file_subdir.py",
+                        "dir2/file_dir2.txt",
+                    },
+                    "expected_structure": {"test_repo/", "src/", "subdir/", "dir2/"},
+                    "expected_not_structure": {"dir1/"},
+                }
+            ),
+            id="exclude-wildcard-directory",
+        ),
+        pytest.param(
+            PatternScenario(
+                {
+                    "include_patterns": {*()},
+                    "ignore_patterns": {"src/**/*.py"},
+                    "expected_num_files": 6,
+                    "expected_content": {
+                        "file1.txt",
+                        "file2.py",
+                        "src/subfile1.txt",
+                        "src/subdir/file_subdir.txt",
+                        "dir1/file_dir1.txt",
+                        "dir2/file_dir2.txt",
+                    },
+                    "expected_structure": {
+                        "test_repo/",
+                        "dir1/",
+                        "dir2/",
+                        "src/",
+                        "subdir/",
+                    },
+                    "expected_not_structure": {*()},
+                }
+            ),
+            id="exclude-recursive-wildcard",
+        ),
+    ],
+)
+def test_include_ignore_patterns(
+    temp_directory: Path,
+    sample_query: IngestionQuery,
+    pattern_scenario: PatternScenario,
+) -> None:
+    """
+    Test `ingest_query` to ensure included and ignored paths are included and ignored respectively.
+
+    Given a directory with .txt and .py files, and a set of include patterns or a set of ignore patterns:
+    When `ingest_query` is invoked,
+    Then it should produce a summary string listing the files analyzed and a combined content string.
+    """
+
+    sample_query.local_path = temp_directory
+    sample_query.subpath = "/"
+    sample_query.type = None
+    sample_query.include_patterns = pattern_scenario["include_patterns"] or None
+    sample_query.ignore_patterns = pattern_scenario["ignore_patterns"] or None
+
+    summary, structure, content = ingest_query(sample_query)
+
+    assert "Repository: test_user/test_repo" in summary
+    num_files_regex = re.compile(r"^Files analyzed: (\d+)$", re.MULTILINE)
+    assert (num_files_match := num_files_regex.search(summary)) is not None
+    assert int(num_files_match.group(1)) == pattern_scenario["expected_num_files"]
+
+    # Check presence of key files in the content
+    for expected_content_item in pattern_scenario["expected_content"]:
+        assert expected_content_item in content
+
+    # check presence of included directories in structure
+    for expected_structure_item in pattern_scenario["expected_structure"]:
+        assert expected_structure_item in structure
+
+    # check non-presence of non-included directories in structure
+    for expected_not_structure_item in pattern_scenario["expected_not_structure"]:
+        assert expected_not_structure_item not in structure
+
+
+
+================================================
+FILE: tests/test_notebook_utils.py
+================================================
+"""
+Tests for the `notebook_utils` module.
+
+These tests validate how notebooks are processed into Python-like output, ensuring that markdown/raw cells are
+converted to triple-quoted blocks, code cells remain executable code, and various edge cases (multiple worksheets,
+empty cells, outputs, etc.) are handled appropriately.
+"""
+
+import pytest
+
+from gitingest.utils.notebook_utils import process_notebook
+from tests.conftest import WriteNotebookFunc
+
+
+def test_process_notebook_all_cells(write_notebook: WriteNotebookFunc) -> None:
+    """
+    Test processing a notebook containing markdown, code, and raw cells.
+
+    Given a notebook with:
+      - One markdown cell
+      - One code cell
+      - One raw cell
+    When `process_notebook` is invoked,
+    Then markdown and raw cells should appear in triple-quoted blocks, and code cells remain as normal code.
+    """
+    notebook_content = {
+        "cells": [
+            {"cell_type": "markdown", "source": ["# Markdown cell"]},
+            {"cell_type": "code", "source": ['print("Hello Code")']},
+            {"cell_type": "raw", "source": ["<raw content>"]},
+        ]
+    }
+    nb_path = write_notebook("all_cells.ipynb", notebook_content)
+    result = process_notebook(nb_path)
+
+    assert result.count('"""') == 4, "Two non-code cells => 2 triple-quoted blocks => 4 total triple quotes."
+
+    # Ensure markdown and raw cells are in triple quotes
+    assert "# Markdown cell" in result
+    assert "<raw content>" in result
+
+    # Ensure code cell is not in triple quotes
+    assert 'print("Hello Code")' in result
+    assert '"""\nprint("Hello Code")\n"""' not in result
+
+
+def test_process_notebook_with_worksheets(write_notebook: WriteNotebookFunc) -> None:
+    """
+    Test a notebook containing the (as of IPEP-17 deprecated) 'worksheets' key.
+
+    Given a notebook that uses the 'worksheets' key with a single worksheet,
+    When `process_notebook` is called,
+    Then a `DeprecationWarning` should be raised, and the content should match an equivalent notebook
+    that has top-level 'cells'.
+    """
+    with_worksheets = {
+        "worksheets": [
+            {
+                "cells": [
+                    {"cell_type": "markdown", "source": ["# Markdown cell"]},
+                    {"cell_type": "code", "source": ['print("Hello Code")']},
+                    {"cell_type": "raw", "source": ["<raw content>"]},
+                ]
+            }
+        ]
+    }
+    without_worksheets = with_worksheets["worksheets"][0]  # same, but no 'worksheets' key
+
+    nb_with = write_notebook("with_worksheets.ipynb", with_worksheets)
+    nb_without = write_notebook("without_worksheets.ipynb", without_worksheets)
+
+    with pytest.warns(DeprecationWarning, match="Worksheets are deprecated as of IPEP-17."):
+        result_with = process_notebook(nb_with)
+
+    # Should not raise a warning
+    result_without = process_notebook(nb_without)
+
+    assert result_with == result_without, "Content from the single worksheet should match the top-level equivalent."
+
+
+def test_process_notebook_multiple_worksheets(write_notebook: WriteNotebookFunc) -> None:
+    """
+    Test a notebook containing multiple 'worksheets'.
+
+    Given a notebook with two worksheets:
+      - First with a markdown cell
+      - Second with a code cell
+    When `process_notebook` is called,
+    Then a warning about multiple worksheets should be raised, and the second worksheet's content should appear
+    in the final output.
+    """
+    multi_worksheets = {
+        "worksheets": [
+            {"cells": [{"cell_type": "markdown", "source": ["# First Worksheet"]}]},
+            {"cells": [{"cell_type": "code", "source": ["# Second Worksheet"]}]},
+        ]
+    }
+
+    single_worksheet = {
+        "worksheets": [
+            {"cells": [{"cell_type": "markdown", "source": ["# First Worksheet"]}]},
+        ]
+    }
+
+    nb_multi = write_notebook("multiple_worksheets.ipynb", multi_worksheets)
+    nb_single = write_notebook("single_worksheet.ipynb", single_worksheet)
+
+    # Expect DeprecationWarning + UserWarning
+    with pytest.warns(
+        DeprecationWarning, match="Worksheets are deprecated as of IPEP-17. Consider updating the notebook."
+    ):
+        with pytest.warns(
+            UserWarning, match="Multiple worksheets detected. Combining all worksheets into a single script."
+        ):
+            result_multi = process_notebook(nb_multi)
+
+    # Expect DeprecationWarning only
+    with pytest.warns(
+        DeprecationWarning, match="Worksheets are deprecated as of IPEP-17. Consider updating the notebook."
+    ):
+        result_single = process_notebook(nb_single)
+
+    assert result_multi != result_single, "Two worksheets should produce more content than one."
+    assert len(result_multi) > len(result_single), "The multi-worksheet notebook should have extra code content."
+    assert "# First Worksheet" in result_single
+    assert "# Second Worksheet" not in result_single
+    assert "# First Worksheet" in result_multi
+    assert "# Second Worksheet" in result_multi
+
+
+def test_process_notebook_code_only(write_notebook: WriteNotebookFunc) -> None:
+    """
+    Test a notebook containing only code cells.
+
+    Given a notebook with code cells only:
+    When `process_notebook` is called,
+    Then no triple quotes should appear in the output.
+    """
+    notebook_content = {
+        "cells": [
+            {"cell_type": "code", "source": ["print('Code Cell 1')"]},
+            {"cell_type": "code", "source": ["x = 42"]},
+        ]
+    }
+    nb_path = write_notebook("code_only.ipynb", notebook_content)
+    result = process_notebook(nb_path)
+
+    assert '"""' not in result, "No triple quotes expected when there are only code cells."
+    assert "print('Code Cell 1')" in result
+    assert "x = 42" in result
+
+
+def test_process_notebook_markdown_only(write_notebook: WriteNotebookFunc) -> None:
+    """
+    Test a notebook with only markdown cells.
+
+    Given a notebook with two markdown cells:
+    When `process_notebook` is called,
+    Then each markdown cell should become a triple-quoted block (2 blocks => 4 triple quotes total).
+    """
+    notebook_content = {
+        "cells": [
+            {"cell_type": "markdown", "source": ["# Markdown Header"]},
+            {"cell_type": "markdown", "source": ["Some more markdown."]},
+        ]
+    }
+    nb_path = write_notebook("markdown_only.ipynb", notebook_content)
+    result = process_notebook(nb_path)
+
+    assert result.count('"""') == 4, "Two markdown cells => 2 blocks => 4 triple quotes total."
+    assert "# Markdown Header" in result
+    assert "Some more markdown." in result
+
+
+def test_process_notebook_raw_only(write_notebook: WriteNotebookFunc) -> None:
+    """
+    Test a notebook with only raw cells.
+
+    Given two raw cells:
+    When `process_notebook` is called,
+    Then each raw cell should become a triple-quoted block (2 blocks => 4 triple quotes total).
+    """
+    notebook_content = {
+        "cells": [
+            {"cell_type": "raw", "source": ["Raw content line 1"]},
+            {"cell_type": "raw", "source": ["Raw content line 2"]},
+        ]
+    }
+    nb_path = write_notebook("raw_only.ipynb", notebook_content)
+    result = process_notebook(nb_path)
+
+    assert result.count('"""') == 4, "Two raw cells => 2 blocks => 4 triple quotes."
+    assert "Raw content line 1" in result
+    assert "Raw content line 2" in result
+
+
+def test_process_notebook_empty_cells(write_notebook: WriteNotebookFunc) -> None:
+    """
+    Test that cells with an empty 'source' are skipped.
+
+    Given a notebook with 4 cells, 3 of which have empty `source`:
+    When `process_notebook` is called,
+    Then only the non-empty cell should appear in the output (1 block => 2 triple quotes).
+    """
+    notebook_content = {
+        "cells": [
+            {"cell_type": "markdown", "source": []},
+            {"cell_type": "code", "source": []},
+            {"cell_type": "raw", "source": []},
+            {"cell_type": "markdown", "source": ["# Non-empty markdown"]},
+        ]
+    }
+    nb_path = write_notebook("empty_cells.ipynb", notebook_content)
+    result = process_notebook(nb_path)
+
+    assert result.count('"""') == 2, "Only one non-empty cell => 1 block => 2 triple quotes"
+    assert "# Non-empty markdown" in result
+
+
+def test_process_notebook_invalid_cell_type(write_notebook: WriteNotebookFunc) -> None:
+    """
+    Test a notebook with an unknown cell type.
+
+    Given a notebook cell whose `cell_type` is unrecognized:
+    When `process_notebook` is called,
+    Then a ValueError should be raised.
+    """
+    notebook_content = {
+        "cells": [
+            {"cell_type": "markdown", "source": ["# Valid markdown"]},
+            {"cell_type": "unknown", "source": ["Unrecognized cell type"]},
+        ]
+    }
+    nb_path = write_notebook("invalid_cell_type.ipynb", notebook_content)
+
+    with pytest.raises(ValueError, match="Unknown cell type: unknown"):
+        process_notebook(nb_path)
+
+
+def test_process_notebook_with_output(write_notebook: WriteNotebookFunc) -> None:
+    """
+    Test a notebook that has code cells with outputs.
+
+    Given a code cell and multiple output objects:
+    When `process_notebook` is called with `include_output=True`,
+    Then the outputs should be appended as commented lines under the code.
+    """
+    notebook_content = {
+        "cells": [
+            {
+                "cell_type": "code",
+                "source": [
+                    "import matplotlib.pyplot as plt\n",
+                    "print('my_data')\n",
+                    "my_data = [1, 2, 3, 4, 5]\n",
+                    "plt.plot(my_data)\n",
+                    "my_data",
+                ],
+                "outputs": [
+                    {"output_type": "stream", "text": ["my_data"]},
+                    {"output_type": "execute_result", "data": {"text/plain": ["[1, 2, 3, 4, 5]"]}},
+                    {"output_type": "display_data", "data": {"text/plain": ["<Figure size 640x480 with 1 Axes>"]}},
+                ],
+            }
+        ]
+    }
+
+    nb_path = write_notebook("with_output.ipynb", notebook_content)
+    with_output = process_notebook(nb_path, include_output=True)
+    without_output = process_notebook(nb_path, include_output=False)
+
+    expected_source = "\n".join(
+        [
+            "# Jupyter notebook converted to Python script.\n",
+            "import matplotlib.pyplot as plt",
+            "print('my_data')",
+            "my_data = [1, 2, 3, 4, 5]",
+            "plt.plot(my_data)",
+            "my_data\n",
+        ]
+    )
+    expected_output = "\n".join(
+        [
+            "# Output:",
+            "#   my_data",
+            "#   [1, 2, 3, 4, 5]",
+            "#   <Figure size 640x480 with 1 Axes>\n",
+        ]
+    )
+
+    expected_combined = expected_source + expected_output
+
+    assert with_output == expected_combined, "Should include source code and comment-ified output."
+    assert without_output == expected_source, "Should include only the source code without output."
+
+
+
+================================================
+FILE: tests/test_repository_clone.py
+================================================
+"""
+Tests for the `cloning` module.
+
+These tests cover various scenarios for cloning repositories, verifying that the appropriate Git commands are invoked
+and handling edge cases such as nonexistent URLs, timeouts, redirects, and specific commits or branches.
+"""
+
+import asyncio
+import os
+from pathlib import Path
+from unittest.mock import AsyncMock
+
+import pytest
+from pytest_mock import MockerFixture
+
+from gitingest.cloning import clone_repo
+from gitingest.schemas import CloneConfig
+from gitingest.utils.exceptions import AsyncTimeoutError
+from gitingest.utils.git_utils import check_repo_exists
+from tests.conftest import DEMO_URL, LOCAL_REPO_PATH
+
+# All cloning-related tests assume (unless explicitly overridden) that the repository exists.
+# Apply the check-repo patch automatically so individual tests don't need to repeat it.
+pytestmark = pytest.mark.usefixtures("repo_exists_true")
+
+
+@pytest.mark.asyncio
+async def test_clone_with_commit(repo_exists_true: AsyncMock, run_command_mock: AsyncMock) -> None:
+    """
+    Test cloning a repository with a specific commit hash.
+
+    Given a valid URL and a commit hash:
+    When `clone_repo` is called,
+    Then the repository should be cloned and checked out at that commit.
+    """
+    clone_config = CloneConfig(
+        url=DEMO_URL,
+        local_path=LOCAL_REPO_PATH,
+        commit="a" * 40,  # Simulating a valid commit hash
+        branch="main",
+    )
+
+    await clone_repo(clone_config)
+
+    repo_exists_true.assert_called_once_with(clone_config.url, token=None)
+    assert run_command_mock.call_count == 2  # Clone and checkout calls
+
+
+@pytest.mark.asyncio
+async def test_clone_without_commit(repo_exists_true: AsyncMock, run_command_mock: AsyncMock) -> None:
+    """
+    Test cloning a repository when no commit hash is provided.
+
+    Given a valid URL and no commit hash:
+    When `clone_repo` is called,
+    Then only the clone_repo operation should be performed (no checkout).
+    """
+    clone_config = CloneConfig(url=DEMO_URL, local_path=LOCAL_REPO_PATH, commit=None, branch="main")
+
+    await clone_repo(clone_config)
+
+    repo_exists_true.assert_called_once_with(clone_config.url, token=None)
+    assert run_command_mock.call_count == 1  # Only clone call
+
+
+@pytest.mark.asyncio
+async def test_clone_nonexistent_repository(repo_exists_true: AsyncMock) -> None:
+    """
+    Test cloning a nonexistent repository URL.
+
+    Given an invalid or nonexistent URL:
+    When `clone_repo` is called,
+    Then a ValueError should be raised with an appropriate error message.
+    """
+    clone_config = CloneConfig(
+        url="https://github.com/user/nonexistent-repo",
+        local_path=LOCAL_REPO_PATH,
+        commit=None,
+        branch="main",
+    )
+    # Override the default fixture behaviour for this test
+    repo_exists_true.return_value = False
+
+    with pytest.raises(ValueError, match="Repository not found"):
+        await clone_repo(clone_config)
+
+    repo_exists_true.assert_called_once_with(clone_config.url, token=None)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "mock_stdout, return_code, expected",
+    [
+        (b"HTTP/1.1 200 OK\n", 0, True),  # Existing repo
+        (b"HTTP/1.1 404 Not Found\n", 0, False),  # Non-existing repo
+        (b"HTTP/1.1 200 OK\n", 1, False),  # Failed request
+    ],
+)
+async def test_check_repo_exists(mock_stdout: bytes, return_code: int, expected: bool, mocker: MockerFixture) -> None:
+    """
+    Test the `check_repo_exists` function with different Git HTTP responses.
+
+    Given various stdout lines and return codes:
+    When `check_repo_exists` is called,
+    Then it should correctly indicate whether the repository exists.
+    """
+    mock_exec = mocker.patch("asyncio.create_subprocess_exec", new_callable=AsyncMock)
+    mock_process = AsyncMock()
+    mock_process.communicate.return_value = (mock_stdout, b"")
+    mock_process.returncode = return_code
+    mock_exec.return_value = mock_process
+
+    repo_exists = await check_repo_exists(DEMO_URL)
+
+    assert repo_exists is expected
+
+
+@pytest.mark.asyncio
+async def test_clone_with_custom_branch(run_command_mock: AsyncMock) -> None:
+    """
+    Test cloning a repository with a specified custom branch.
+
+    Given a valid URL and a branch:
+    When `clone_repo` is called,
+    Then the repository should be cloned shallowly to that branch.
+    """
+    clone_config = CloneConfig(url=DEMO_URL, local_path=LOCAL_REPO_PATH, branch="feature-branch")
+
+    await clone_repo(clone_config)
+
+    run_command_mock.assert_called_once_with(
+        "git",
+        "clone",
+        "--single-branch",
+        "--depth=1",
+        "--branch",
+        "feature-branch",
+        clone_config.url,
+        clone_config.local_path,
+    )
+
+
+@pytest.mark.asyncio
+async def test_git_command_failure(run_command_mock: AsyncMock) -> None:
+    """
+    Test cloning when the Git command fails during execution.
+
+    Given a valid URL, but `run_command` raises a RuntimeError:
+    When `clone_repo` is called,
+    Then a RuntimeError should be raised with the correct message.
+    """
+    clone_config = CloneConfig(url=DEMO_URL, local_path=LOCAL_REPO_PATH)
+
+    run_command_mock.side_effect = RuntimeError("Git command failed")
+
+    with pytest.raises(RuntimeError, match="Git command failed"):
+        await clone_repo(clone_config)
+
+
+@pytest.mark.asyncio
+async def test_clone_default_shallow_clone(run_command_mock: AsyncMock) -> None:
+    """
+    Test cloning a repository with the default shallow clone options.
+
+    Given a valid URL and no branch or commit:
+    When `clone_repo` is called,
+    Then the repository should be cloned with `--depth=1` and `--single-branch`.
+    """
+    clone_config = CloneConfig(url=DEMO_URL, local_path=LOCAL_REPO_PATH)
+
+    await clone_repo(clone_config)
+
+    run_command_mock.assert_called_once_with(
+        "git",
+        "clone",
+        "--single-branch",
+        "--depth=1",
+        clone_config.url,
+        clone_config.local_path,
+    )
+
+
+@pytest.mark.asyncio
+async def test_clone_commit_without_branch(run_command_mock: AsyncMock) -> None:
+    """
+    Test cloning when a commit hash is provided but no branch is specified.
+
+    Given a valid URL and a commit hash (but no branch):
+    When `clone_repo` is called,
+    Then the repository should be cloned and checked out at that commit.
+    """
+    # Simulating a valid commit hash
+    clone_config = CloneConfig(url=DEMO_URL, local_path=LOCAL_REPO_PATH, commit="a" * 40)
+
+    await clone_repo(clone_config)
+
+    assert run_command_mock.call_count == 2  # Clone and checkout calls
+    run_command_mock.assert_any_call("git", "clone", "--single-branch", clone_config.url, clone_config.local_path)
+    run_command_mock.assert_any_call("git", "-C", clone_config.local_path, "checkout", clone_config.commit)
+
+
+@pytest.mark.asyncio
+async def test_check_repo_exists_with_redirect(mocker: MockerFixture) -> None:
+    """
+    Test `check_repo_exists` when a redirect (302) is returned.
+
+    Given a URL that responds with "302 Found":
+    When `check_repo_exists` is called,
+    Then it should return `False`, indicating the repo is inaccessible.
+    """
+    mock_exec = mocker.patch("asyncio.create_subprocess_exec", new_callable=AsyncMock)
+    mock_process = AsyncMock()
+    mock_process.communicate.return_value = (b"HTTP/1.1 302 Found\n", b"")
+    mock_process.returncode = 0  # Simulate successful request
+    mock_exec.return_value = mock_process
+
+    repo_exists = await check_repo_exists(DEMO_URL)
+
+    assert repo_exists is False
+
+
+@pytest.mark.asyncio
+async def test_check_repo_exists_with_permanent_redirect(mocker: MockerFixture) -> None:
+    """
+    Test `check_repo_exists` when a permanent redirect (301) is returned.
+
+    Given a URL that responds with "301 Found":
+    When `check_repo_exists` is called,
+    Then it should return `True`, indicating the repo may exist at the new location.
+    """
+    mock_exec = mocker.patch("asyncio.create_subprocess_exec", new_callable=AsyncMock)
+    mock_process = AsyncMock()
+    mock_process.communicate.return_value = (b"HTTP/1.1 301 Found\n", b"")
+    mock_process.returncode = 0  # Simulate successful request
+    mock_exec.return_value = mock_process
+
+    repo_exists = await check_repo_exists(DEMO_URL)
+
+    assert repo_exists
+
+
+@pytest.mark.asyncio
+async def test_clone_with_timeout(run_command_mock: AsyncMock) -> None:
+    """
+    Test cloning a repository when a timeout occurs.
+
+    Given a valid URL, but `run_command` times out:
+    When `clone_repo` is called,
+    Then an `AsyncTimeoutError` should be raised to indicate the operation exceeded time limits.
+    """
+    clone_config = CloneConfig(url=DEMO_URL, local_path=LOCAL_REPO_PATH)
+
+    run_command_mock.side_effect = asyncio.TimeoutError
+
+    with pytest.raises(AsyncTimeoutError, match="Operation timed out after"):
+        await clone_repo(clone_config)
+
+
+@pytest.mark.asyncio
+async def test_clone_specific_branch(tmp_path: Path) -> None:
+    """
+    Test cloning a specific branch of a repository.
+
+    Given a valid repository URL and a branch name:
+    When `clone_repo` is called,
+    Then the repository should be cloned and checked out at that branch.
+    """
+    repo_url = "https://github.com/cyclotruc/gitingest.git"
+    branch_name = "main"
+    local_path = tmp_path / "gitingest"
+    clone_config = CloneConfig(url=repo_url, local_path=str(local_path), branch=branch_name)
+
+    await clone_repo(clone_config)
+
+    assert local_path.exists(), "The repository was not cloned successfully."
+    assert local_path.is_dir(), "The cloned repository path is not a directory."
+    current_branch = os.popen(f"git -C {local_path} branch --show-current").read().strip()
+    assert current_branch == branch_name, f"Expected branch '{branch_name}', got '{current_branch}'."
+
+
+@pytest.mark.asyncio
+async def test_clone_branch_with_slashes(tmp_path: Path, run_command_mock: AsyncMock) -> None:
+    """
+    Test cloning a branch with slashes in the name.
+
+    Given a valid repository URL and a branch name with slashes:
+    When `clone_repo` is called,
+    Then the repository should be cloned and checked out at that branch.
+    """
+    branch_name = "fix/in-operator"
+    local_path = tmp_path / "gitingest"
+    clone_config = CloneConfig(url=DEMO_URL, local_path=str(local_path), branch=branch_name)
+
+    await clone_repo(clone_config)
+
+    run_command_mock.assert_called_once_with(
+        "git",
+        "clone",
+        "--single-branch",
+        "--depth=1",
+        "--branch",
+        "fix/in-operator",
+        clone_config.url,
+        clone_config.local_path,
+    )
+
+
+@pytest.mark.asyncio
+async def test_clone_creates_parent_directory(tmp_path: Path, run_command_mock: AsyncMock) -> None:
+    """
+    Test that clone_repo creates parent directories if they don't exist.
+
+    Given a local path with non-existent parent directories:
+    When `clone_repo` is called,
+    Then it should create the parent directories before attempting to clone.
+    """
+    nested_path = tmp_path / "deep" / "nested" / "path" / "repo"
+    clone_config = CloneConfig(url=DEMO_URL, local_path=str(nested_path))
+
+    await clone_repo(clone_config)
+
+    assert nested_path.parent.exists()
+    run_command_mock.assert_called_once_with(
+        "git",
+        "clone",
+        "--single-branch",
+        "--depth=1",
+        clone_config.url,
+        str(nested_path),
+    )
+
+
+@pytest.mark.asyncio
+async def test_clone_with_specific_subpath(run_command_mock: AsyncMock) -> None:
+    """
+    Test cloning a repository with a specific subpath.
+
+    Given a valid repository URL and a specific subpath:
+    When `clone_repo` is called,
+    Then the repository should be cloned with sparse checkout enabled and the specified subpath.
+    """
+    clone_config = CloneConfig(url=DEMO_URL, local_path=LOCAL_REPO_PATH, subpath="src/docs")
+
+    await clone_repo(clone_config)
+
+    # Verify the clone command includes sparse checkout flags
+    run_command_mock.assert_any_call(
+        "git",
+        "clone",
+        "--single-branch",
+        "--filter=blob:none",
+        "--sparse",
+        "--depth=1",
+        clone_config.url,
+        clone_config.local_path,
+    )
+
+    # Verify the sparse-checkout command sets the correct path
+    run_command_mock.assert_any_call("git", "-C", clone_config.local_path, "sparse-checkout", "set", "src/docs")
+
+    assert run_command_mock.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_clone_with_commit_and_subpath(run_command_mock: AsyncMock) -> None:
+    """
+    Test cloning a repository with both a specific commit and subpath.
+
+    Given a valid repository URL, commit hash, and subpath:
+    When `clone_repo` is called,
+    Then the repository should be cloned with sparse checkout enabled,
+    checked out at the specific commit, and only include the specified subpath.
+    """
+    # Simulating a valid commit hash
+    clone_config = CloneConfig(url=DEMO_URL, local_path=LOCAL_REPO_PATH, commit="a" * 40, subpath="src/docs")
+
+    await clone_repo(clone_config)
+
+    # Verify the clone command includes sparse checkout flags
+    run_command_mock.assert_any_call(
+        "git",
+        "clone",
+        "--single-branch",
+        "--filter=blob:none",
+        "--sparse",
+        clone_config.url,
+        clone_config.local_path,
+    )
+
+    # Verify sparse-checkout set
+    run_command_mock.assert_any_call(
+        "git",
+        "-C",
+        clone_config.local_path,
+        "sparse-checkout",
+        "set",
+        "src/docs",
+    )
+
+    # Verify checkout commit
+    run_command_mock.assert_any_call(
+        "git",
+        "-C",
+        clone_config.local_path,
+        "checkout",
+        clone_config.commit,
+    )
+
+    assert run_command_mock.call_count == 3
+
+
+
+================================================
+FILE: tests/query_parser/__init__.py
+================================================
+
+
+
+================================================
+FILE: tests/query_parser/test_git_host_agnostic.py
+================================================
+"""
+Tests to verify that the query parser is Git host agnostic.
+
+These tests confirm that `parse_query` correctly identifies user/repo pairs and canonical URLs for GitHub, GitLab,
+Bitbucket, Gitea, and Codeberg, even if the host is omitted.
+"""
+
+from typing import List, Tuple
+
+import pytest
+
+from gitingest.query_parsing import parse_query
+from gitingest.utils.query_parser_utils import KNOWN_GIT_HOSTS
+
+# Repository matrix: (host, user, repo)
+_REPOS: List[Tuple[str, str, str]] = [
+    ("github.com", "tiangolo", "fastapi"),
+    ("gitlab.com", "gitlab-org", "gitlab-runner"),
+    ("bitbucket.org", "na-dna", "llm-knowledge-share"),
+    ("gitea.com", "xorm", "xorm"),
+    ("codeberg.org", "forgejo", "forgejo"),
+    ("git.rwth-aachen.de", "medialab", "19squared"),
+    ("gitlab.alpinelinux.org", "alpine", "apk-tools"),
+]
+
+
+# Generate cartesian product of repository tuples with URL variants.
+@pytest.mark.parametrize("host, user, repo", _REPOS, ids=[f"{h}:{u}/{r}" for h, u, r in _REPOS])
+@pytest.mark.parametrize("variant", ["full", "noscheme", "slug"])
+@pytest.mark.asyncio
+async def test_parse_query_without_host(
+    host: str,
+    user: str,
+    repo: str,
+    variant: str,
+) -> None:
+    """Verify that `parse_query` handles URLs, host-omitted URLs and raw slugs."""
+
+    # Build the input URL based on the selected variant
+    if variant == "full":
+        url = f"https://{host}/{user}/{repo}"
+    elif variant == "noscheme":
+        url = f"{host}/{user}/{repo}"
+    else:  # "slug"
+        url = f"{user}/{repo}"
+
+    expected_url = f"https://{host}/{user}/{repo}"
+
+    # For slug form with a custom host (not in KNOWN_GIT_HOSTS) we expect a failure,
+    # because the parser cannot guess which domain to use.
+    if variant == "slug" and host not in KNOWN_GIT_HOSTS:
+        with pytest.raises(ValueError):
+            await parse_query(url, max_file_size=50, from_web=True)
+        return
+
+    query = await parse_query(url, max_file_size=50, from_web=True)
+
+    # Compare against the canonical dict while ignoring unpredictable fields.
+    actual = query.model_dump(exclude={"id", "local_path", "ignore_patterns"})
+
+    expected = {
+        "user_name": user,
+        "repo_name": repo,
+        "url": expected_url,
+        "slug": f"{user}-{repo}",
+        "subpath": "/",
+        "type": None,
+        "branch": None,
+        "commit": None,
+        "max_file_size": 50,
+        "include_patterns": None,
+    }
+
+    assert actual == expected
+
+
+
+================================================
+FILE: tests/query_parser/test_query_parser.py
+================================================
+"""
+Tests for the `query_parsing` module.
+
+These tests cover URL parsing, pattern parsing, and handling of branches/subpaths for HTTP(S) repositories and local
+paths.
+"""
+
+from pathlib import Path
+from typing import Callable, List, Optional
+from unittest.mock import AsyncMock
+
+import pytest
+from pytest_mock import MockerFixture
+
+from gitingest.query_parsing import _parse_patterns, _parse_remote_repo, parse_query
+from gitingest.schemas.ingestion_schema import IngestionQuery
+from gitingest.utils.ignore_patterns import DEFAULT_IGNORE_PATTERNS
+from tests.conftest import DEMO_URL
+
+URLS_HTTPS: List[str] = [
+    DEMO_URL,
+    "https://gitlab.com/user/repo",
+    "https://bitbucket.org/user/repo",
+    "https://gitea.com/user/repo",
+    "https://codeberg.org/user/repo",
+    "https://gist.github.com/user/repo",
+    "https://git.example.com/user/repo",
+    "https://gitlab.example.com/user/repo",
+    "https://gitlab.example.se/user/repo",
+]
+
+URLS_HTTP: List[str] = [url.replace("https://", "http://") for url in URLS_HTTPS]
+
+
+@pytest.mark.parametrize("url", URLS_HTTPS, ids=lambda u: u)
+@pytest.mark.asyncio
+async def test_parse_url_valid_https(url: str) -> None:
+    """Valid HTTPS URLs parse correctly and `query.url` equals the input."""
+    query = await _assert_basic_repo_fields(url)
+
+    assert query.url == url  # HTTPS: canonical URL should equal input
+
+
+@pytest.mark.parametrize("url", URLS_HTTP, ids=lambda u: u)
+@pytest.mark.asyncio
+async def test_parse_url_valid_http(url: str) -> None:
+    """Valid HTTP URLs parse correctly (slug check only)."""
+    await _assert_basic_repo_fields(url)
+
+
+@pytest.mark.asyncio
+async def test_parse_url_invalid() -> None:
+    """
+    Test `_parse_remote_repo` with an invalid URL.
+
+    Given an HTTPS URL lacking a repository structure (e.g., "https://github.com"),
+    When `_parse_remote_repo` is called,
+    Then a ValueError should be raised indicating an invalid repository URL.
+    """
+    url = "https://github.com"
+
+    with pytest.raises(ValueError, match="Invalid repository URL"):
+        await _parse_remote_repo(url)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("url", [DEMO_URL, "https://gitlab.com/user/repo"])
+async def test_parse_query_basic(url: str) -> None:
+    """
+    Test `parse_query` with a basic valid repository URL.
+
+    Given an HTTPS URL and ignore_patterns="*.txt":
+    When `parse_query` is called,
+    Then user/repo, URL, and ignore patterns should be parsed correctly.
+    """
+    query = await parse_query(source=url, max_file_size=50, from_web=True, ignore_patterns="*.txt")
+
+    assert query.user_name == "user"
+    assert query.repo_name == "repo"
+    assert query.url == url
+    assert query.ignore_patterns
+    assert "*.txt" in query.ignore_patterns
+
+
+@pytest.mark.asyncio
+async def test_parse_query_mixed_case() -> None:
+    """
+    Test `parse_query` with mixed-case URLs.
+
+    Given a URL with mixed-case parts (e.g. "Https://GitHub.COM/UsEr/rEpO"):
+    When `parse_query` is called,
+    Then the user and repo names should be normalized to lowercase.
+    """
+    url = "Https://GitHub.COM/UsEr/rEpO"
+    query = await parse_query(url, max_file_size=50, from_web=True)
+
+    assert query.user_name == "user"
+    assert query.repo_name == "repo"
+
+
+@pytest.mark.asyncio
+async def test_parse_query_include_pattern() -> None:
+    """
+    Test `parse_query` with a specified include pattern.
+
+    Given a URL and include_patterns="*.py":
+    When `parse_query` is called,
+    Then the include pattern should be set, and default ignore patterns remain applied.
+    """
+    query = await parse_query(DEMO_URL, max_file_size=50, from_web=True, include_patterns="*.py")
+
+    assert query.include_patterns == {"*.py"}
+    assert query.ignore_patterns == DEFAULT_IGNORE_PATTERNS
+
+
+@pytest.mark.asyncio
+async def test_parse_query_invalid_pattern() -> None:
+    """
+    Test `parse_query` with an invalid pattern.
+
+    Given an include pattern containing special characters (e.g., "*.py;rm -rf"):
+    When `parse_query` is called,
+    Then a ValueError should be raised indicating invalid characters.
+    """
+    with pytest.raises(ValueError, match="Pattern.*contains invalid characters"):
+        await parse_query(DEMO_URL, max_file_size=50, from_web=True, include_patterns="*.py;rm -rf")
+
+
+@pytest.mark.asyncio
+async def test_parse_url_with_subpaths(stub_branches: Callable[[List[str]], None]) -> None:
+    """
+    Test `_parse_remote_repo` with a URL containing branch and subpath.
+
+    Given a URL referencing a branch ("main") and a subdir ("subdir/file"):
+    When `_parse_remote_repo` is called with remote branch fetching,
+    Then user, repo, branch, and subpath should be identified correctly.
+    """
+    url = DEMO_URL + "/tree/main/subdir/file"
+
+    stub_branches(["main", "dev", "feature-branch"])
+
+    query = await _assert_basic_repo_fields(url)
+
+    assert query.user_name == "user"
+    assert query.repo_name == "repo"
+    assert query.branch == "main"
+    assert query.subpath == "/subdir/file"
+
+
+@pytest.mark.asyncio
+async def test_parse_url_invalid_repo_structure() -> None:
+    """
+    Test `_parse_remote_repo` with a URL missing a repository name.
+
+    Given a URL like "https://github.com/user":
+    When `_parse_remote_repo` is called,
+    Then a ValueError should be raised indicating an invalid repository URL.
+    """
+    url = "https://github.com/user"
+
+    with pytest.raises(ValueError, match="Invalid repository URL"):
+        await _parse_remote_repo(url)
+
+
+def test_parse_patterns_valid() -> None:
+    """
+    Test `_parse_patterns` with valid comma-separated patterns.
+
+    Given patterns like "*.py, *.md, docs/*":
+    When `_parse_patterns` is called,
+    Then it should return a set of parsed strings.
+    """
+    patterns = "*.py, *.md, docs/*"
+    parsed_patterns = _parse_patterns(patterns)
+
+    assert parsed_patterns == {"*.py", "*.md", "docs/*"}
+
+
+def test_parse_patterns_invalid_characters() -> None:
+    """
+    Test `_parse_patterns` with invalid characters.
+
+    Given a pattern string containing special characters (e.g. "*.py;rm -rf"):
+    When `_parse_patterns` is called,
+    Then a ValueError should be raised indicating invalid pattern syntax.
+    """
+    patterns = "*.py;rm -rf"
+
+    with pytest.raises(ValueError, match="Pattern.*contains invalid characters"):
+        _parse_patterns(patterns)
+
+
+@pytest.mark.asyncio
+async def test_parse_query_with_large_file_size() -> None:
+    """
+    Test `parse_query` with a very large file size limit.
+
+    Given a URL and max_file_size=10**9:
+    When `parse_query` is called,
+    Then `max_file_size` should be set correctly and default ignore patterns remain unchanged.
+    """
+    query = await parse_query(DEMO_URL, max_file_size=10**9, from_web=True)
+
+    assert query.max_file_size == 10**9
+    assert query.ignore_patterns == DEFAULT_IGNORE_PATTERNS
+
+
+@pytest.mark.asyncio
+async def test_parse_query_empty_patterns() -> None:
+    """
+    Test `parse_query` with empty patterns.
+
+    Given empty include_patterns and ignore_patterns:
+    When `parse_query` is called,
+    Then include_patterns becomes None and default ignore patterns apply.
+    """
+    query = await parse_query(DEMO_URL, max_file_size=50, from_web=True, include_patterns="", ignore_patterns="")
+
+    assert query.include_patterns is None
+    assert query.ignore_patterns == DEFAULT_IGNORE_PATTERNS
+
+
+@pytest.mark.asyncio
+async def test_parse_query_include_and_ignore_overlap() -> None:
+    """
+    Test `parse_query` with overlapping patterns.
+
+    Given include="*.py" and ignore={"*.py", "*.txt"}:
+    When `parse_query` is called,
+    Then "*.py" should be removed from ignore patterns.
+    """
+    query = await parse_query(
+        DEMO_URL,
+        max_file_size=50,
+        from_web=True,
+        include_patterns="*.py",
+        ignore_patterns={"*.py", "*.txt"},
+    )
+
+    assert query.include_patterns == {"*.py"}
+    assert query.ignore_patterns is not None
+    assert "*.py" not in query.ignore_patterns
+    assert "*.txt" in query.ignore_patterns
+
+
+@pytest.mark.asyncio
+async def test_parse_query_local_path() -> None:
+    """
+    Test `parse_query` with a local file path.
+
+    Given "/home/user/project" and from_web=False:
+    When `parse_query` is called,
+    Then the local path should be set, id generated, and slug formed accordingly.
+    """
+    path = "/home/user/project"
+    query = await parse_query(path, max_file_size=100, from_web=False)
+    tail = Path("home/user/project")
+
+    assert query.local_path.parts[-len(tail.parts) :] == tail.parts
+    assert query.id is not None
+    assert query.slug == "home/user/project"
+
+
+@pytest.mark.asyncio
+async def test_parse_query_relative_path() -> None:
+    """
+    Test `parse_query` with a relative path.
+
+    Given "./project" and from_web=False:
+    When `parse_query` is called,
+    Then local_path resolves relatively, and slug ends with "project".
+    """
+    path = "./project"
+    query = await parse_query(path, max_file_size=100, from_web=False)
+    tail = Path("project")
+
+    assert query.local_path.parts[-len(tail.parts) :] == tail.parts
+    assert query.slug.endswith("project")
+
+
+@pytest.mark.asyncio
+async def test_parse_query_empty_source() -> None:
+    """
+    Test `parse_query` with an empty string.
+
+    Given an empty source string:
+    When `parse_query` is called,
+    Then a ValueError should be raised indicating an invalid repository URL.
+    """
+    url = ""
+
+    with pytest.raises(ValueError, match="Invalid repository URL"):
+        await parse_query(url, max_file_size=100, from_web=True)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "path, expected_branch, expected_commit",
+    [
+        ("/tree/main", "main", None),
+        ("/tree/abcd1234abcd1234abcd1234abcd1234abcd1234", None, "abcd1234abcd1234abcd1234abcd1234abcd1234"),
+    ],
+)
+async def test_parse_url_branch_and_commit_distinction(
+    path: str,
+    expected_branch: str,
+    expected_commit: str,
+    stub_branches: Callable[[List[str]], None],
+) -> None:
+    """
+    Test `_parse_remote_repo` distinguishing branch vs. commit hash.
+
+    Given either a branch URL (e.g., ".../tree/main") or a 40-character commit URL:
+    When `_parse_remote_repo` is called with branch fetching,
+    Then the function should correctly set `branch` or `commit` based on the URL content.
+    """
+    stub_branches(["main", "dev", "feature-branch"])
+
+    url = DEMO_URL + path
+    query = await _assert_basic_repo_fields(url)
+
+    assert query.branch == expected_branch
+    assert query.commit == expected_commit
+
+
+@pytest.mark.asyncio
+async def test_parse_query_uuid_uniqueness() -> None:
+    """
+    Test `parse_query` for unique UUID generation.
+
+    Given the same path twice:
+    When `parse_query` is called repeatedly,
+    Then each call should produce a different query id.
+    """
+    path = "/home/user/project"
+    query_1 = await parse_query(path, max_file_size=100, from_web=False)
+    query_2 = await parse_query(path, max_file_size=100, from_web=False)
+
+    assert query_1.id != query_2.id
+
+
+@pytest.mark.asyncio
+async def test_parse_url_with_query_and_fragment() -> None:
+    """
+    Test `_parse_remote_repo` with query parameters and a fragment.
+
+    Given a URL like "https://github.com/user/repo?arg=value#fragment":
+    When `_parse_remote_repo` is called,
+    Then those parts should be stripped, leaving a clean user/repo URL.
+    """
+    url = DEMO_URL + "?arg=value#fragment"
+    query = await _parse_remote_repo(url)
+
+    assert query.user_name == "user"
+    assert query.repo_name == "repo"
+    assert query.url == DEMO_URL  # URL should be cleaned
+
+
+@pytest.mark.asyncio
+async def test_parse_url_unsupported_host() -> None:
+    """
+    Test `_parse_remote_repo` with an unsupported host.
+
+    Given "https://only-domain.com":
+    When `_parse_remote_repo` is called,
+    Then a ValueError should be raised for the unknown domain.
+    """
+    url = "https://only-domain.com"
+
+    with pytest.raises(ValueError, match="Unknown domain 'only-domain.com' in URL"):
+        await _parse_remote_repo(url)
+
+
+@pytest.mark.asyncio
+async def test_parse_query_with_branch() -> None:
+    """
+    Test `parse_query` when a branch is specified in a blob path.
+
+    Given "https://github.com/pandas-dev/pandas/blob/2.2.x/...":
+    When `parse_query` is called,
+    Then the branch should be identified, subpath set, and commit remain None.
+    """
+    url = "https://github.com/pandas-dev/pandas/blob/2.2.x/.github/ISSUE_TEMPLATE/documentation_improvement.yaml"
+    query = await parse_query(url, max_file_size=10**9, from_web=True)
+
+    assert query.user_name == "pandas-dev"
+    assert query.repo_name == "pandas"
+    assert query.url == "https://github.com/pandas-dev/pandas"
+    assert query.slug == "pandas-dev-pandas"
+    assert query.id is not None
+    assert query.subpath == "/.github/ISSUE_TEMPLATE/documentation_improvement.yaml"
+    assert query.branch == "2.2.x"
+    assert query.commit is None
+    assert query.type == "blob"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "path, expected_branch, expected_subpath",
+    [
+        ("/tree/main/src", "main", "/src"),
+        ("/tree/fix1", "fix1", "/"),
+        ("/tree/nonexistent-branch/src", "nonexistent-branch", "/src"),
+    ],
+)
+async def test_parse_repo_source_with_failed_git_command(
+    path: str,
+    expected_branch: str,
+    expected_subpath: str,
+    mocker: MockerFixture,
+) -> None:
+    """
+    Test `_parse_remote_repo` when git fetch fails.
+
+    Given a URL referencing a branch, but Git fetching fails:
+    When `_parse_remote_repo` is called,
+    Then it should fall back to path components for branch identification.
+    """
+    url = DEMO_URL + path
+
+    mock_fetch_branches = mocker.patch("gitingest.utils.git_utils.fetch_remote_branch_list", new_callable=AsyncMock)
+    mock_fetch_branches.side_effect = Exception("Failed to fetch branch list")
+
+    with pytest.warns(
+        RuntimeWarning,
+        match="Warning: Failed to fetch branch list: Command failed: "
+        "git ls-remote --heads https://github.com/user/repo",
+    ):
+        query = await _parse_remote_repo(url)
+
+    assert query.branch == expected_branch
+    assert query.subpath == expected_subpath
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("path", "expected_branch", "expected_subpath"),
+    [
+        ("/tree/feature/fix1/src", "feature/fix1", "/src"),
+        ("/tree/main/src", "main", "/src"),
+        ("", None, "/"),
+        ("/tree/nonexistent-branch/src", None, "/"),
+        ("/tree/fix", "fix", "/"),
+        ("/blob/fix/page.html", "fix", "/page.html"),
+    ],
+)
+async def test_parse_repo_source_with_various_url_patterns(
+    path: str,
+    expected_branch: Optional[str],
+    expected_subpath: str,
+    stub_branches: Callable[[List[str]], None],
+) -> None:
+    """
+    `_parse_remote_repo` should detect (or reject) a branch and resolve the
+    sub-path for various GitHub-style URL permutations.
+
+    Branch discovery is stubbed so that only names passed to `stub_branches` are considered "remote".
+    """
+    stub_branches(["feature/fix1", "main", "feature-branch", "fix"])
+
+    url = DEMO_URL + path
+    query = await _assert_basic_repo_fields(url)
+
+    assert query.branch == expected_branch
+    assert query.subpath == expected_subpath
+
+
+async def _assert_basic_repo_fields(url: str) -> IngestionQuery:
+    """Run _parse_remote_repo and assert user, repo and slug are parsed."""
+
+    query = await _parse_remote_repo(url)
+
+    assert query.user_name == "user"
+    assert query.repo_name == "repo"
+    assert query.slug == "user-repo"
+
+    return query
+
+

@@ -17,7 +17,7 @@ from gitingest.entrypoint import ingest_async
     "--output",
     "-o",
     default=None,
-    help="Output file path (default: <repo_name>.txt in current directory)",
+    help="Output file path (default: digest.txt in current directory). Use '-' for stdout.",
 )
 @click.option(
     "--max-size",
@@ -81,7 +81,7 @@ def main(
         A directory path or a Git repository URL.
     output : str, optional
         The path where the output file will be written. If not specified, the output will be written
-        to a file named `<repo_name>.txt` in the current directory. Use '-' to output to stdout.
+        to a file named `digest.txt` in the current directory. Use '-' to output to stdout.
     max_size : int
         Maximum file size (in bytes) to consider.
     exclude_pattern : Tuple[str, ...]
@@ -95,6 +95,25 @@ def main(
     token: str, optional
         GitHub personal-access token (PAT). Needed when *source* refers to a
         **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
+
+    Examples
+    --------
+    Basic usage:
+        $ gitingest .
+        $ gitingest /path/to/repo
+        $ gitingest https://github.com/user/repo
+
+    Output to stdout:
+        $ gitingest . -o -
+        $ gitingest https://github.com/user/repo --output -
+
+    With filtering:
+        $ gitingest . -i "*.py" -e "*.log"
+        $ gitingest . --include-pattern "*.js" --exclude-pattern "node_modules/*"
+
+    Private repositories:
+        $ gitingest https://github.com/user/private-repo -t ghp_token
+        $ GITHUB_TOKEN=ghp_token gitingest https://github.com/user/private-repo
     """
     asyncio.run(
         _async_main(
@@ -133,7 +152,7 @@ async def _async_main(
         A directory path or a Git repository URL.
     output : str, optional
         The path where the output file will be written. If not specified, the output will be written
-        to a file named `<repo_name>.txt` in the current directory. Use '-' to output to stdout.
+        to a file named `digest.txt` in the current directory. Use '-' to output to stdout.
     max_size : int
         Maximum file size (in bytes) to consider.
     exclude_pattern : Tuple[str, ...]
