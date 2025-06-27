@@ -4,6 +4,7 @@ import asyncio
 import base64
 import re
 from typing import List, Optional, Tuple
+from urllib.parse import urlparse
 
 from gitingest.utils.exceptions import InvalidGitHubTokenError
 
@@ -13,18 +14,17 @@ GITHUB_PAT_PATTERN = r"^(?:github_pat_|ghp_)[A-Za-z0-9_]{36,}$"
 def _is_github_host(url: str) -> bool:
     """
     Check if a URL is from a GitHub host (github.com or GitHub Enterprise).
-    
+
     Parameters
     ----------
     url : str
         The URL to check
-        
+
     Returns
     -------
     bool
         True if the URL is from a GitHub host, False otherwise
     """
-    from urllib.parse import urlparse
     parsed = urlparse(url)
     hostname = parsed.hostname or ""
     return hostname == "github.com" or hostname.startswith("github.")
@@ -159,8 +159,8 @@ async def _check_github_repo_exists(url: str, token: Optional[str] = None) -> bo
         owner, repo = m.groups()
         api = f"https://api.github.com/repos/{owner}/{repo}"
     else:
-        domain, owner, repo = m.groups()
-        from urllib.parse import urlparse
+        _, owner, repo = m.groups()
+
         parsed = urlparse(url)
         api = f"https://{parsed.hostname}/api/v3/repos/{owner}/{repo}"
     cmd = [
@@ -216,7 +216,13 @@ async def fetch_remote_branch_list(url: str, token: Optional[str] = None) -> Lis
 
     # Add authentication if needed
     if token and _is_github_host(url):
-        fetch_branches_command += ["-c", create_git_auth_header(token, url)]
+        # Only pass URL if it's not the default github.com to maintain backward compatibility
+
+        parsed = urlparse(url)
+        if parsed.hostname == "github.com":
+            fetch_branches_command += ["-c", create_git_auth_header(token)]
+        else:
+            fetch_branches_command += ["-c", create_git_auth_header(token, url)]
 
     fetch_branches_command += ["ls-remote", "--heads", url]
 
@@ -253,7 +259,13 @@ def create_git_command(base_cmd: List[str], local_path: str, url: str, token: Op
     cmd = base_cmd + ["-C", local_path]
     if token and _is_github_host(url):
         validate_github_token(token)
-        cmd += ["-c", create_git_auth_header(token, url)]
+        # Only pass URL if it's not the default github.com to maintain backward compatibility
+
+        parsed = urlparse(url)
+        if parsed.hostname == "github.com":
+            cmd += ["-c", create_git_auth_header(token)]
+        else:
+            cmd += ["-c", create_git_auth_header(token, url)]
     return cmd
 
 
@@ -264,13 +276,16 @@ def create_git_auth_header(token: str, url: str = "https://github.com") -> str:
     ----------
     token : str
         GitHub personal access token
+    url : str
+        The GitHub URL to create the authentication header for.
+        Defaults to "https://github.com".
 
     Returns
     -------
     str
         The git config command for setting the authentication header
     """
-    from urllib.parse import urlparse
+
     parsed = urlparse(url)
     hostname = parsed.hostname or "github.com"
     basic = base64.b64encode(f"x-oauth-basic:{token}".encode()).decode()

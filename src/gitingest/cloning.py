@@ -2,6 +2,7 @@
 
 from pathlib import Path
 from typing import Optional
+from urllib.parse import urlparse
 
 from gitingest.config import DEFAULT_TIMEOUT
 from gitingest.schemas import CloneConfig
@@ -61,7 +62,13 @@ async def clone_repo(config: CloneConfig, token: Optional[str] = None) -> None:
 
     clone_cmd = ["git"]
     if token and _is_github_host(url):
-        clone_cmd += ["-c", create_git_auth_header(token, url)]
+        # Only pass URL if it's not the default github.com to maintain backward compatibility
+
+        parsed = urlparse(url)
+        if parsed.hostname == "github.com":
+            clone_cmd += ["-c", create_git_auth_header(token)]
+        else:
+            clone_cmd += ["-c", create_git_auth_header(token, url)]
 
     clone_cmd += ["clone", "--single-branch"]
     # TODO: Re-enable --recurse-submodules when submodule support is needed
