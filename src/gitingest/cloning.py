@@ -6,6 +6,7 @@ from typing import Optional
 from gitingest.config import DEFAULT_TIMEOUT
 from gitingest.schemas import CloneConfig
 from gitingest.utils.git_utils import (
+    _is_github_host,
     check_repo_exists,
     create_git_auth_header,
     create_git_command,
@@ -48,7 +49,7 @@ async def clone_repo(config: CloneConfig, token: Optional[str] = None) -> None:
     partial_clone: bool = config.subpath != "/"
 
     # Validate token if provided
-    if token and url.startswith("https://github.com"):
+    if token and _is_github_host(url):
         validate_github_token(token)
 
     # Create parent directory if it doesn't exist
@@ -59,8 +60,8 @@ async def clone_repo(config: CloneConfig, token: Optional[str] = None) -> None:
         raise ValueError("Repository not found. Make sure it is public or that you have provided a valid token.")
 
     clone_cmd = ["git"]
-    if token and url.startswith("https://github.com"):
-        clone_cmd += ["-c", create_git_auth_header(token)]
+    if token and _is_github_host(url):
+        clone_cmd += ["-c", create_git_auth_header(token, url)]
 
     clone_cmd += ["clone", "--single-branch"]
     # TODO: Re-enable --recurse-submodules when submodule support is needed
