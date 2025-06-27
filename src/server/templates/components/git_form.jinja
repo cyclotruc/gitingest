@@ -170,7 +170,8 @@
         </form>
         <!-- Example repositories section -->
         {% if show_examples %}
-            <div id="exampleRepositories" class="mt-4">
+            <div id="exampleRepositories"
+                 class="{% if token %}lg:mt-0 {% endif %} mt-4">
                 <p class="opacity-70 mb-1">Try these example repositories:</p>
                 <div class="flex flex-wrap gap-2">
                     {% for example in examples %}
