@@ -15,7 +15,6 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 from gitingest.config import TMP_BASE_PATH
-from gitingest.utils.async_compat import to_thread
 from server.server_config import DELETE_REPO_AFTER, MAX_FILE_SIZE_KB, MAX_SLIDER_POSITION
 
 # Initialize a rate limiter
@@ -112,7 +111,7 @@ async def _remove_old_repositories(
 
 
 async def _process_folder(folder: Path) -> None:
-    """Append the repo URL (if discoverable) to ``history.txt`` and delete *folder*.
+    """Append the repo URL (if discoverable) to ``history.txt`` and delete ``folder``.
 
     Parameters
     ----------
@@ -121,27 +120,26 @@ async def _process_folder(folder: Path) -> None:
 
     """
     history_file = Path("history.txt")
+    loop = asyncio.get_running_loop()
 
     try:
-        first_txt_file: Path = next(folder.glob("*.txt"))
+        first_txt_file = next(folder.glob("*.txt"))
     except StopIteration:  # No .txt file found
         return
 
-    # Try to log repository URL before deletion
+    # Append owner/repo to history.txt
     try:
-        # Extract owner and repository name from the filename
-        filename = first_txt_file.stem  # e.g. "owner-repo"
+        filename = first_txt_file.stem  # "owner-repo"
         if "-" in filename:
             owner, repo = filename.split("-", 1)
             repo_url = f"{owner}/{repo}"
-            await to_thread(_append_line, history_file, repo_url)
-
+            await loop.run_in_executor(None, _append_line, history_file, repo_url)
     except (OSError, PermissionError) as exc:
         print(f"Error logging repository URL for {folder}: {exc}")
 
-    # Delete the folder
+    # Delete the cloned repo
     try:
-        await to_thread(shutil.rmtree, folder)
+        await loop.run_in_executor(None, shutil.rmtree, folder)
     except PermissionError as exc:
         print(f"No permission to delete {folder}: {exc}")
     except OSError as exc:

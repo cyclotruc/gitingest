@@ -12,7 +12,6 @@ from gitingest.clone import clone_repo
 from gitingest.config import MAX_FILE_SIZE, TMP_BASE_PATH
 from gitingest.ingestion import ingest_query
 from gitingest.query_parser import IngestionQuery, parse_query
-from gitingest.utils.async_compat import to_thread
 from gitingest.utils.auth import resolve_token
 from gitingest.utils.ignore_patterns import load_ignore_patterns
 
@@ -221,11 +220,10 @@ async def _write_output(tree: str, content: str, target: str | None) -> None:
         The path to the output file. If ``None``, the results are not written to a file.
 
     """
+    data = f"{tree}\n{content}"
+    loop = asyncio.get_running_loop()
     if target == "-":
-        loop = asyncio.get_running_loop()
-        data = f"{tree}\n{content}"
         await loop.run_in_executor(None, sys.stdout.write, data)
         await loop.run_in_executor(None, sys.stdout.flush)
     elif target is not None:
-        path = Path(target)
-        await to_thread(path.write_text, f"{tree}\n{content}", encoding="utf-8")
+        await loop.run_in_executor(None, Path(target).write_text, data, "utf-8")

@@ -14,7 +14,6 @@ from pytest_mock import MockerFixture
 
 from gitingest.clone import clone_repo
 from gitingest.schemas import CloneConfig
-from gitingest.utils.async_compat import to_thread
 from gitingest.utils.exceptions import AsyncTimeoutError
 from gitingest.utils.git_utils import check_repo_exists
 from tests.conftest import DEMO_URL, LOCAL_REPO_PATH
@@ -272,13 +271,18 @@ async def test_clone_specific_branch(tmp_path: Path) -> None:
     assert local_path.exists(), "The repository was not cloned successfully."
     assert local_path.is_dir(), "The cloned repository path is not a directory."
 
+    loop = asyncio.get_running_loop()
     current_branch = (
-        await to_thread(
-            subprocess.check_output,
-            ["git", "-C", str(local_path), "branch", "--show-current"],
-            text=True,
+        (
+            await loop.run_in_executor(
+                None,
+                subprocess.check_output,
+                ["git", "-C", str(local_path), "branch", "--show-current"],
+            )
         )
-    ).strip()
+        .decode()
+        .strip()
+    )
 
     assert current_branch == branch_name, f"Expected branch '{branch_name}', got '{current_branch}'."
 
