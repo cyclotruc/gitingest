@@ -27,6 +27,12 @@ class _CLIArgs(TypedDict):
 @click.command()
 @click.argument("source", type=str, default=".")
 @click.option(
+    "--output",
+    "-o",
+    default=None,
+    help="Output file path (default: digest.txt in current directory). Use '-' for stdout.",
+)
+@click.option(
     "--max-size",
     "-s",
     default=MAX_FILE_SIZE,
@@ -57,14 +63,52 @@ class _CLIArgs(TypedDict):
         "If omitted, the CLI will look for the GITHUB_TOKEN environment variable."
     ),
 )
-@click.option(
-    "--output",
-    "-o",
-    default=None,
-    help="Write to PATH (or '-' for stdout, default: <repo>.txt).",
-)
 def main(**cli_kwargs: Unpack[_CLIArgs]) -> None:
-    """Run the CLI entry point to analyze a repo / directory and dump its contents."""
+    """
+    Main entry point for the CLI. This function is called when the CLI is run as a script.
+
+    It calls the async main function to run the command.
+
+    Parameters
+    ----------
+    source : str
+        A directory path or a Git repository URL.
+    output : str, optional
+        The path where the output file will be written. If not specified, the output will be written
+        to a file named `digest.txt` in the current directory. Use '-' to output to stdout.
+    max_size : int
+        Maximum file size (in bytes) to consider.
+    exclude_pattern : Tuple[str, ...]
+        Glob patterns for pruning the file set.
+    include_pattern : Tuple[str, ...]
+        Glob patterns for including files in the output.
+    branch : str, optional
+        Specific branch to ingest (defaults to the repository's default).
+    include_gitignored : bool
+        If provided, include files normally ignored by .gitignore.
+    token: str, optional
+        GitHub personal-access token (PAT). Needed when *source* refers to a
+        **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
+
+    Examples
+    --------
+    Basic usage:
+        $ gitingest .
+        $ gitingest /path/to/repo
+        $ gitingest https://github.com/user/repo
+
+    Output to stdout:
+        $ gitingest . -o -
+        $ gitingest https://github.com/user/repo --output -
+
+    With filtering:
+        $ gitingest . -i "*.py" -e "*.log"
+        $ gitingest . --include-pattern "*.js" --exclude-pattern "node_modules/*"
+
+    Private repositories:
+        $ gitingest https://github.com/user/private-repo -t ghp_token
+        $ GITHUB_TOKEN=ghp_token gitingest https://github.com/user/private-repo
+    """
     asyncio.run(_async_main(**cli_kwargs))
 
 
@@ -88,7 +132,7 @@ async def _async_main(
     Parameters
     ----------
     source : str
-        Directory path or Git repository URL.
+        A directory path or a Git repository URL.
     max_size : int
         Maximum file size in bytes to ingest (default: 10 MB).
     exclude_pattern : tuple[str, ...] | None
@@ -103,8 +147,8 @@ async def _async_main(
         GitHub personal access token (PAT) for accessing private repositories.
         Can also be set via the ``GITHUB_TOKEN`` environment variable.
     output : str | None
-        Destination file path. If ``None``, the output is written to ``<repo_name>.txt`` in the current directory.
-        Use ``"-"`` to write to ``stdout``.
+        The path where the output file will be written. If not specified, the output will be written
+        to a file named `digest.txt` in the current directory. Use '-' to output to stdout.
 
     Raises
     ------
