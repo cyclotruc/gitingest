@@ -83,7 +83,7 @@ async def ingest_async(
 
     repo_cloned = False
     try:
-        await _clone_if_remote(query, token)
+        await _clone_if_remote(query, token=token)
         repo_cloned = bool(query.url)
 
         summary, tree, content = ingest_query(query)
@@ -183,7 +183,7 @@ async def _clone_if_remote(query: IngestionQuery, token: str | None) -> None:
     query : IngestionQuery
         The query to clone.
     token : str | None
-        The token to use for the query.
+        GitHub personal access token (PAT) for accessing private repositories.
 
     Raises
     ------

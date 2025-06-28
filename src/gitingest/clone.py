@@ -65,7 +65,7 @@ async def clone_repo(config: CloneConfig, token: str | None = None) -> None:
 
     clone_cmd = ["git"]
     if token and is_github_host(url):
-        clone_cmd += ["-c", create_git_auth_header(token, url)]
+        clone_cmd += ["-c", create_git_auth_header(token, url=url)]
 
     clone_cmd += ["clone", "--single-branch"]
     # TODO: Re-enable --recurse-submodules when submodule support is needed

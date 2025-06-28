@@ -83,7 +83,7 @@ async def _remove_old_repositories(
     Parameters
     ----------
     base_path : Path
-        The path to the base directory where repositories are stored (default: ``TMP_BASE_PATH``)
+        The path to the base directory where repositories are stored (default: ``TMP_BASE_PATH``).
     scan_interval : int
         The number of seconds between scans (default: 60).
     delete_after : int

@@ -36,8 +36,8 @@ from gitingest.config import MAX_FILE_SIZE, OUTPUT_FILE_NAME
 def test_cli_writes_file(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    cli_args: list[str],
     *,
+    cli_args: list[str],
     expect_file: bool,
 ) -> None:
     """Run the CLI and verify that the SARIF file is created (or not)."""

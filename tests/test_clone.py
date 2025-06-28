@@ -96,8 +96,8 @@ async def test_clone_nonexistent_repository(repo_exists_true: AsyncMock) -> None
 )
 async def test_check_repo_exists(
     mock_stdout: bytes,
-    return_code: int,
     *,
+    return_code: int,
     expected: bool,
     mocker: MockerFixture,
 ) -> None:

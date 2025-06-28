@@ -52,7 +52,7 @@ async def process_query(
     is_index : bool
         Flag indicating whether the request is for the index page (default: ``False``).
     token : str | None
-        GitHub personal-access token (PAT). Needed when the repository is private.
+        GitHub personal access token (PAT) for accessing private repositories.
 
     Returns
     -------

@@ -9,12 +9,12 @@ async def ensure_directory(path: Path) -> None:
     Parameters
     ----------
     path : Path
-        The path to ensure exists
+        The path to ensure exists.
 
     Raises
     ------
     OSError
-        If the directory cannot be created
+        If the directory cannot be created.
 
     """
     try:

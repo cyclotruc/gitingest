@@ -118,8 +118,8 @@ def _gather_file_contents(node: FileSystemNode) -> str:
 
 def _create_tree_structure(
     query: IngestionQuery,
-    node: FileSystemNode,
     *,
+    node: FileSystemNode,
     prefix: str = "",
     is_last: bool = True,
 ) -> str:

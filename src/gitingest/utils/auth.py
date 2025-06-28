@@ -11,7 +11,7 @@ def resolve_token(token: str | None) -> str | None:
     Parameters
     ----------
     token : str | None
-        The token to use for the query.
+        GitHub personal access token (PAT) for accessing private repositories.
 
     Returns
     -------

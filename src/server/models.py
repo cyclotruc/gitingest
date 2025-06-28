@@ -22,7 +22,7 @@ class QueryForm(BaseModel):
     pattern : str
         Glob/regex pattern string.
     token : str | None
-        GitHub personal-access token (``None`` if omitted).
+        GitHub personal access token (PAT) for accessing private repositories.
 
     """
 
@@ -54,7 +54,7 @@ class QueryForm(BaseModel):
         pattern : StrForm
             Glob/regex pattern string.
         token : OptStrForm
-            GitHub personal-access token (``None`` if omitted).
+            GitHub personal access token (PAT) for accessing private repositories.
 
         Returns
         -------

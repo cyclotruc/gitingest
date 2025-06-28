@@ -253,7 +253,7 @@ async def fetch_remote_branch_list(url: str, token: str | None = None) -> list[s
 
     # Add authentication if needed
     if token and is_github_host(url):
-        fetch_branches_command += ["-c", create_git_auth_header(token, url)]
+        fetch_branches_command += ["-c", create_git_auth_header(token, url=url)]
 
     fetch_branches_command += ["ls-remote", "--heads", url]
 
@@ -274,18 +274,18 @@ def create_git_command(base_cmd: list[str], local_path: str, url: str, token: st
     Parameters
     ----------
     base_cmd : list[str]
-        The base git command to start with
+        The base git command to start with.
     local_path : str
-        The local path where the git command should be executed
+        The local path where the git command should be executed.
     url : str
-        The repository URL to check if it's a GitHub repository
+        The repository URL to check if it's a GitHub repository.
     token : str | None
-        GitHub personal access token for authentication
+        GitHub personal access token (PAT) for accessing private repositories.
 
     Returns
     -------
     list[str]
-        The git command with authentication if needed
+        The git command with authentication if needed.
 
     """
     cmd = [*base_cmd, "-C", local_path]
@@ -301,7 +301,7 @@ def create_git_auth_header(token: str, url: str = "https://github.com") -> str:
     Parameters
     ----------
     token : str
-        GitHub personal access token
+        GitHub personal access token (PAT) for accessing private repositories.
     url : str
         The GitHub URL to create the authentication header for.
         Defaults to "https://github.com" if not provided.
@@ -309,7 +309,7 @@ def create_git_auth_header(token: str, url: str = "https://github.com") -> str:
     Returns
     -------
     str
-        The git config command for setting the authentication header
+        The git config command for setting the authentication header.
 
     """
     hostname = urlparse(url).hostname
@@ -323,12 +323,12 @@ def validate_github_token(token: str) -> None:
     Parameters
     ----------
     token : str
-        The GitHub token to validate
+        GitHub personal access token (PAT) for accessing private repositories.
 
     Raises
     ------
     InvalidGitHubTokenError
-        If the token format is invalid
+        If the token format is invalid.
 
     """
     if not re.match(GITHUB_PAT_PATTERN, token):
