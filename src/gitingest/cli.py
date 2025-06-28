@@ -9,6 +9,10 @@ import click
 
 from gitingest.config import MAX_FILE_SIZE, OUTPUT_FILE_NAME
 from gitingest.entrypoint import ingest_async
+from gitingest.utils.click_validation_utils import (
+    validate_exclude_patterns,
+    validate_include_patterns,
+)
 
 
 @click.command()
@@ -29,6 +33,7 @@ from gitingest.entrypoint import ingest_async
     "--exclude-pattern",
     "-e",
     multiple=True,
+    callback=validate_exclude_patterns,
     help=(
         "Patterns to exclude. Handles Python's arbitrary subset of Unix shell-style "
         "wildcards. See: https://docs.python.org/3/library/fnmatch.html"
@@ -38,6 +43,7 @@ from gitingest.entrypoint import ingest_async
     "--include-pattern",
     "-i",
     multiple=True,
+    callback=validate_include_patterns,
     help=(
         "Patterns to include. Handles Python's arbitrary subset of Unix shell-style "
         "wildcards. See: https://docs.python.org/3/library/fnmatch.html"
