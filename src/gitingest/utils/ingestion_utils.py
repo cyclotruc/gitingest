@@ -1,55 +1,47 @@
 """Utility functions for the ingestion process."""
 
-from pathlib import Path
-from typing import Set
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from pathspec import PathSpec
 
+if TYPE_CHECKING:
+    from pathlib import Path
 
-def _should_include(path: Path, base_path: Path, include_patterns: Set[str]) -> bool:
-    """
-    Determine if the given file or directory path matches any of the include patterns.
 
-    This function checks whether the relative path of a file or directory matches any of the specified patterns. If a
-    match is found, it returns `True`, indicating that the file or directory should be included in further processing.
+def _should_include(path: Path, base_path: Path, include_patterns: set[str]) -> bool:
+    """Return ``True`` if ``path`` matches any of ``include_patterns``.
 
     Parameters
     ----------
     path : Path
         The absolute path of the file or directory to check.
+
     base_path : Path
         The base directory from which the relative path is calculated.
-    include_patterns : Set[str]
+
+    include_patterns : set[str]
         A set of patterns to check against the relative path.
 
     Returns
     -------
     bool
-        `True` if the path matches any of the include patterns, `False` otherwise.
+        ``True`` if the path matches any of the include patterns, ``False`` otherwise.
+
     """
-    try:
-        rel_path = path.relative_to(base_path)
-    except ValueError:
-        # If path is not under base_path at all
+    rel_path = _relative_or_none(path, base_path)
+    if rel_path is None:  # outside repo → do *not* include
         return False
-
-    rel_str = str(rel_path)
-
-    # if path is a directory, include it by default
-    if path.is_dir():
+    if path.is_dir():  # keep directories so children are visited
         return True
 
     spec = PathSpec.from_lines("gitwildmatch", include_patterns)
-    return spec.match_file(rel_str)
+    return spec.match_file(str(rel_path))
 
 
-def _should_exclude(path: Path, base_path: Path, ignore_patterns: Set[str]) -> bool:
-    """
-    Determine if the given file or directory path matches any of the ignore patterns.
-
-    This function checks whether the relative path of a file or directory matches
-    any of the specified ignore patterns. If a match is found, it returns `True`, indicating
-    that the file or directory should be excluded from further processing.
+def _should_exclude(path: Path, base_path: Path, ignore_patterns: set[str]) -> bool:
+    """Return ``True`` if ``path`` matches any of ``ignore_patterns``.
 
     Parameters
     ----------
@@ -57,20 +49,40 @@ def _should_exclude(path: Path, base_path: Path, ignore_patterns: Set[str]) -> b
         The absolute path of the file or directory to check.
     base_path : Path
         The base directory from which the relative path is calculated.
-    ignore_patterns : Set[str]
+    ignore_patterns : set[str]
         A set of patterns to check against the relative path.
 
     Returns
     -------
     bool
-        `True` if the path matches any of the ignore patterns, `False` otherwise.
+        ``True`` if the path matches any of the ignore patterns, ``False`` otherwise.
+
     """
-    try:
-        rel_path = path.relative_to(base_path)
-    except ValueError:
-        # If path is not under base_path at all
+    rel_path = _relative_or_none(path, base_path)
+    if rel_path is None:  # outside repo → already “excluded”
         return True
 
-    rel_str = str(rel_path)
     spec = PathSpec.from_lines("gitwildmatch", ignore_patterns)
-    return spec.match_file(rel_str)
+    return spec.match_file(str(rel_path))
+
+
+def _relative_or_none(path: Path, base: Path) -> Path | None:
+    """Return *path* relative to *base* or ``None`` if *path* is outside *base*.
+
+    Parameters
+    ----------
+    path : Path
+        The absolute path of the file or directory to check.
+    base : Path
+        The base directory from which the relative path is calculated.
+
+    Returns
+    -------
+    Path | None
+        The relative path of ``path`` to ``base``, or ``None`` if ``path`` is outside ``base``.
+
+    """
+    try:
+        return path.relative_to(base)
+    except ValueError:  # path is not a sub-path of base
+        return None

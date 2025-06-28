@@ -6,8 +6,8 @@ from pathlib import Path
 from typing import Generator
 
 import pytest
+from fastapi import status
 from fastapi.testclient import TestClient
-from pytest import FixtureRequest
 from pytest_mock import MockerFixture
 
 from src.server.main import app
@@ -25,24 +25,24 @@ def test_client() -> Generator[TestClient, None, None]:
 
 
 @pytest.fixture(autouse=True)
-def mock_static_files(mocker: MockerFixture) -> Generator[None, None, None]:
+def mock_static_files(mocker: MockerFixture) -> None:
     """Mock the static file mount to avoid directory errors."""
     mock_static = mocker.patch("src.server.main.StaticFiles", autospec=True)
     mock_static.return_value = None
-    yield mock_static
+    return mock_static
 
 
 @pytest.fixture(autouse=True)
-def mock_templates(mocker: MockerFixture) -> Generator[None, None, None]:
+def mock_templates(mocker: MockerFixture) -> None:
     """Mock Jinja2 template rendering to bypass actual file loading."""
     mock_template = mocker.patch("starlette.templating.Jinja2Templates.TemplateResponse", autospec=True)
     mock_template.return_value = "Mocked Template Response"
-    yield mock_template
+    return mock_template
 
 
 @pytest.fixture(scope="module", autouse=True)
 def cleanup_tmp_dir() -> Generator[None, None, None]:
-    """Remove /tmp/gitingest after this test-module is done."""
+    """Remove ``/tmp/gitingest`` after this test-module is done."""
     yield  # run tests
     temp_dir = Path("/tmp/gitingest")
     if temp_dir.exists():
@@ -53,7 +53,7 @@ def cleanup_tmp_dir() -> Generator[None, None, None]:
 
 
 @pytest.mark.asyncio
-async def test_remote_repository_analysis(request: FixtureRequest) -> None:
+async def test_remote_repository_analysis(request: pytest.FixtureRequest) -> None:
     """Test the complete flow of analyzing a remote repository."""
     client = request.getfixturevalue("test_client")
     form_data = {
@@ -65,12 +65,12 @@ async def test_remote_repository_analysis(request: FixtureRequest) -> None:
     }
 
     response = client.post("/", data=form_data)
-    assert response.status_code == 200, f"Form submission failed: {response.text}"
+    assert response.status_code == status.HTTP_200_OK, f"Form submission failed: {response.text}"
     assert "Mocked Template Response" in response.text
 
 
 @pytest.mark.asyncio
-async def test_invalid_repository_url(request: FixtureRequest) -> None:
+async def test_invalid_repository_url(request: pytest.FixtureRequest) -> None:
     """Test handling of an invalid repository URL."""
     client = request.getfixturevalue("test_client")
     form_data = {
@@ -82,12 +82,12 @@ async def test_invalid_repository_url(request: FixtureRequest) -> None:
     }
 
     response = client.post("/", data=form_data)
-    assert response.status_code == 200, f"Request failed: {response.text}"
+    assert response.status_code == status.HTTP_200_OK, f"Request failed: {response.text}"
     assert "Mocked Template Response" in response.text
 
 
 @pytest.mark.asyncio
-async def test_large_repository(request: FixtureRequest) -> None:
+async def test_large_repository(request: pytest.FixtureRequest) -> None:
     """Simulate analysis of a large repository with nested folders."""
     client = request.getfixturevalue("test_client")
     form_data = {
@@ -99,16 +99,16 @@ async def test_large_repository(request: FixtureRequest) -> None:
     }
 
     response = client.post("/", data=form_data)
-    assert response.status_code == 200, f"Request failed: {response.text}"
+    assert response.status_code == status.HTTP_200_OK, f"Request failed: {response.text}"
     assert "Mocked Template Response" in response.text
 
 
 @pytest.mark.asyncio
-async def test_concurrent_requests(request: FixtureRequest) -> None:
+async def test_concurrent_requests(request: pytest.FixtureRequest) -> None:
     """Test handling of multiple concurrent requests."""
     client = request.getfixturevalue("test_client")
 
-    def make_request():
+    def make_request() -> None:
         form_data = {
             "input_text": "https://github.com/octocat/Hello-World",
             "max_file_size": "243",
@@ -117,7 +117,7 @@ async def test_concurrent_requests(request: FixtureRequest) -> None:
             "token": "",
         }
         response = client.post("/", data=form_data)
-        assert response.status_code == 200, f"Request failed: {response.text}"
+        assert response.status_code == status.HTTP_200_OK, f"Request failed: {response.text}"
         assert "Mocked Template Response" in response.text
 
     with ThreadPoolExecutor(max_workers=5) as executor:
@@ -127,7 +127,7 @@ async def test_concurrent_requests(request: FixtureRequest) -> None:
 
 
 @pytest.mark.asyncio
-async def test_large_file_handling(request: FixtureRequest) -> None:
+async def test_large_file_handling(request: pytest.FixtureRequest) -> None:
     """Test handling of repositories with large files."""
     client = request.getfixturevalue("test_client")
     form_data = {
@@ -139,12 +139,12 @@ async def test_large_file_handling(request: FixtureRequest) -> None:
     }
 
     response = client.post("/", data=form_data)
-    assert response.status_code == 200, f"Request failed: {response.text}"
+    assert response.status_code == status.HTTP_200_OK, f"Request failed: {response.text}"
     assert "Mocked Template Response" in response.text
 
 
 @pytest.mark.asyncio
-async def test_repository_with_patterns(request: FixtureRequest) -> None:
+async def test_repository_with_patterns(request: pytest.FixtureRequest) -> None:
     """Test repository analysis with include/exclude patterns."""
     client = request.getfixturevalue("test_client")
     form_data = {
@@ -156,5 +156,5 @@ async def test_repository_with_patterns(request: FixtureRequest) -> None:
     }
 
     response = client.post("/", data=form_data)
-    assert response.status_code == 200, f"Request failed: {response.text}"
+    assert response.status_code == status.HTTP_200_OK, f"Request failed: {response.text}"
     assert "Mocked Template Response" in response.text

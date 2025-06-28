@@ -150,12 +150,10 @@ function copyFullDigest() {
 
 // Add the logSliderToSize helper function
 function logSliderToSize(position) {
-    const minp = 0;
-    const maxp = 500;
-    const minv = Math.log(1);
-    const maxv = Math.log(102400);
+    const maxPosition = 500;
+    const maxValue = Math.log(102400); // 100 MB
 
-    const value = Math.exp(minv + (maxv - minv) * Math.pow(position / maxp, 1.5));
+    const value = Math.exp(maxValue * Math.pow(position / maxPosition, 1.5));
     return Math.round(value);
 }
 

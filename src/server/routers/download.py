@@ -1,61 +1,45 @@
-"""This module contains the FastAPI router for downloading a digest file."""
+"""Module containing the FastAPI router for downloading a digest file."""
 
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import Response
+from fastapi.responses import FileResponse
 
 from gitingest.config import TMP_BASE_PATH
 
 router = APIRouter()
 
 
-@router.get("/download/{digest_id}")
-async def download_ingest(digest_id: str) -> Response:
-    """
-    Download a .txt file associated with a given digest ID.
-
-    This function searches for a `.txt` file in a directory corresponding to the provided
-    digest ID. If a file is found, it is read and returned as a downloadable attachment.
-    If no `.txt` file is found, an error is raised.
+@router.get("/download/{digest_id}", response_class=FileResponse)
+async def download_ingest(digest_id: str) -> FileResponse:
+    """Return the first ``*.txt`` file produced for ``digest_id`` as a download.
 
     Parameters
     ----------
     digest_id : str
-        The unique identifier for the digest. It is used to find the corresponding directory
-        and locate the .txt file within that directory.
+        Identifier that the ingest step emitted (also the directory name that stores the artefacts).
 
     Returns
     -------
-    Response
-        A FastAPI Response object containing the content of the found `.txt` file. The file is
-        sent with the appropriate media type (`text/plain`) and the correct `Content-Disposition`
-        header to prompt a file download.
+    FileResponse
+        Streamed response with media type ``text/plain`` that prompts the browser to download the file.
 
     Raises
     ------
     HTTPException
-        If the digest directory is not found or if no `.txt` file exists in the directory.
+        **404** - digest directory is missing or contains no ``*.txt`` file.
+        **403** - the process lacks permission to read the directory or file.
+
     """
     directory = TMP_BASE_PATH / digest_id
 
+    if not directory.is_dir():
+        raise HTTPException(status_code=404, detail=f"Digest {digest_id!r} not found")
+
     try:
-        if not directory.exists():
-            raise FileNotFoundError("Directory not found")
+        first_txt_file = next(directory.glob("*.txt"))
+    except StopIteration as exc:
+        raise HTTPException(status_code=404, detail=f"No .txt file found for digest {digest_id!r}") from exc
 
-        txt_files = [f for f in directory.iterdir() if f.suffix == ".txt"]
-        if not txt_files:
-            raise FileNotFoundError("No .txt file found")
-
-    except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail="Digest not found") from exc
-
-    # Find the first .txt file in the directory
-    first_file = txt_files[0]
-
-    with first_file.open(encoding="utf-8") as f:
-        content = f.read()
-
-    return Response(
-        content=content,
-        media_type="text/plain",
-        headers={"Content-Disposition": f"attachment; filename={first_file.name}"},
-    )
+    try:
+        return FileResponse(path=first_txt_file, media_type="text/plain", filename=first_txt_file.name)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=f"Permission denied for {first_txt_file}") from exc

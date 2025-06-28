@@ -1,16 +1,24 @@
 """Functions to ingest and analyze a codebase directory or single file."""
 
-from typing import Optional, Tuple
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import tiktoken
 
-from gitingest.query_parsing import IngestionQuery
 from gitingest.schemas import FileSystemNode, FileSystemNodeType
 
+if TYPE_CHECKING:
+    from gitingest.query_parser import IngestionQuery
 
-def format_node(node: FileSystemNode, query: IngestionQuery) -> Tuple[str, str, str]:
-    """
-    Generate a summary, directory structure, and file contents for a given file system node.
+_TOKEN_THRESHOLDS: list[tuple[int, str]] = [
+    (1_000_000, "M"),
+    (1_000, "k"),
+]
+
+
+def format_node(node: FileSystemNode, query: IngestionQuery) -> tuple[str, str, str]:
+    """Generate a summary, directory structure, and file contents for a given file system node.
 
     If the node represents a directory, the function will recursively process its contents.
 
@@ -23,8 +31,9 @@ def format_node(node: FileSystemNode, query: IngestionQuery) -> Tuple[str, str, 
 
     Returns
     -------
-    Tuple[str, str, str]
+    tuple[str, str, str]
         A tuple containing the summary, directory structure, and file contents.
+
     """
     is_single_file = node.type == FileSystemNodeType.FILE
     summary = _create_summary_prefix(query, single_file=is_single_file)
@@ -35,8 +44,7 @@ def format_node(node: FileSystemNode, query: IngestionQuery) -> Tuple[str, str, 
         summary += f"File: {node.name}\n"
         summary += f"Lines: {len(node.content.splitlines()):,}\n"
 
-    tree = "Directory structure:\n" + _create_tree_structure(query, node)
-    _create_tree_structure(query, node)
+    tree = "Directory structure:\n" + _create_tree_structure(query, node=node)
 
     content = _gather_file_contents(node)
 
@@ -47,9 +55,8 @@ def format_node(node: FileSystemNode, query: IngestionQuery) -> Tuple[str, str, 
     return summary, tree, content
 
 
-def _create_summary_prefix(query: IngestionQuery, single_file: bool = False) -> str:
-    """
-    Create a prefix string for summarizing a repository or local directory.
+def _create_summary_prefix(query: IngestionQuery, *, single_file: bool = False) -> str:
+    """Create a prefix string for summarizing a repository or local directory.
 
     Includes repository name (if provided), commit/branch details, and subpath if relevant.
 
@@ -58,12 +65,13 @@ def _create_summary_prefix(query: IngestionQuery, single_file: bool = False) -> 
     query : IngestionQuery
         The parsed query object containing information about the repository and query parameters.
     single_file : bool
-        A flag indicating whether the summary is for a single file, by default False.
+        A flag indicating whether the summary is for a single file (default: ``False``).
 
     Returns
     -------
     str
         A summary prefix string containing repository, commit, branch, and subpath details.
+
     """
     parts = []
 
@@ -85,8 +93,7 @@ def _create_summary_prefix(query: IngestionQuery, single_file: bool = False) -> 
 
 
 def _gather_file_contents(node: FileSystemNode) -> str:
-    """
-    Recursively gather contents of all files under the given node.
+    """Recursively gather contents of all files under the given node.
 
     This function recursively processes a directory node and gathers the contents of all files
     under that node. It returns the concatenated content of all files as a single string.
@@ -100,6 +107,7 @@ def _gather_file_contents(node: FileSystemNode) -> str:
     -------
     str
         The concatenated content of all files under the given node.
+
     """
     if node.type != FileSystemNodeType.DIRECTORY:
         return node.content_string
@@ -108,9 +116,14 @@ def _gather_file_contents(node: FileSystemNode) -> str:
     return "\n".join(_gather_file_contents(child) for child in node.children)
 
 
-def _create_tree_structure(query: IngestionQuery, node: FileSystemNode, prefix: str = "", is_last: bool = True) -> str:
-    """
-    Generate a tree-like string representation of the file structure.
+def _create_tree_structure(
+    query: IngestionQuery,
+    *,
+    node: FileSystemNode,
+    prefix: str = "",
+    is_last: bool = True,
+) -> str:
+    """Generate a tree-like string representation of the file structure.
 
     This function generates a string representation of the directory structure, formatted
     as a tree with appropriate indentation for nested directories and files.
@@ -122,14 +135,15 @@ def _create_tree_structure(query: IngestionQuery, node: FileSystemNode, prefix: 
     node : FileSystemNode
         The current directory or file node being processed.
     prefix : str
-        A string used for indentation and formatting of the tree structure, by default "".
+        A string used for indentation and formatting of the tree structure (default: ``""``).
     is_last : bool
-        A flag indicating whether the current node is the last in its directory, by default True.
+        A flag indicating whether the current node is the last in its directory (default: ``True``).
 
     Returns
     -------
     str
         A string representing the directory structure formatted as a tree.
+
     """
     if not node.name:
         # If no name is present, use the slug as the top-level directory name
@@ -154,11 +168,8 @@ def _create_tree_structure(query: IngestionQuery, node: FileSystemNode, prefix: 
     return tree_str
 
 
-def _format_token_count(text: str) -> Optional[str]:
-    """
-    Return a human-readable string representing the token count of the given text.
-
-    E.g., '120' -> '120', '1200' -> '1.2k', '1200000' -> '1.2M'.
+def _format_token_count(text: str) -> str | None:
+    """Return a human-readable token-count string (e.g. 1.2k, 1.2 M).
 
     Parameters
     ----------
@@ -167,8 +178,9 @@ def _format_token_count(text: str) -> Optional[str]:
 
     Returns
     -------
-    str, optional
-        The formatted number of tokens as a string (e.g., '1.2k', '1.2M'), or `None` if an error occurs.
+    str | None
+        The formatted number of tokens as a string (e.g., ``"1.2k"``, ``"1.2M"``), or ``None`` if an error occurs.
+
     """
     try:
         encoding = tiktoken.get_encoding("o200k_base")  # gpt-4o, gpt-4o-mini
@@ -177,10 +189,8 @@ def _format_token_count(text: str) -> Optional[str]:
         print(exc)
         return None
 
-    if total_tokens >= 1_000_000:
-        return f"{total_tokens / 1_000_000:.1f}M"
-
-    if total_tokens >= 1_000:
-        return f"{total_tokens / 1_000:.1f}k"
+    for threshold, suffix in _TOKEN_THRESHOLDS:
+        if total_tokens >= threshold:
+            return f"{total_tokens / threshold:.1f}{suffix}"
 
     return str(total_tokens)
