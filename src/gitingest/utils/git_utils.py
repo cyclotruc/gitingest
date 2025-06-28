@@ -1,9 +1,10 @@
 """Utility functions for interacting with Git repositories."""
 
+from __future__ import annotations
+
 import asyncio
 import base64
 import re
-from typing import List, Optional, Tuple
 from urllib.parse import urlparse
 
 from gitingest.utils.exceptions import InvalidGitHubTokenError
@@ -11,9 +12,8 @@ from gitingest.utils.exceptions import InvalidGitHubTokenError
 GITHUB_PAT_PATTERN = r"^(?:github_pat_|ghp_)[A-Za-z0-9_]{36,}$"
 
 
-def _is_github_host(url: str) -> bool:
-    """
-    Check if a URL is from a GitHub host (github.com or GitHub Enterprise).
+def is_github_host(url: str) -> bool:
+    """Check if a URL is from a GitHub host (github.com or GitHub Enterprise).
 
     Parameters
     ----------
@@ -24,15 +24,14 @@ def _is_github_host(url: str) -> bool:
     -------
     bool
         True if the URL is from a GitHub host, False otherwise
+
     """
-    parsed = urlparse(url)
-    hostname = parsed.hostname or ""
+    hostname = urlparse(url).hostname or ""
     return hostname == "github.com" or hostname.startswith("github.")
 
 
-async def run_command(*args: str) -> Tuple[bytes, bytes]:
-    """
-    Execute a shell command asynchronously and return (stdout, stderr) bytes.
+async def run_command(*args: str) -> tuple[bytes, bytes]:
+    """Execute a shell command asynchronously and return (stdout, stderr) bytes.
 
     Parameters
     ----------
@@ -41,13 +40,14 @@ async def run_command(*args: str) -> Tuple[bytes, bytes]:
 
     Returns
     -------
-    Tuple[bytes, bytes]
+    tuple[bytes, bytes]
         A tuple containing the stdout and stderr of the command.
 
     Raises
     ------
     RuntimeError
         If command exits with a non-zero status.
+
     """
     # Execute the requested command
     proc = await asyncio.create_subprocess_exec(
@@ -58,37 +58,38 @@ async def run_command(*args: str) -> Tuple[bytes, bytes]:
     stdout, stderr = await proc.communicate()
     if proc.returncode != 0:
         error_message = stderr.decode().strip()
-        raise RuntimeError(f"Command failed: {' '.join(args)}\nError: {error_message}")
+        msg = f"Command failed: {' '.join(args)}\nError: {error_message}"
+        raise RuntimeError(msg)
 
     return stdout, stderr
 
 
 async def ensure_git_installed() -> None:
-    """
-    Ensure Git is installed and accessible on the system.
+    """Ensure Git is installed and accessible on the system.
 
     Raises
     ------
     RuntimeError
         If Git is not installed or not accessible.
+
     """
     try:
         await run_command("git", "--version")
     except RuntimeError as exc:
-        raise RuntimeError("Git is not installed or not accessible. Please install Git first.") from exc
+        msg = "Git is not installed or not accessible. Please install Git first."
+        raise RuntimeError(msg) from exc
 
 
-async def check_repo_exists(url: str, token: Optional[str] = None) -> bool:
-    """
-    Check if a Git repository exists at the provided URL.
+async def check_repo_exists(url: str, token: str | None = None) -> bool:
+    """Check if a Git repository exists at the provided URL.
 
     Parameters
     ----------
     url : str
         The URL of the Git repository to check.
-    token : str, optional
-        GitHub personal-access token (PAT). Needed when *source* refers to a
-        **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
+    token : str | None
+        GitHub personal-access token (PAT). Needed when the repository is private.
+        Can also be set via the `GITHUB_TOKEN` env var.
 
     Returns
     -------
@@ -99,9 +100,11 @@ async def check_repo_exists(url: str, token: Optional[str] = None) -> bool:
     ------
     RuntimeError
         If the curl command returns an unexpected status code.
+
     """
-    if token and _is_github_host(url):
-        return await _check_github_repo_exists(url, token)
+    expected_path_length = 2
+    if token and is_github_host(url):
+        return await _check_github_repo_exists(url, token=token)
 
     proc = await asyncio.create_subprocess_exec(
         "curl",
@@ -118,26 +121,26 @@ async def check_repo_exists(url: str, token: Optional[str] = None) -> bool:
     response = stdout.decode()
     status_line = response.splitlines()[0].strip()
     parts = status_line.split(" ")
-    if len(parts) >= 2:
+    if len(parts) >= expected_path_length:
         status_code_str = parts[1]
         if status_code_str in ("200", "301"):
             return True
         if status_code_str in ("302", "404"):
             return False
-    raise RuntimeError(f"Unexpected status line: {status_line}")
+    msg = f"Unexpected status line: {status_line}"
+    raise RuntimeError(msg)
 
 
-async def _check_github_repo_exists(url: str, token: Optional[str] = None) -> bool:
-    """
-    Return True iff the authenticated user can see `url`.
+async def _check_github_repo_exists(url: str, token: str | None = None) -> bool:
+    """Return True iff the authenticated user can see ``url``.
 
     Parameters
     ----------
     url : str
         The URL of the GitHub repository to check.
-    token : str, optional
-        GitHub personal-access token (PAT). Needed when *source* refers to a
-        **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
+    token : str | None
+        GitHub personal-access token (PAT). Needed when the repository is private.
+        Can also be set via the `GITHUB_TOKEN` env var.
 
     Returns
     -------
@@ -146,23 +149,17 @@ async def _check_github_repo_exists(url: str, token: Optional[str] = None) -> bo
 
     Raises
     ------
-    ValueError
-        If the URL is not a valid GitHub repository URL.
     RuntimeError
         If the repository is not found, if the provided URL is invalid, or if the token format is invalid.
-    """
-    m = re.match(r"https?://github\.([^/]*)/([^/]+)/([^/]+?)(?:\.git)?/?$", url)
-    if not m:
-        m = re.match(r"https?://github\.com/([^/]+)/([^/]+?)(?:\.git)?/?$", url)
-        if not m:
-            raise ValueError(f"Un-recognised GitHub URL: {url!r}")
-        owner, repo = m.groups()
-        api = f"https://api.github.com/repos/{owner}/{repo}"
-    else:
-        _, owner, repo = m.groups()
 
-        parsed = urlparse(url)
-        api = f"https://{parsed.hostname}/api/v3/repos/{owner}/{repo}"
+    """
+    host, owner, repo = _parse_github_url(url)
+
+    if host == "github.com":
+        api = f"https://api.github.com/repos/{owner}/{repo}"
+    else:  # GitHub Enterprise
+        api = f"https://{host}/api/v3/repos/{owner}/{repo}"
+
     cmd = [
         "curl",
         "--silent",
@@ -191,38 +188,72 @@ async def _check_github_repo_exists(url: str, token: Optional[str] = None) -> bo
     if status == "404":
         return False
     if status in ("401", "403"):
-        raise RuntimeError("Token invalid or lacks permissions")
-    raise RuntimeError(f"GitHub API returned unexpected HTTP {status}")
+        msg = "Token invalid or lacks permissions"
+        raise RuntimeError(msg)
+    msg = f"GitHub API returned unexpected HTTP {status}"
+    raise RuntimeError(msg)
 
 
-async def fetch_remote_branch_list(url: str, token: Optional[str] = None) -> List[str]:
+def _parse_github_url(url: str) -> tuple[str, str, str]:
+    """Parse a GitHub URL and return (hostname, owner, repo).
+
+    Parameters
+    ----------
+    url : str
+        The URL of the GitHub repository to parse.
+
+    Returns
+    -------
+    tuple[str, str, str]
+        A tuple containing the hostname, owner, and repository name.
+
+    Raises
+    ------
+    ValueError
+        If the URL is not a valid GitHub repository URL.
+
     """
-    Fetch the list of branches from a remote Git repository.
+    expected_path_length = 2
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"}:
+        msg = f"URL must start with http:// or https://: {url!r}"
+        raise ValueError(msg)
+
+    if not parsed.hostname or not parsed.hostname.startswith("github."):
+        msg = f"Un-recognised GitHub hostname: {parsed.hostname!r}"
+        raise ValueError(msg)
+
+    parts = parsed.path.strip("/").removesuffix(".git").split("/")
+    if len(parts) != expected_path_length:
+        msg = f"Path must look like /<owner>/<repo>: {parsed.path!r}"
+        raise ValueError(msg)
+
+    owner, repo = parts
+    return parsed.hostname, owner, repo
+
+
+async def fetch_remote_branch_list(url: str, token: str | None = None) -> list[str]:
+    """Fetch the list of branches from a remote Git repository.
 
     Parameters
     ----------
     url : str
         The URL of the Git repository to fetch branches from.
-    token : str, optional
-        GitHub personal-access token (PAT). Needed when *source* refers to a
-        **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
+    token : str | None
+        GitHub personal-access token (PAT). Needed when the repository is private.
+        Can also be set via the `GITHUB_TOKEN` env var.
 
     Returns
     -------
-    List[str]
+    list[str]
         A list of branch names available in the remote repository.
+
     """
     fetch_branches_command = ["git"]
 
     # Add authentication if needed
-    if token and _is_github_host(url):
-        # Only pass URL if it's not the default github.com to maintain backward compatibility
-
-        parsed = urlparse(url)
-        if parsed.hostname == "github.com":
-            fetch_branches_command += ["-c", create_git_auth_header(token)]
-        else:
-            fetch_branches_command += ["-c", create_git_auth_header(token, url)]
+    if token and is_github_host(url):
+        fetch_branches_command += ["-c", create_git_auth_header(token, url)]
 
     fetch_branches_command += ["ls-remote", "--heads", url]
 
@@ -237,35 +268,30 @@ async def fetch_remote_branch_list(url: str, token: Optional[str] = None) -> Lis
     ]
 
 
-def create_git_command(base_cmd: List[str], local_path: str, url: str, token: Optional[str] = None) -> List[str]:
+def create_git_command(base_cmd: list[str], local_path: str, url: str, token: str | None = None) -> list[str]:
     """Create a git command with authentication if needed.
 
     Parameters
     ----------
-    base_cmd : List[str]
+    base_cmd : list[str]
         The base git command to start with
     local_path : str
         The local path where the git command should be executed
     url : str
         The repository URL to check if it's a GitHub repository
-    token : Optional[str]
+    token : str | None
         GitHub personal access token for authentication
 
     Returns
     -------
-    List[str]
+    list[str]
         The git command with authentication if needed
-    """
-    cmd = base_cmd + ["-C", local_path]
-    if token and _is_github_host(url):
-        validate_github_token(token)
-        # Only pass URL if it's not the default github.com to maintain backward compatibility
 
-        parsed = urlparse(url)
-        if parsed.hostname == "github.com":
-            cmd += ["-c", create_git_auth_header(token)]
-        else:
-            cmd += ["-c", create_git_auth_header(token, url)]
+    """
+    cmd = [*base_cmd, "-C", local_path]
+    if token and is_github_host(url):
+        validate_github_token(token)
+        cmd += ["-c", create_git_auth_header(token, url=url)]
     return cmd
 
 
@@ -278,16 +304,15 @@ def create_git_auth_header(token: str, url: str = "https://github.com") -> str:
         GitHub personal access token
     url : str
         The GitHub URL to create the authentication header for.
-        Defaults to "https://github.com".
+        Defaults to "https://github.com" if not provided.
 
     Returns
     -------
     str
         The git config command for setting the authentication header
-    """
 
-    parsed = urlparse(url)
-    hostname = parsed.hostname or "github.com"
+    """
+    hostname = urlparse(url).hostname
     basic = base64.b64encode(f"x-oauth-basic:{token}".encode()).decode()
     return f"http.https://{hostname}/.extraheader=Authorization: Basic {basic}"
 
@@ -304,6 +329,7 @@ def validate_github_token(token: str) -> None:
     ------
     InvalidGitHubTokenError
         If the token format is invalid
+
     """
     if not re.match(GITHUB_PAT_PATTERN, token):
-        raise InvalidGitHubTokenError()
+        raise InvalidGitHubTokenError

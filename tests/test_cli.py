@@ -1,12 +1,11 @@
 """Tests for the Gitingest CLI."""
 
-import os
+from __future__ import annotations
+
 from inspect import signature
 from pathlib import Path
-from typing import List
 
 import pytest
-from _pytest.monkeypatch import MonkeyPatch
 from click.testing import CliRunner, Result
 
 from gitingest.cli import main
@@ -14,7 +13,7 @@ from gitingest.config import MAX_FILE_SIZE, OUTPUT_FILE_NAME
 
 
 @pytest.mark.parametrize(
-    "cli_args, expect_file",
+    ("cli_args", "expect_file"),
     [
         pytest.param(["./"], True, id="default-options"),
         pytest.param(
@@ -34,14 +33,21 @@ from gitingest.config import MAX_FILE_SIZE, OUTPUT_FILE_NAME
         ),
     ],
 )
-def test_cli_writes_file(tmp_path: Path, monkeypatch: MonkeyPatch, cli_args: List[str], expect_file: bool) -> None:
+def test_cli_writes_file(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    cli_args: list[str],
+    *,
+    expect_file: bool,
+) -> None:
     """Run the CLI and verify that the SARIF file is created (or not)."""
+    expectes_exit_code = 0
     # Work inside an isolated temp directory
     monkeypatch.chdir(tmp_path)
 
     result = _invoke_isolated_cli_runner(cli_args)
 
-    assert result.exit_code == 0, result.stderr
+    assert result.exit_code == expectes_exit_code, result.stderr
 
     # Summary line should be on STDOUT
     stdout_lines = result.stdout.splitlines()
@@ -54,9 +60,10 @@ def test_cli_writes_file(tmp_path: Path, monkeypatch: MonkeyPatch, cli_args: Lis
 
 def test_cli_with_stdout_output() -> None:
     """Test CLI invocation with output directed to STDOUT."""
+    output_file = Path(OUTPUT_FILE_NAME)
     # Clean up any existing digest.txt file before test
-    if os.path.exists(OUTPUT_FILE_NAME):
-        os.remove(OUTPUT_FILE_NAME)
+    if output_file.exists():
+        output_file.unlink()
 
     try:
         result = _invoke_isolated_cli_runner(["./", "--output", "-", "--exclude-pattern", "tests/"])
@@ -64,10 +71,10 @@ def test_cli_with_stdout_output() -> None:
         # ─── core expectations (stdout) ────────────────────────────────────-
         assert result.exit_code == 0, f"CLI exited with code {result.exit_code}, stderr: {result.stderr}"
         assert "---" in result.stdout, "Expected file separator '---' not found in STDOUT"
-        assert (
-            "src/gitingest/cli.py" in result.stdout
-        ), "Expected content (e.g., src/gitingest/cli.py) not found in STDOUT"
-        assert not os.path.exists(OUTPUT_FILE_NAME), f"Output file {OUTPUT_FILE_NAME} was unexpectedly created."
+        assert "src/gitingest/cli.py" in result.stdout, (
+            "Expected content (e.g., src/gitingest/cli.py) not found in STDOUT"
+        )
+        assert not output_file.exists(), f"Output file {output_file} was unexpectedly created."
 
         # ─── the summary must *not* pollute STDOUT, must appear on STDERR ───
         summary = "Analysis complete! Output sent to stdout."
@@ -75,17 +82,17 @@ def test_cli_with_stdout_output() -> None:
         stderr_lines = result.stderr.splitlines()
         assert summary not in stdout_lines, "Unexpected summary message found in STDOUT"
         assert summary in stderr_lines, "Expected summary message not found in STDERR"
-        assert f"Output written to: {OUTPUT_FILE_NAME}" not in stderr_lines
+        assert f"Output written to: {output_file.name}" not in stderr_lines
     finally:
         # Clean up any digest.txt file that might have been created during test
-        if os.path.exists(OUTPUT_FILE_NAME):
-            os.remove(OUTPUT_FILE_NAME)
+        if output_file.exists():
+            output_file.unlink()
 
 
-def _invoke_isolated_cli_runner(args: List[str]) -> Result:
-    """Return a CliRunner that keeps stderr apart on Click 8.0-8.1."""
+def _invoke_isolated_cli_runner(args: list[str]) -> Result:
+    """Return a ``CliRunner`` that keeps ``stderr`` separate on Click 8.0-8.1."""
     kwargs = {}
     if "mix_stderr" in signature(CliRunner.__init__).parameters:
-        kwargs["mix_stderr"] = False  # Click 8.0–8.1
+        kwargs["mix_stderr"] = False  # Click 8.0-8.1
     runner = CliRunner(**kwargs)
     return runner.invoke(main, args)

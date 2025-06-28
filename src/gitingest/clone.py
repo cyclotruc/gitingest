@@ -1,28 +1,30 @@
-"""This module contains functions for cloning a Git repository to a local path."""
+"""Module containing functions for cloning a Git repository to a local path."""
+
+from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
-from urllib.parse import urlparse
+from typing import TYPE_CHECKING
 
 from gitingest.config import DEFAULT_TIMEOUT
-from gitingest.schemas import CloneConfig
 from gitingest.utils.git_utils import (
-    _is_github_host,
     check_repo_exists,
     create_git_auth_header,
     create_git_command,
     ensure_git_installed,
+    is_github_host,
     run_command,
     validate_github_token,
 )
 from gitingest.utils.os_utils import ensure_directory
 from gitingest.utils.timeout_wrapper import async_timeout
 
+if TYPE_CHECKING:
+    from gitingest.schemas import CloneConfig
+
 
 @async_timeout(DEFAULT_TIMEOUT)
-async def clone_repo(config: CloneConfig, token: Optional[str] = None) -> None:
-    """
-    Clone a repository to a local path based on the provided configuration.
+async def clone_repo(config: CloneConfig, token: str | None = None) -> None:
+    """Clone a repository to a local path based on the provided configuration.
 
     This function handles the process of cloning a Git repository to the local file system.
     It can clone a specific branch or commit if provided, and it raises exceptions if
@@ -32,25 +34,25 @@ async def clone_repo(config: CloneConfig, token: Optional[str] = None) -> None:
     ----------
     config : CloneConfig
         The configuration for cloning the repository.
-    token : str, optional
-        GitHub personal-access token (PAT). Needed when *source* refers to a
-        **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
-        Must start with 'github_pat_' or 'gph_' for GitHub repositories.
+    token : str | None
+        GitHub personal-access token (PAT). Needed when the repository is private.
+        Can also be set via the `GITHUB_TOKEN` env var.
 
     Raises
     ------
     ValueError
         If the repository is not found, if the provided URL is invalid, or if the token format is invalid.
+
     """
     # Extract and validate query parameters
     url: str = config.url
     local_path: str = config.local_path
-    commit: Optional[str] = config.commit
-    branch: Optional[str] = config.branch
+    commit: str | None = config.commit
+    branch: str | None = config.branch
     partial_clone: bool = config.subpath != "/"
 
     # Validate token if provided
-    if token and _is_github_host(url):
+    if token and is_github_host(url):
         validate_github_token(token)
 
     # Create parent directory if it doesn't exist
@@ -58,17 +60,12 @@ async def clone_repo(config: CloneConfig, token: Optional[str] = None) -> None:
 
     # Check if the repository exists
     if not await check_repo_exists(url, token=token):
-        raise ValueError("Repository not found. Make sure it is public or that you have provided a valid token.")
+        msg = "Repository not found. Make sure it is public or that you have provided a valid token."
+        raise ValueError(msg)
 
     clone_cmd = ["git"]
-    if token and _is_github_host(url):
-        # Only pass URL if it's not the default github.com to maintain backward compatibility
-
-        parsed = urlparse(url)
-        if parsed.hostname == "github.com":
-            clone_cmd += ["-c", create_git_auth_header(token)]
-        else:
-            clone_cmd += ["-c", create_git_auth_header(token, url)]
+    if token and is_github_host(url):
+        clone_cmd += ["-c", create_git_auth_header(token, url)]
 
     clone_cmd += ["clone", "--single-branch"]
     # TODO: Re-enable --recurse-submodules when submodule support is needed

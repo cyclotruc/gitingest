@@ -2,16 +2,17 @@
 
 import asyncio
 import functools
-from typing import Any, Awaitable, Callable, TypeVar
+from typing import Awaitable, Callable, TypeVar
 
+from gitingest.utils.compat_typing import ParamSpec
 from gitingest.utils.exceptions import AsyncTimeoutError
 
 T = TypeVar("T")
+P = ParamSpec("P")
 
 
-def async_timeout(seconds) -> Callable[[Callable[..., Awaitable[T]]], Callable[..., Awaitable[T]]]:
-    """
-    Async Timeout decorator.
+def async_timeout(seconds: int) -> Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]]:
+    """Async Timeout decorator.
 
     This decorator wraps an asynchronous function and ensures it does not run for
     longer than the specified number of seconds. If the function execution exceeds
@@ -24,19 +25,21 @@ def async_timeout(seconds) -> Callable[[Callable[..., Awaitable[T]]], Callable[.
 
     Returns
     -------
-    Callable[[Callable[..., Awaitable[T]]], Callable[..., Awaitable[T]]]
+    Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]]
         A decorator that, when applied to an async function, ensures the function
         completes within the specified time limit. If the function takes too long,
         an `AsyncTimeoutError` is raised.
+
     """
 
-    def decorator(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]:
+    def decorator(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
         @functools.wraps(func)
-        async def wrapper(*args: Any, **kwargs: Any) -> T:
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
             try:
                 return await asyncio.wait_for(func(*args, **kwargs), timeout=seconds)
             except asyncio.TimeoutError as exc:
-                raise AsyncTimeoutError(f"Operation timed out after {seconds} seconds") from exc
+                msg = f"Operation timed out after {seconds} seconds"
+                raise AsyncTimeoutError(msg) from exc
 
         return wrapper
 

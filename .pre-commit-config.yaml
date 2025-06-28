@@ -38,11 +38,6 @@ repos:
       - id: absolufy-imports
         description: "Automatically convert relative imports to absolute. (Use `args: [--never]` to revert.)"
 
-  - repo: https://github.com/psf/black
-    rev: 25.1.0
-    hooks:
-      - id: black
-
   - repo: https://github.com/asottile/pyupgrade
     rev: v3.20.0
     hooks:
@@ -79,12 +74,18 @@ repos:
         description: "Lint markdown files."
         args: ["--disable=line-length"]
 
-  - repo: https://github.com/terrencepreilly/darglint
-    rev: v1.8.1
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.12.0
     hooks:
-      - id: darglint
-        name: darglint for source
-        args: [--docstring-style=numpy]
+      - id: ruff-check
+      - id: ruff-format
+
+  - repo: https://github.com/jsh9/pydoclint
+    rev: 0.6.7
+    hooks:
+      - id: pydoclint
+        name: pydoclint for source
+        args: [--style=numpy]
         files: ^src/
 
   - repo: https://github.com/pycqa/pylint
@@ -104,7 +105,6 @@ repos:
             slowapi,
             starlette>=0.40.0,
             tiktoken,
-            tomli,
             pathspec,
             uvicorn>=0.11.7,
           ]
@@ -124,7 +124,6 @@ repos:
             slowapi,
             starlette>=0.40.0,
             tiktoken,
-            tomli,
             pathspec,
             uvicorn>=0.11.7,
           ]

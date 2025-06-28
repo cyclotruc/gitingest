@@ -4,8 +4,9 @@ import asyncio
 import math
 import shutil
 import time
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
+from typing import AsyncGenerator
 
 from fastapi import FastAPI, Request
 from fastapi.responses import Response
@@ -14,6 +15,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 from gitingest.config import TMP_BASE_PATH
+from gitingest.utils.async_compat import to_thread
 from server.server_config import DELETE_REPO_AFTER
 
 # Initialize a rate limiter
@@ -21,8 +23,7 @@ limiter = Limiter(key_func=get_remote_address)
 
 
 async def rate_limit_exception_handler(request: Request, exc: Exception) -> Response:
-    """
-    Custom exception handler for rate-limiting errors.
+    """Handle rate-limiting errors with a custom exception handler.
 
     Parameters
     ----------
@@ -40,6 +41,7 @@ async def rate_limit_exception_handler(request: Request, exc: Exception) -> Resp
     ------
     exc
         If the exception is not a RateLimitExceeded error, it is re-raised.
+
     """
     if isinstance(exc, RateLimitExceeded):
         # Delegate to the default rate limit handler
@@ -49,102 +51,120 @@ async def rate_limit_exception_handler(request: Request, exc: Exception) -> Resp
 
 
 @asynccontextmanager
-async def lifespan(_: FastAPI):
-    """
-    Lifecycle manager for handling startup and shutdown events for the FastAPI application.
+async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
+    """Manage startup & graceful-shutdown tasks for the FastAPI app.
 
-    Parameters
-    ----------
-    _ : FastAPI
-        The FastAPI application instance (unused).
-
-    Yields
+    Returns
     -------
-    None
+    AsyncGenerator[None, None]
         Yields control back to the FastAPI application while the background task runs.
+
     """
     task = asyncio.create_task(_remove_old_repositories())
 
-    yield
-    # Cancel the background task on shutdown
-    task.cancel()
-    try:
-        await task
-    except asyncio.CancelledError:
-        pass
+    yield  # app runs while the background task is alive
+
+    task.cancel()  # ask the worker to stop
+    with suppress(asyncio.CancelledError):
+        await task  # swallow the cancellation signal
 
 
-async def _remove_old_repositories():
-    """
-    Periodically remove old repository folders.
+async def _remove_old_repositories(
+    base_path: Path = TMP_BASE_PATH,
+    scan_interval: int = 60,
+    delete_after: int = DELETE_REPO_AFTER,
+) -> None:
+    """Periodically delete old repositories/directories.
 
-    Background task that runs periodically to clean up old repository directories.
+    Every ``scan_interval`` seconds the coroutine scans ``base_path`` and deletes directories older than
+    ``delete_after`` seconds. The repository URL is extracted from the first ``.txt`` file in each directory
+    and appended to ``history.txt``, assuming the filename format: "owner-repository.txt". Filesystem errors are
+    logged and the loop continues.
 
-    This task:
-    - Scans the TMP_BASE_PATH directory every 60 seconds
-    - Removes directories older than DELETE_REPO_AFTER seconds
-    - Before deletion, logs repository URLs to history.txt if a matching .txt file exists
-    - Handles errors gracefully if deletion fails
+    Parameters
+    ----------
+    base_path : Path
+        The path to the base directory where repositories are stored (default: ``TMP_BASE_PATH``)
+    scan_interval : int
+        The number of seconds between scans (default: 60).
+    delete_after : int
+        The number of seconds after which a repository is considered old and will be deleted
+        (default: ``DELETE_REPO_AFTER``).
 
-    The repository URL is extracted from the first .txt file in each directory,
-    assuming the filename format: "owner-repository.txt"
     """
     while True:
+        if not base_path.exists():
+            await asyncio.sleep(scan_interval)
+            continue
+
+        now = time.time()
         try:
-            if not TMP_BASE_PATH.exists():
-                await asyncio.sleep(60)
-                continue
-
-            current_time = time.time()
-
-            for folder in TMP_BASE_PATH.iterdir():
-                # Skip if folder is not old enough
-                if current_time - folder.stat().st_ctime <= DELETE_REPO_AFTER:
+            for folder in base_path.iterdir():
+                if now - folder.stat().st_ctime <= delete_after:  # Not old enough
                     continue
 
                 await _process_folder(folder)
 
-        except Exception as exc:
+        except (OSError, PermissionError) as exc:
             print(f"Error in _remove_old_repositories: {exc}")
 
-        await asyncio.sleep(60)
+        await asyncio.sleep(scan_interval)
 
 
 async def _process_folder(folder: Path) -> None:
-    """
-    Process a single folder for deletion and logging.
+    """Append the repo URL (if discoverable) to ``history.txt`` and delete *folder*.
 
     Parameters
     ----------
     folder : Path
         The path to the folder to be processed.
+
     """
+    history_file = Path("history.txt")
+
+    try:
+        first_txt_file: Path = next(folder.glob("*.txt"))
+    except StopIteration:  # No .txt file found
+        return
+
     # Try to log repository URL before deletion
     try:
-        txt_files = [f for f in folder.iterdir() if f.suffix == ".txt"]
-
         # Extract owner and repository name from the filename
-        filename = txt_files[0].stem
-        if txt_files and "-" in filename:
+        filename = first_txt_file.stem  # e.g. "owner-repo"
+        if "-" in filename:
             owner, repo = filename.split("-", 1)
             repo_url = f"{owner}/{repo}"
+            await to_thread(_append_line, history_file, repo_url)
 
-            with open("history.txt", mode="a", encoding="utf-8") as history:
-                history.write(f"{repo_url}\n")
-
-    except Exception as exc:
+    except (OSError, PermissionError) as exc:
         print(f"Error logging repository URL for {folder}: {exc}")
 
     # Delete the folder
     try:
-        shutil.rmtree(folder)
-    except Exception as exc:
-        print(f"Error deleting {folder}: {exc}")
+        await to_thread(shutil.rmtree, folder)
+    except PermissionError as exc:
+        print(f"No permission to delete {folder}: {exc}")
+    except OSError as exc:
+        print(f"Could not delete {folder}: {exc}")
+
+
+def _append_line(path: Path, line: str) -> None:
+    """Append a line to a file.
+
+    Parameters
+    ----------
+    path : Path
+        The path to the file to append the line to.
+    line : str
+        The line to append to the file.
+
+    """
+    with path.open("a", encoding="utf-8") as fp:
+        fp.write(f"{line}\n")
 
 
 def log_slider_to_size(position: int) -> int:
-    """
-    Convert a slider position to a file size in bytes using a logarithmic scale.
+    """Convert a slider position to a file size in bytes using a logarithmic scale.
 
     Parameters
     ----------
@@ -155,6 +175,7 @@ def log_slider_to_size(position: int) -> int:
     -------
     int
         File size in bytes corresponding to the slider position.
+
     """
     maxp = 500
     minv = math.log(1)
@@ -164,7 +185,7 @@ def log_slider_to_size(position: int) -> int:
 
 ## Color printing utility
 class Colors:
-    """ANSI color codes"""
+    """ANSI color codes."""
 
     BLACK = "\033[0;30m"
     RED = "\033[0;31m"

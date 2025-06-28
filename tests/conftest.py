@@ -1,19 +1,22 @@
-"""
-Fixtures for tests.
+"""Fixtures for tests.
 
 This file provides shared fixtures for creating sample queries, a temporary directory structure, and a helper function
-to write `.ipynb` notebooks for testing notebook utilities.
+to write ``.ipynb`` notebooks for testing notebook utilities.
 """
+
+from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Callable, Dict, List
+from typing import TYPE_CHECKING, Any, Callable, Dict
 from unittest.mock import AsyncMock
 
 import pytest
-from pytest_mock import MockerFixture
 
-from gitingest.query_parsing import IngestionQuery
+from gitingest.query_parser import IngestionQuery
+
+if TYPE_CHECKING:
+    from pytest_mock import MockerFixture
 
 WriteNotebookFunc = Callable[[str, Dict[str, Any]], Path]
 
@@ -23,15 +26,15 @@ LOCAL_REPO_PATH = "/tmp/repo"
 
 @pytest.fixture
 def sample_query() -> IngestionQuery:
-    """
-    Provide a default `IngestionQuery` object for use in tests.
+    """Provide a default ``IngestionQuery`` object for use in tests.
 
-    This fixture returns a `IngestionQuery` pre-populated with typical fields and some default ignore patterns.
+    This fixture returns a ``IngestionQuery`` pre-populated with typical fields and some default ignore patterns.
 
     Returns
     -------
     IngestionQuery
-        The sample `IngestionQuery` object.
+        The sample ``IngestionQuery`` object.
+
     """
     return IngestionQuery(
         user_name="test_user",
@@ -50,8 +53,7 @@ def sample_query() -> IngestionQuery:
 
 @pytest.fixture
 def temp_directory(tmp_path: Path) -> Path:
-    """
-    Create a temporary directory structure for testing repository scanning.
+    """Create a temporary directory structure for testing repository scanning.
 
     The structure includes:
     test_repo/
@@ -71,12 +73,13 @@ def temp_directory(tmp_path: Path) -> Path:
     Parameters
     ----------
     tmp_path : Path
-        The temporary directory path provided by the `tmp_path` fixture.
+        The temporary directory path provided by the ``tmp_path`` fixture.
 
     Returns
     -------
     Path
-        The path to the created `test_repo` directory.
+        The path to the created ``test_repo`` directory.
+
     """
     test_dir = tmp_path / "test_repo"
     test_dir.mkdir()
@@ -112,22 +115,22 @@ def temp_directory(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def write_notebook(tmp_path: Path) -> WriteNotebookFunc:
-    """
-    Provide a helper function to write a `.ipynb` notebook file with the given content.
+    """Provide a helper function to write a ``.ipynb`` notebook file with the given content.
 
     Parameters
     ----------
     tmp_path : Path
-        The temporary directory path provided by the `tmp_path` fixture.
+        The temporary directory path provided by the ``tmp_path`` fixture.
 
     Returns
     -------
     WriteNotebookFunc
-        A callable that accepts a filename and a dictionary (representing JSON notebook data), writes it to a `.ipynb`
-        file, and returns the path to the file.
+        A callable that accepts a filename and a dictionary (representing JSON notebook data), writes it to a
+        ``.ipynb`` file, and returns the path to the file.
+
     """
 
-    def _write_notebook(name: str, content: Dict[str, Any]) -> Path:
+    def _write_notebook(name: str, content: dict[str, Any]) -> Path:
         notebook_path = tmp_path / name
         with notebook_path.open(mode="w", encoding="utf-8") as f:
             json.dump(content, f)
@@ -137,10 +140,10 @@ def write_notebook(tmp_path: Path) -> WriteNotebookFunc:
 
 
 @pytest.fixture
-def stub_branches(mocker: MockerFixture) -> Callable[[List[str]], None]:
+def stub_branches(mocker: MockerFixture) -> Callable[[list[str]], None]:
     """Return a function that stubs git branch discovery to *branches*."""
 
-    def _factory(branches: List[str]) -> None:
+    def _factory(branches: list[str]) -> None:
         mocker.patch(
             "gitingest.utils.git_utils.run_command",
             new_callable=AsyncMock,
@@ -157,24 +160,18 @@ def stub_branches(mocker: MockerFixture) -> Callable[[List[str]], None]:
 
 @pytest.fixture
 def repo_exists_true(mocker: MockerFixture) -> AsyncMock:
-    """Patch `gitingest.cloning.check_repo_exists` to always return ``True``.
-
-    Many cloning-related tests assume that the remote repository exists. This fixture centralises
-    that behaviour so individual tests no longer need to repeat the same ``mocker.patch`` call.
-    The mock object is returned so that tests can make assertions on how it was used or override
-    its behaviour when needed.
-    """
-    return mocker.patch("gitingest.cloning.check_repo_exists", return_value=True)
+    """Patch ``gitingest.clone.check_repo_exists`` to always return *True*."""
+    return mocker.patch("gitingest.clone.check_repo_exists", return_value=True)
 
 
 @pytest.fixture
 def run_command_mock(mocker: MockerFixture) -> AsyncMock:
-    """Patch `gitingest.cloning.run_command` with an ``AsyncMock``.
+    """Patch ``gitingest.clone.run_command`` with an ``AsyncMock``.
 
     The mocked function returns a dummy process whose ``communicate`` method yields generic
     *stdout* / *stderr* bytes. Tests can still access / tweak the mock via the fixture argument.
     """
-    mock_exec = mocker.patch("gitingest.cloning.run_command", new_callable=AsyncMock)
+    mock_exec = mocker.patch("gitingest.clone.run_command", new_callable=AsyncMock)
 
     # Provide a default dummy process so most tests don't have to create one.
     dummy_process = AsyncMock()
