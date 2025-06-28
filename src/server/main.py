@@ -1,8 +1,9 @@
 """Main module for the FastAPI application."""
 
+from __future__ import annotations
+
 import os
 from pathlib import Path
-from typing import Dict
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
@@ -45,22 +46,21 @@ app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
 
 
 @app.get("/health")
-async def health_check() -> Dict[str, str]:
-    """
-    Health check endpoint to verify that the server is running.
+async def health_check() -> dict[str, str]:
+    """Health check endpoint to verify that the server is running.
 
     Returns
     -------
-    Dict[str, str]
+    dict[str, str]
         A JSON object with a "status" key indicating the server's health status.
+
     """
     return {"status": "healthy"}
 
 
 @app.head("/")
 async def head_root() -> HTMLResponse:
-    """
-    Respond to HTTP HEAD requests for the root URL.
+    """Respond to HTTP HEAD requests for the root URL.
 
     Mirrors the headers and status code of the index page.
 
@@ -68,6 +68,7 @@ async def head_root() -> HTMLResponse:
     -------
     HTMLResponse
         An empty HTML response with appropriate headers.
+
     """
     return HTMLResponse(content=None, headers={"content-type": "text/html; charset=utf-8"})
 
@@ -75,8 +76,7 @@ async def head_root() -> HTMLResponse:
 @app.get("/api/", response_class=HTMLResponse)
 @app.get("/api", response_class=HTMLResponse)
 async def api_docs(request: Request) -> HTMLResponse:
-    """
-    Render the API documentation page.
+    """Render the API documentation page.
 
     Parameters
     ----------
@@ -87,32 +87,33 @@ async def api_docs(request: Request) -> HTMLResponse:
     -------
     HTMLResponse
         A rendered HTML page displaying API documentation.
+
     """
     return templates.TemplateResponse("api.jinja", {"request": request})
 
 
 @app.get("/robots.txt")
 async def robots() -> FileResponse:
-    """
-    Serve the `robots.txt` file to guide search engine crawlers.
+    """Serve the ``robots.txt`` file to guide search engine crawlers.
 
     Returns
     -------
     FileResponse
-        The `robots.txt` file located in the static directory.
+        The ``robots.txt`` file located in the static directory.
+
     """
     return FileResponse("static/robots.txt")
 
 
 @app.get("/llm.txt")
 async def llm_txt() -> FileResponse:
-    """
-    Serve the `llm.txt` file to provide information about the site to LLMs.
+    """Serve the ``llm.txt`` file to provide information about the site to LLMs.
 
     Returns
     -------
     FileResponse
-        The `llm.txt` file located in the static directory.
+        The ``llm.txt`` file located in the static directory.
+
     """
     return FileResponse("static/llm.txt")
 
