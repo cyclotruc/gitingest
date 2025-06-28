@@ -85,8 +85,8 @@ def _looks_like_git_host(host: str) -> bool:
     """
     Check if the given host looks like a Git host.
 
-    The current heuristic returns `True` when the host starts with `git.` (e.g. `git.example.com`) or starts with
-    `gitlab.` (e.g. `gitlab.company.com`).
+    The current heuristic returns `True` when the host starts with `git.` (e.g. `git.example.com`), starts with
+    `gitlab.` (e.g. `gitlab.company.com`), or starts with `github.` (e.g. `github.company.com` for GitHub Enterprise).
 
     Parameters
     ----------
@@ -99,7 +99,7 @@ def _looks_like_git_host(host: str) -> bool:
         True if the host looks like a Git host, otherwise False.
     """
     host = host.lower()
-    return host.startswith(("git.", "gitlab."))
+    return host.startswith(("git.", "gitlab.", "github."))
 
 
 def _validate_url_scheme(scheme: str) -> None:
