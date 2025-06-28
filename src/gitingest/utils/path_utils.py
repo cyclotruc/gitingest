@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 def _is_safe_symlink(symlink_path: Path, base_path: Path) -> bool:
-    """Return ``True`` if *symlink_path* resolves inside *base_path*.
+    """Return ``True`` if ``symlink_path`` resolves inside ``base_path``.
 
     Parameters
     ----------
@@ -17,7 +17,7 @@ def _is_safe_symlink(symlink_path: Path, base_path: Path) -> bool:
     Returns
     -------
     bool
-        Whether the symlink is “safe” (i.e., does not escape *base_path*).
+        Whether the symlink is “safe” (i.e., does not escape ``base_path``).
 
     """
     # On Windows a non-symlink is immediately unsafe

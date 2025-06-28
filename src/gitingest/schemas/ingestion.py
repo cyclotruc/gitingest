@@ -101,7 +101,7 @@ class IngestionQuery(BaseModel):  # pylint: disable=too-many-instance-attributes
         Raises
         ------
         ValueError
-            If the `url` parameter is not provided.
+            If the ``url`` parameter is not provided.
 
         """
         if not self.url:

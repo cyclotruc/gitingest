@@ -52,8 +52,8 @@ def test_load_gitignore_patterns(tmp_path: Path) -> None:
 async def test_ingest_with_gitignore(repo_path: Path) -> None:
     """Integration test for ``ingest_async()`` respecting ``.gitignore`` rules.
 
-    When ``include_gitignored`` is *False* (default), the content of ``exclude.txt`` should be omitted.
-    When ``include_gitignored`` is *True*, both files should be present.
+    When ``include_gitignored`` is ``False`` (default), the content of ``exclude.txt`` should be omitted.
+    When ``include_gitignored`` is ``True``, both files should be present.
     """
     # Run ingestion with the gitignore functionality enabled.
     _, _, content_with_ignore = await ingest_async(source=str(repo_path))

@@ -48,8 +48,8 @@ async def parse_query(
     ignore_patterns : set[str] | str | None
         Patterns to ignore. Can be a set of strings or a single string.
     token : str | None
-        GitHub personal-access token (PAT). Needed when the repository is private.
-        Can also be set via the `GITHUB_TOKEN` env var.
+        GitHub personal access token (PAT) for accessing private repositories.
+        Can also be set via the ``GITHUB_TOKEN`` environment variable.
 
     Returns
     -------
@@ -99,17 +99,17 @@ async def _parse_remote_repo(source: str, token: str | None = None) -> Ingestion
     """Parse a repository URL into a structured query dictionary.
 
     If source is:
-      - A fully qualified URL (`https://gitlab.com/...`), parse & verify that domain
-      - A URL missing `https://` (`gitlab.com/...`), add `https://` and parse
-      - A `slug` (`pandas-dev/pandas`), attempt known domains until we find one that exists.
+      - A fully qualified URL ('https://gitlab.com/...'), parse & verify that domain
+      - A URL missing 'https://' ('gitlab.com/...'), add 'https://' and parse
+      - A *slug* ('pandas-dev/pandas'), attempt known domains until we find one that exists.
 
     Parameters
     ----------
     source : str
         The URL or domain-less slug to parse.
     token : str | None
-        GitHub personal-access token (PAT). Needed when the repository is private.
-        Can also be set via the ``GITHUB_TOKEN`` env var.
+        GitHub personal access token (PAT) for accessing private repositories.
+        Can also be set via the ``GITHUB_TOKEN`` environment variable.
 
     Returns
     -------
@@ -300,8 +300,8 @@ async def try_domains_for_user_and_repo(user_name: str, repo_name: str, token: s
     repo_name : str
         The name of the repository.
     token : str | None
-        GitHub personal-access token (PAT). Needed when the repository is private.
-        Can also be set via the ``GITHUB_TOKEN`` env var.
+        GitHub personal access token (PAT) for accessing private repositories.
+        Can also be set via the ``GITHUB_TOKEN`` environment variable.
 
     Returns
     -------

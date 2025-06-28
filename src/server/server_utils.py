@@ -16,7 +16,7 @@ from slowapi.util import get_remote_address
 
 from gitingest.config import TMP_BASE_PATH
 from gitingest.utils.async_compat import to_thread
-from server.server_config import DELETE_REPO_AFTER
+from server.server_config import DELETE_REPO_AFTER, MAX_FILE_SIZE_KB, MAX_SLIDER_POSITION
 
 # Initialize a rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -177,10 +177,8 @@ def log_slider_to_size(position: int) -> int:
         File size in bytes corresponding to the slider position.
 
     """
-    maxp = 500
-    minv = math.log(1)
-    maxv = math.log(102_400)
-    return round(math.exp(minv + (maxv - minv) * pow(position / maxp, 1.5))) * 1024
+    maxv = math.log(MAX_FILE_SIZE_KB)
+    return round(math.exp(maxv * pow(position / MAX_SLIDER_POSITION, 1.5))) * 1024
 
 
 ## Color printing utility

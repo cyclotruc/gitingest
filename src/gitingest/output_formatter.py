@@ -179,7 +179,7 @@ def _format_token_count(text: str) -> str | None:
     Returns
     -------
     str | None
-        The formatted number of tokens as a string (e.g., ``1.2k``, ``1.2M``), or ``None`` if an error occurs.
+        The formatted number of tokens as a string (e.g., ``"1.2k"``, ``"1.2M"``), or ``None`` if an error occurs.
 
     """
     try:

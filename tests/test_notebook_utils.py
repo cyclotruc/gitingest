@@ -1,4 +1,4 @@
-"""Tests for the `notebook` utils module.
+"""Tests for the ``notebook`` utils module.
 
 These tests validate how notebooks are processed into Python-like output, ensuring that markdown/raw cells are
 converted to triple-quoted blocks, code cells remain executable code, and various edge cases (multiple worksheets,

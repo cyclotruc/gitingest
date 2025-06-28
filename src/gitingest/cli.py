@@ -53,7 +53,7 @@ class _CLIArgs(TypedDict):
     envvar="GITHUB_TOKEN",
     default=None,
     help=(
-        "GitHub personal access token for accessing private repositories. "
+        "GitHub personal access token (PAT) for accessing private repositories. "
         "If omitted, the CLI will look for the GITHUB_TOKEN environment variable."
     ),
 )
@@ -81,9 +81,9 @@ async def _async_main(
 ) -> None:
     """Analyze a directory or repository and create a text dump of its contents.
 
-    This command analyzes the contents of a specified source directory or repository, applies custom include and
-    exclude patterns, and generates a text summary of the analysis which is then written to an output file
-    or printed to stdout.
+    This command scans the specified ``source`` (a local directory or Git repo),
+    applies custom include and exclude patterns, and generates a text summary of
+    the analysis.  The summary is written to an output file or printed to ``stdout``.
 
     Parameters
     ----------
@@ -96,20 +96,20 @@ async def _async_main(
     include_pattern : tuple[str, ...] | None
         Glob patterns for including files in the output.
     branch : str | None
-        Git branch to ingest. If *None*, the repository's default branch is used.
+        Git branch to ingest. If ``None``, the repository's default branch is used.
     include_gitignored : bool
-        If *True*, also ingest files matched by ``.gitignore`` or ``.gitingestignore`` (default: ``False``).
+        If ``True``, also ingest files matched by ``.gitignore`` or ``.gitingestignore`` (default: ``False``).
     token : str | None
-        GitHub personal-access token (PAT). Needed when the repository is private.
-        Can also be set via the ``GITHUB_TOKEN`` env var.
+        GitHub personal access token (PAT) for accessing private repositories.
+        Can also be set via the ``GITHUB_TOKEN`` environment variable.
     output : str | None
-        Destination file path. If *None*, the output is written to ``<repo_name>.txt`` in the current directory.
-        Use ``"-"`` to write to *stdout*.
+        Destination file path. If ``None``, the output is written to ``<repo_name>.txt`` in the current directory.
+        Use ``"-"`` to write to ``stdout``.
 
     Raises
     ------
     click.Abort
-        If there is an error during the execution of the command, this exception is raised to abort the process.
+        Raised if an error occurs during execution and the command must be aborted.
 
     """
     try:

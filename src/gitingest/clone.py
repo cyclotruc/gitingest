@@ -35,8 +35,8 @@ async def clone_repo(config: CloneConfig, token: str | None = None) -> None:
     config : CloneConfig
         The configuration for cloning the repository.
     token : str | None
-        GitHub personal-access token (PAT). Needed when the repository is private.
-        Can also be set via the `GITHUB_TOKEN` env var.
+        GitHub personal access token (PAT) for accessing private repositories.
+        Can also be set via the ``GITHUB_TOKEN`` environment variable.
 
     Raises
     ------

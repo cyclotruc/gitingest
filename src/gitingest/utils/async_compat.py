@@ -21,14 +21,14 @@ else:
     async def to_thread(func: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs) -> R:
         """Back-port :func:`asyncio.to_thread` for Python < 3.9.
 
-        Run `func` in the default thread-pool executor and return the result.
+        Run ``func`` in the default thread-pool executor and return the result.
         """
         loop = asyncio.get_running_loop()
         ctx = contextvars.copy_context()
         func_call = functools.partial(ctx.run, func, *args, **kwargs)
         return await loop.run_in_executor(None, func_call)
 
-    # Patch stdlib so that *existing* imports of ``asyncio`` see the shim.
+    # Patch stdlib so that *existing* imports of asyncio see the shim.
     if not hasattr(asyncio, "to_thread"):
         asyncio.to_thread = to_thread
 

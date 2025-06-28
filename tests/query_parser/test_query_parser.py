@@ -1,4 +1,4 @@
-"""Tests for the `query_parser` module.
+"""Tests for the ``query_parser`` module.
 
 These tests cover URL parsing, pattern parsing, and handling of branches/subpaths for HTTP(S) repositories and local
 paths.
@@ -206,7 +206,7 @@ async def test_parse_query_empty_patterns() -> None:
 
     Given empty include_patterns and ignore_patterns:
     When ``parse_query`` is called,
-    Then ``include_patterns`` becomes *None* and default ignore patterns apply.
+    Then ``include_patterns`` becomes ``None`` and default ignore patterns apply.
     """
     query = await parse_query(DEMO_URL, max_file_size=50, from_web=True, include_patterns="", ignore_patterns="")
 
@@ -301,7 +301,7 @@ async def test_parse_url_branch_and_commit_distinction(
 
     Given either a branch URL (e.g., ".../tree/main") or a 40-character commit URL:
     When ``_parse_remote_repo`` is called with branch fetching,
-    Then the function should correctly set `branch` or `commit` based on the URL content.
+    Then the function should correctly set ``branch`` or ``commit`` based on the URL content.
     """
     stub_branches(["main", "dev", "feature-branch"])
 

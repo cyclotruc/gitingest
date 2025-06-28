@@ -79,7 +79,7 @@ def _relative_or_none(path: Path, base: Path) -> Path | None:
     Returns
     -------
     Path | None
-        The relative path of *path* to *base*, or ``None`` if *path* is outside *base*.
+        The relative path of ``path`` to ``base``, or ``None`` if ``path`` is outside ``base``.
 
     """
     try:

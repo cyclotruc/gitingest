@@ -1,4 +1,4 @@
-"""Tests for the `query_ingestion` module.
+"""Tests for the ``query_ingestion`` module.
 
 These tests validate directory scanning, file content extraction, notebook handling, and the overall ingestion logic,
 including filtering patterns and subpaths.

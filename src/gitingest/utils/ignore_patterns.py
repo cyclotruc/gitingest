@@ -169,7 +169,7 @@ def load_ignore_patterns(root: Path, filename: str) -> set[str]:
     """Load ignore patterns from ``filename`` found under ``root``.
 
     The loader walks the directory tree, looks for the supplied ``filename``,
-    and returns a unified ``set`` of patterns. It implements the same parsing rules
+    and returns a unified set of patterns. It implements the same parsing rules
     we use for ``.gitignore`` and ``.gitingestignore`` (git-wildmatch syntax with
     support for negation and root-relative paths).
 
@@ -223,12 +223,12 @@ def _parse_ignore_file(ignore_file: Path, root: Path) -> set[str]:
             if not line or line.startswith("#"):  # comments / blank lines
                 continue
 
-            # Handle negation (`!foobar`)
+            # Handle negation ("!foobar")
             negated = line.startswith("!")
             if negated:
                 line = line[1:]
 
-            # Handle leading slash (`/foobar`)
+            # Handle leading slash ("/foobar")
             if line.startswith("/"):
                 line = line.lstrip("/")
 

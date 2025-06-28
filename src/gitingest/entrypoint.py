@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 from gitingest.clone import clone_repo
-from gitingest.config import TMP_BASE_PATH
+from gitingest.config import MAX_FILE_SIZE, TMP_BASE_PATH
 from gitingest.ingestion import ingest_query
 from gitingest.query_parser import IngestionQuery, parse_query
 from gitingest.utils.async_compat import to_thread
@@ -20,7 +20,7 @@ from gitingest.utils.ignore_patterns import load_ignore_patterns
 async def ingest_async(
     source: str,
     *,
-    max_file_size: int = 10 * 1024 * 1024,  # 10 MB
+    max_file_size: int = MAX_FILE_SIZE,  # 10 MB
     include_patterns: str | set[str] | None = None,
     exclude_patterns: str | set[str] | None = None,
     branch: str | None = None,
@@ -41,19 +41,20 @@ async def ingest_async(
     max_file_size : int
         Maximum allowed file size for file ingestion. Files larger than this size are ignored (default: 10 MB).
     include_patterns : str | set[str] | None
-        Pattern or set of patterns specifying which files to include. If *None*, all files are included.
+        Pattern or set of patterns specifying which files to include. If ``None``, all files are included.
     exclude_patterns : str | set[str] | None
-        Pattern or set of patterns specifying which files to exclude. If *None*, no files are excluded.
+        Pattern or set of patterns specifying which files to exclude. If ``None``, no files are excluded.
     branch : str | None
-        The branch to clone and ingest. If *None*, the default branch is used.
+        The branch to clone and ingest (default: the default branch).
     include_gitignored : bool
-        If *True*, include files ignored by ``.gitignore`` and ``.gitingestignore`` (default: ``False``).
+        If ``True``, include files ignored by ``.gitignore`` and ``.gitingestignore`` (default: ``False``).
     token : str | None
-        GitHub personal-access token (PAT). Needed when the repository is private.
-        Can also be set via the ``GITHUB_TOKEN`` env var.
+        GitHub personal access token (PAT) for accessing private repositories.
+        Can also be set via the ``GITHUB_TOKEN`` environment variable.
     output : str | None
-        File path where the summary and content should be written. If *"-"* (dash), the results are written to stdout.
-        If *None*, the results are not written to a file.
+        File path where the summary and content should be written.
+        If ``"-"`` (dash), the results are written to ``stdout``.
+        If ``None``, the results are not written to a file.
 
     Returns
     -------
@@ -99,7 +100,7 @@ async def ingest_async(
 def ingest(
     source: str,
     *,
-    max_file_size: int = 10 * 1024 * 1024,  # 10 MB
+    max_file_size: int = MAX_FILE_SIZE,
     include_patterns: str | set[str] | None = None,
     exclude_patterns: str | set[str] | None = None,
     branch: str | None = None,
@@ -120,19 +121,20 @@ def ingest(
     max_file_size : int
         Maximum allowed file size for file ingestion. Files larger than this size are ignored (default: 10 MB).
     include_patterns : str | set[str] | None
-        Pattern or set of patterns specifying which files to include. If *None*, all files are included.
+        Pattern or set of patterns specifying which files to include. If ``None``, all files are included.
     exclude_patterns : str | set[str] | None
-        Pattern or set of patterns specifying which files to exclude. If *None*, no files are excluded.
+        Pattern or set of patterns specifying which files to exclude. If ``None``, no files are excluded.
     branch : str | None
         The branch to clone and ingest (default: the default branch).
     include_gitignored : bool
-        If *True*, include files ignored by ``.gitignore`` and ``.gitingestignore`` (default: ``False``).
+        If ``True``, include files ignored by ``.gitignore`` and ``.gitingestignore`` (default: ``False``).
     token : str | None
-        GitHub personal-access token (PAT). Needed when the repository is private.
-        Can also be set via the ``GITHUB_TOKEN`` env var.
+        GitHub personal access token (PAT) for accessing private repositories.
+        Can also be set via the ``GITHUB_TOKEN`` environment variable.
     output : str | None
-        File path where the summary and content should be written. If *"-"* (dash), the results are written to stdout.
-        If *None*, the results are not written to a file.
+        File path where the summary and content should be written.
+        If ``"-"`` (dash), the results are written to ``stdout``.
+        If ``None``, the results are not written to a file.
 
     Returns
     -------
@@ -162,7 +164,7 @@ def ingest(
 
 
 def _apply_gitignores(query: IngestionQuery) -> None:
-    """Update `query.ignore_patterns` in-place.
+    """Update ``query.ignore_patterns`` in-place.
 
     Parameters
     ----------
@@ -187,7 +189,7 @@ async def _clone_if_remote(query: IngestionQuery, token: str | None) -> None:
     Raises
     ------
     TypeError
-        If `clone_repo` does not return a coroutine.
+        If ``clone_repo`` does not return a coroutine.
 
     """
     if not query.url:  # local path ingestion
@@ -207,7 +209,7 @@ async def _clone_if_remote(query: IngestionQuery, token: str | None) -> None:
 
 
 async def _write_output(tree: str, content: str, target: str | None) -> None:
-    """Write combined output to *target* (`'-'` ⇒ stdout).
+    """Write combined output to ``target`` (``"-"`` ⇒ stdout).
 
     Parameters
     ----------
@@ -216,7 +218,7 @@ async def _write_output(tree: str, content: str, target: str | None) -> None:
     content : str
         The content of the files in the repository or directory.
     target : str | None
-        The path to the output file. If *None*, the results are not written to a file.
+        The path to the output file. If ``None``, the results are not written to a file.
 
     """
     if target == "-":

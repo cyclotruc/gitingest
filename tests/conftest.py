@@ -160,7 +160,7 @@ def stub_branches(mocker: MockerFixture) -> Callable[[list[str]], None]:
 
 @pytest.fixture
 def repo_exists_true(mocker: MockerFixture) -> AsyncMock:
-    """Patch ``gitingest.clone.check_repo_exists`` to always return *True*."""
+    """Patch ``gitingest.clone.check_repo_exists`` to always return ``True``."""
     return mocker.patch("gitingest.clone.check_repo_exists", return_value=True)
 
 
@@ -169,7 +169,7 @@ def run_command_mock(mocker: MockerFixture) -> AsyncMock:
     """Patch ``gitingest.clone.run_command`` with an ``AsyncMock``.
 
     The mocked function returns a dummy process whose ``communicate`` method yields generic
-    *stdout* / *stderr* bytes. Tests can still access / tweak the mock via the fixture argument.
+    ``stdout`` / ``stderr`` bytes. Tests can still access / tweak the mock via the fixture argument.
     """
     mock_exec = mocker.patch("gitingest.clone.run_command", new_callable=AsyncMock)
 

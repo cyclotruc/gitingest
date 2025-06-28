@@ -1,6 +1,6 @@
-"""Tests for the `git_utils` module.
+"""Tests for the ``git_utils`` module.
 
-These tests validate the `validate_github_token` function, which ensures that
+These tests validate the ``validate_github_token`` function, which ensures that
 GitHub personal access tokens (PATs) are properly formatted.
 """
 

@@ -32,7 +32,7 @@ def _is_valid_git_commit_hash(commit: str) -> bool:
     Returns
     -------
     bool
-        `True` if the string is a valid 40-character Git commit hash, otherwise `False`.
+        ``True`` if the string is a valid 40-character Git commit hash, otherwise ``False``.
 
     """
     sha_hex_length = 40
@@ -43,8 +43,8 @@ def _is_valid_pattern(pattern: str) -> bool:
     """Validate if the given pattern contains only valid characters.
 
     This function checks if the pattern contains only alphanumeric characters or one
-    of the following allowed characters: dash (`-`), underscore (`_`), dot (`.`),
-    forward slash (`/`), plus (`+`), asterisk (`*`), or the at sign (`@`).
+    of the following allowed characters: dash ('-'), underscore ('_'), dot ('.'),
+    forward slash ('/'), plus ('+'), asterisk ('*'), or the at sign ('@').
 
     Parameters
     ----------
@@ -54,7 +54,7 @@ def _is_valid_pattern(pattern: str) -> bool:
     Returns
     -------
     bool
-        `True` if the pattern is valid, otherwise `False`.
+        ``True`` if the pattern is valid, otherwise ``False``.
 
     """
     return all(c.isalnum() or c in "-_./+*@" for c in pattern)
@@ -63,9 +63,9 @@ def _is_valid_pattern(pattern: str) -> bool:
 def _validate_host(host: str) -> None:
     """Validate a hostname.
 
-    The host is accepted if it is either present in the hard-coded `KNOWN_GIT_HOSTS` list or if it satisfies the
-    simple heuristics in `_looks_like_git_host`, which try to recognise common self-hosted Git services (e.g. GitLab
-    instances on sub-domains such as `gitlab.example.com` or `git.example.com`).
+    The host is accepted if it is either present in the hard-coded ``KNOWN_GIT_HOSTS`` list or if it satisfies the
+    simple heuristics in ``_looks_like_git_host``, which try to recognise common self-hosted Git services (e.g. GitLab
+    instances on sub-domains such as 'gitlab.example.com' or 'git.example.com').
 
     Parameters
     ----------
@@ -87,8 +87,8 @@ def _validate_host(host: str) -> None:
 def _looks_like_git_host(host: str) -> bool:
     """Check if the given host looks like a Git host.
 
-    The current heuristic returns `True` when the host starts with `git.` (e.g. `git.example.com`), starts with
-    `gitlab.` (e.g. `gitlab.company.com`), or starts with `github.` (e.g. `github.company.com` for GitHub Enterprise).
+    The current heuristic returns ``True`` when the host starts with ``git.`` (e.g. 'git.example.com'), starts with
+    'gitlab.' (e.g. 'gitlab.company.com'), or starts with 'github.' (e.g. 'github.company.com' for GitHub Enterprise).
 
     Parameters
     ----------
@@ -98,7 +98,7 @@ def _looks_like_git_host(host: str) -> bool:
     Returns
     -------
     bool
-        `True` if the host looks like a Git host, otherwise `False`.
+        ``True`` if the host looks like a Git host, otherwise ``False``.
 
     """
     host = host.lower()
@@ -116,7 +116,7 @@ def _validate_url_scheme(scheme: str) -> None:
     Raises
     ------
     ValueError
-        If the scheme is not `http` or `https`.
+        If the scheme is not 'http' or 'https'.
 
     """
     scheme = scheme.lower()
@@ -156,7 +156,7 @@ def _normalize_pattern(pattern: str) -> str:
     """Normalize the given pattern by removing leading separators and appending a wildcard.
 
     This function processes the pattern string by stripping leading directory separators
-    and appending a wildcard (`*`) if the pattern ends with a separator.
+    and appending a wildcard (``*``) if the pattern ends with a separator.
 
     Parameters
     ----------

@@ -16,7 +16,7 @@ def async_timeout(seconds: int) -> Callable[[Callable[P, Awaitable[T]]], Callabl
 
     This decorator wraps an asynchronous function and ensures it does not run for
     longer than the specified number of seconds. If the function execution exceeds
-    this limit, it raises an `AsyncTimeoutError`.
+    this limit, it raises an ``AsyncTimeoutError``.
 
     Parameters
     ----------
@@ -28,7 +28,7 @@ def async_timeout(seconds: int) -> Callable[[Callable[P, Awaitable[T]]], Callabl
     Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]]
         A decorator that, when applied to an async function, ensures the function
         completes within the specified time limit. If the function takes too long,
-        an `AsyncTimeoutError` is raised.
+        an ``AsyncTimeoutError`` is raised.
 
     """
 

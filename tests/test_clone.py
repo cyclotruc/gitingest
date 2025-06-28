@@ -1,4 +1,4 @@
-"""Tests for the `clone` module.
+"""Tests for the ``clone`` module.
 
 These tests cover various scenarios for cloning repositories, verifying that the appropriate Git commands are invoked
 and handling edge cases such as nonexistent URLs, timeouts, redirects, and specific commits or branches.
@@ -206,7 +206,7 @@ async def test_check_repo_exists_with_redirect(mocker: MockerFixture) -> None:
 
     Given a URL that responds with "302 Found":
     When ``check_repo_exists`` is called,
-    Then it should return `False`, indicating the repo is inaccessible.
+    Then it should return ``False``, indicating the repo is inaccessible.
     """
     mock_exec = mocker.patch("asyncio.create_subprocess_exec", new_callable=AsyncMock)
     mock_process = AsyncMock()
@@ -225,7 +225,7 @@ async def test_check_repo_exists_with_permanent_redirect(mocker: MockerFixture) 
 
     Given a URL that responds with "301 Found":
     When ``check_repo_exists`` is called,
-    Then it should return *True*, indicating the repo may exist at the new location.
+    Then it should return ``True``, indicating the repo may exist at the new location.
     """
     mock_exec = mocker.patch("asyncio.create_subprocess_exec", new_callable=AsyncMock)
     mock_process = AsyncMock()

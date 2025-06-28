@@ -88,8 +88,8 @@ async def check_repo_exists(url: str, token: str | None = None) -> bool:
     url : str
         The URL of the Git repository to check.
     token : str | None
-        GitHub personal-access token (PAT). Needed when the repository is private.
-        Can also be set via the `GITHUB_TOKEN` env var.
+        GitHub personal access token (PAT) for accessing private repositories.
+        Can also be set via the ``GITHUB_TOKEN`` environment variable.
 
     Returns
     -------
@@ -139,8 +139,8 @@ async def _check_github_repo_exists(url: str, token: str | None = None) -> bool:
     url : str
         The URL of the GitHub repository to check.
     token : str | None
-        GitHub personal-access token (PAT). Needed when the repository is private.
-        Can also be set via the `GITHUB_TOKEN` env var.
+        GitHub personal access token (PAT) for accessing private repositories.
+        Can also be set via the ``GITHUB_TOKEN`` environment variable.
 
     Returns
     -------
@@ -240,8 +240,8 @@ async def fetch_remote_branch_list(url: str, token: str | None = None) -> list[s
     url : str
         The URL of the Git repository to fetch branches from.
     token : str | None
-        GitHub personal-access token (PAT). Needed when the repository is private.
-        Can also be set via the `GITHUB_TOKEN` env var.
+        GitHub personal access token (PAT) for accessing private repositories.
+        Can also be set via the ``GITHUB_TOKEN`` environment variable.
 
     Returns
     -------

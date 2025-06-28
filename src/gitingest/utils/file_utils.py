@@ -44,7 +44,7 @@ def _read_chunk(path: Path) -> bytes | None:
     Returns
     -------
     bytes | None
-        The first *_CHUNK_SIZE* bytes of *path*, or None on any `OSError`.
+        The first ``_CHUNK_SIZE`` bytes of ``path``, or ``None`` on any ``OSError``.
 
     """
     try:
@@ -55,7 +55,7 @@ def _read_chunk(path: Path) -> bytes | None:
 
 
 def _decodes(chunk: bytes, encoding: str) -> bool:
-    """Return *True* if *chunk* decodes cleanly with *encoding*.
+    """Return ``True`` if ``chunk`` decodes cleanly with ``encoding``.
 
     Parameters
     ----------
@@ -67,7 +67,7 @@ def _decodes(chunk: bytes, encoding: str) -> bool:
     Returns
     -------
     bool
-        True if the chunk decodes cleanly with the encoding, False otherwise.
+        ``True`` if the chunk decodes cleanly with the encoding, ``False`` otherwise.
 
     """
     try:
