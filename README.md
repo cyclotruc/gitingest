@@ -1,21 +1,36 @@
 # Gitingest
 
-[![Image](./docs/frontpage.png "Gitingest main page")](https://gitingest.com)
+[![Screenshot of Gitingest front page](./docs/frontpage.png)](https://gitingest.com)
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/cyclotruc/gitingest/blob/main/LICENSE)
-[![PyPI version](https://badge.fury.io/py/gitingest.svg)](https://badge.fury.io/py/gitingest)
-[![GitHub stars](https://img.shields.io/github/stars/cyclotruc/gitingest?style=social.svg)](https://github.com/cyclotruc/gitingest)
-[![Downloads](https://pepy.tech/badge/gitingest)](https://pepy.tech/project/gitingest)
-
-[![Discord](https://dcbadge.limes.pink/api/server/https://discord.com/invite/zerRaGK9EC)](https://discord.com/invite/zerRaGK9EC)
+<!-- Badges -->
+<!-- markdownlint-disable MD033 -->
+<p align="center">
+  <!-- row 1 — install & compat -->
+  <a href="https://pypi.org/project/gitingest"><img src="https://img.shields.io/pypi/v/gitingest.svg" alt="PyPI"></a>
+  <a href="https://pypi.org/project/gitingest"><img src="https://img.shields.io/pypi/pyversions/gitingest.svg" alt="Python Versions"></a>
+  <br>
+  <!-- row 2 — quality & community -->
+  <a href="https://github.com/cyclotruc/gitingest/actions/workflows/ci.yml?query=branch%3Amain"><img src="https://github.com/cyclotruc/gitingest/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
+  <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/cyclotruc/gitingest"><img src="https://api.scorecard.dev/projects/github.com/cyclotruc/gitingest/badge" alt="OpenSSF Scorecard"></a>
+  <br>
+  <a href="https://github.com/cyclotruc/gitingest/blob/main/LICENSE"><img src="https://img.shields.io/github/license/cyclotruc/gitingest.svg" alt="License"></a>
+  <a href="https://pepy.tech/project/gitingest"><img src="https://pepy.tech/badge/gitingest" alt="Downloads"></a>
+  <a href="https://github.com/cyclotruc/gitingest"><img src="https://img.shields.io/github/stars/cyclotruc/gitingest" alt="GitHub Stars"></a>
+  <a href="https://discord.com/invite/zerRaGK9EC"><img src="https://img.shields.io/badge/Discord-Join_chat-5865F2?logo=discord&logoColor=white" alt="Discord"></a>
+  <br>
+  <a href="https://trendshift.io/repositories/13519"><img src="https://trendshift.io/api/badge/repositories/13519" alt="Trendshift" height="50"></a>
+</p>
+<!-- markdownlint-enable MD033 -->
 
 Turn any Git repository into a prompt-friendly text ingest for LLMs.
 
 You can also replace `hub` with `ingest` in any GitHub URL to access the corresponding digest.
 
+<!-- Extensions -->
 [gitingest.com](https://gitingest.com) · [Chrome Extension](https://chromewebstore.google.com/detail/adfjahbijlkjfoicpjkhjicpjpjfaood) · [Firefox Add-on](https://addons.mozilla.org/firefox/addon/gitingest)
 
-<!-- Keep these links. Translations will automatically update with the README. -->
+<!-- Languages -->
 [Deutsch](https://www.readme-i18n.com/cyclotruc/gitingest?lang=de) |
 [Español](https://www.readme-i18n.com/cyclotruc/gitingest?lang=es) |
 [Français](https://www.readme-i18n.com/cyclotruc/gitingest?lang=fr) |

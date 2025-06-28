@@ -1,39 +1,34 @@
 """Utility functions for working with file paths."""
 
-import os
 import platform
 from pathlib import Path
 
 
 def _is_safe_symlink(symlink_path: Path, base_path: Path) -> bool:
-    """
-    Check if a symlink points to a location within the base directory.
-
-    This function resolves the target of a symlink and ensures it is within the specified
-    base directory, returning `True` if it is safe, or `False` if the symlink points outside
-    the base directory.
+    """Return ``True`` if ``symlink_path`` resolves inside ``base_path``.
 
     Parameters
     ----------
     symlink_path : Path
-        The path of the symlink to check.
+        Symlink whose target should be validated.
     base_path : Path
-        The base directory to ensure the symlink points within.
+        Directory that the symlink target must remain within.
 
     Returns
     -------
     bool
-        `True` if the symlink points within the base directory, `False` otherwise.
-    """
-    try:
-        if platform.system() == "Windows":
-            if not os.path.islink(str(symlink_path)):
-                return False
+        Whether the symlink is “safe” (i.e., does not escape ``base_path``).
 
+    """
+    # On Windows a non-symlink is immediately unsafe
+    if platform.system() == "Windows" and not symlink_path.is_symlink():
+        return False
+
+    try:
         target_path = symlink_path.resolve()
         base_resolved = base_path.resolve()
-
-        return base_resolved in target_path.parents or target_path == base_resolved
     except (OSError, ValueError):
-        # If there's any error resolving the paths, consider it unsafe
+        # Any resolution error → treat as unsafe
         return False
+
+    return base_resolved in target_path.parents or target_path == base_resolved
