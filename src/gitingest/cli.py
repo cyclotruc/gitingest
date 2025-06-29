@@ -11,6 +11,10 @@ from typing_extensions import Unpack
 
 from gitingest.config import MAX_FILE_SIZE, OUTPUT_FILE_NAME
 from gitingest.entrypoint import ingest_async
+from gitingest.utils.click_validation_utils import (
+    validate_exclude_patterns,
+    validate_include_patterns,
+)
 
 
 class _CLIArgs(TypedDict):
@@ -33,12 +37,12 @@ class _CLIArgs(TypedDict):
     show_default=True,
     help="Maximum file size to process in bytes",
 )
-@click.option("--exclude-pattern", "-e", multiple=True, help="Shell-style patterns to exclude.")
+
 @click.option(
     "--include-pattern",
     "-i",
     multiple=True,
-    help="Shell-style patterns to include.",
+
 )
 @click.option("--branch", "-b", default=None, help="Branch to clone and ingest")
 @click.option(
