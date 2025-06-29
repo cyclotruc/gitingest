@@ -1,30 +1,33 @@
 """Main entry point for ingesting a source and processing its contents."""
 
+from __future__ import annotations
+
 import asyncio
 import inspect
-import os
 import shutil
 import sys
-from typing import Optional, Set, Tuple, Union
+from pathlib import Path
 
-from gitingest.cloning import clone_repo
+from gitingest.clone import clone_repo
+from gitingest.config import MAX_FILE_SIZE
 from gitingest.ingestion import ingest_query
-from gitingest.query_parsing import IngestionQuery, parse_query
-from gitingest.utils.ignore_patterns import load_gitignore_patterns
+from gitingest.query_parser import IngestionQuery, parse_query
+from gitingest.utils.auth import resolve_token
+from gitingest.utils.ignore_patterns import load_ignore_patterns
 
 
 async def ingest_async(
     source: str,
-    max_file_size: int = 10 * 1024 * 1024,  # 10 MB
-    include_patterns: Optional[Union[str, Set[str]]] = None,
-    exclude_patterns: Optional[Union[str, Set[str]]] = None,
-    branch: Optional[str] = None,
+    *,
+    max_file_size: int = MAX_FILE_SIZE,  # 10 MB
+    include_patterns: str | set[str] | None = None,
+    exclude_patterns: str | set[str] | None = None,
+    branch: str | None = None,
     include_gitignored: bool = False,
-    token: Optional[str] = None,
-    output: Optional[str] = None,
-) -> Tuple[str, str, str]:
-    """
-    Main entry point for ingesting a source and processing its contents.
+    token: str | None = None,
+    output: str | None = None,
+) -> tuple[str, str, str]:
+    """Ingest a source and process its contents.
 
     This function analyzes a source (URL or local path), clones the corresponding repository (if applicable),
     and processes its files according to the specified query parameters. It returns a summary, a tree-like
@@ -35,81 +38,56 @@ async def ingest_async(
     source : str
         The source to analyze, which can be a URL (for a Git repository) or a local directory path.
     max_file_size : int
-        Maximum allowed file size for file ingestion. Files larger than this size are ignored, by default
-        10*1024*1024 (10 MB).
-    include_patterns : Union[str, Set[str]], optional
-        Pattern or set of patterns specifying which files to include. If `None`, all files are included.
-    exclude_patterns : Union[str, Set[str]], optional
-        Pattern or set of patterns specifying which files to exclude. If `None`, no files are excluded.
-    branch : str, optional
-        The branch to clone and ingest. If `None`, the default branch is used.
+        Maximum allowed file size for file ingestion. Files larger than this size are ignored (default: 10 MB).
+    include_patterns : str | set[str] | None
+        Pattern or set of patterns specifying which files to include. If ``None``, all files are included.
+    exclude_patterns : str | set[str] | None
+        Pattern or set of patterns specifying which files to exclude. If ``None``, no files are excluded.
+    branch : str | None
+        The branch to clone and ingest (default: the default branch).
     include_gitignored : bool
-        If ``True``, include files ignored by ``.gitignore``. Defaults to ``False``.
-    token : str, optional
-        GitHub personal-access token (PAT). Needed when *source* refers to a
-        **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
-    output : str, optional
-        File path where the summary and content should be written. If `None`, the results are not written to a file.
+        If ``True``, include files ignored by ``.gitignore`` and ``.gitingestignore`` (default: ``False``).
+    token : str | None
+        GitHub personal access token (PAT) for accessing private repositories.
+        Can also be set via the ``GITHUB_TOKEN`` environment variable.
+    output : str | None
+        File path where the summary and content should be written.
+        If ``"-"`` (dash), the results are written to ``stdout``.
+        If ``None``, the results are not written to a file.
 
     Returns
     -------
-    Tuple[str, str, str]
+    tuple[str, str, str]
         A tuple containing:
         - A summary string of the analyzed repository or directory.
         - A tree-like string representation of the file structure.
         - The content of the files in the repository or directory.
 
-    Raises
-    ------
-    TypeError
-        If `clone_repo` does not return a coroutine, or if the `source` is of an unsupported type.
     """
+    token = resolve_token(token)
+
+    query: IngestionQuery = await parse_query(
+        source=source,
+        max_file_size=max_file_size,
+        from_web=False,
+        include_patterns=include_patterns,
+        ignore_patterns=exclude_patterns,
+        token=token,
+    )
+
+    if not include_gitignored:
+        _apply_gitignores(query)
+
+    if branch:
+        query.branch = branch
+
     repo_cloned = False
-
-    if not token:
-        token = os.getenv("GITHUB_TOKEN")
-
     try:
-        query: IngestionQuery = await parse_query(
-            source=source,
-            max_file_size=max_file_size,
-            from_web=False,
-            include_patterns=include_patterns,
-            ignore_patterns=exclude_patterns,
-            token=token,
-        )
-
-        if not include_gitignored:
-            gitignore_patterns = load_gitignore_patterns(query.local_path)
-            query.ignore_patterns.update(gitignore_patterns)
-
-        if query.url:
-            selected_branch = branch if branch else query.branch  # prioritize branch argument
-            query.branch = selected_branch
-
-            clone_config = query.extract_clone_config()
-            clone_coroutine = clone_repo(clone_config, token=token)
-
-            if inspect.iscoroutine(clone_coroutine):
-                if asyncio.get_event_loop().is_running():
-                    await clone_coroutine
-                else:
-                    asyncio.run(clone_coroutine)
-            else:
-                raise TypeError("clone_repo did not return a coroutine as expected.")
-
-            repo_cloned = True
+        await _clone_if_remote(query, token=token)
+        repo_cloned = bool(query.url)
 
         summary, tree, content = ingest_query(query)
-
-        if output == "-":
-            loop = asyncio.get_running_loop()
-            output_data = tree + "\n" + content
-            await loop.run_in_executor(None, sys.stdout.write, output_data)
-            await loop.run_in_executor(None, sys.stdout.flush)
-        elif output is not None:
-            with open(output, "w", encoding="utf-8") as f:
-                f.write(tree + "\n" + content)
+        await _write_output(tree, content=content, target=output)
 
         return summary, tree, content
     finally:
@@ -120,16 +98,16 @@ async def ingest_async(
 
 def ingest(
     source: str,
-    max_file_size: int = 10 * 1024 * 1024,  # 10 MB
-    include_patterns: Optional[Union[str, Set[str]]] = None,
-    exclude_patterns: Optional[Union[str, Set[str]]] = None,
-    branch: Optional[str] = None,
+    *,
+    max_file_size: int = MAX_FILE_SIZE,
+    include_patterns: str | set[str] | None = None,
+    exclude_patterns: str | set[str] | None = None,
+    branch: str | None = None,
     include_gitignored: bool = False,
-    token: Optional[str] = None,
-    output: Optional[str] = None,
-) -> Tuple[str, str, str]:
-    """
-    Synchronous version of ingest_async.
+    token: str | None = None,
+    output: str | None = None,
+) -> tuple[str, str, str]:
+    """Provide a synchronous wrapper around ``ingest_async``.
 
     This function analyzes a source (URL or local path), clones the corresponding repository (if applicable),
     and processes its files according to the specified query parameters. It returns a summary, a tree-like
@@ -140,25 +118,26 @@ def ingest(
     source : str
         The source to analyze, which can be a URL (for a Git repository) or a local directory path.
     max_file_size : int
-        Maximum allowed file size for file ingestion. Files larger than this size are ignored, by default
-        10*1024*1024 (10 MB).
-    include_patterns : Union[str, Set[str]], optional
-        Pattern or set of patterns specifying which files to include. If `None`, all files are included.
-    exclude_patterns : Union[str, Set[str]], optional
-        Pattern or set of patterns specifying which files to exclude. If `None`, no files are excluded.
-    branch : str, optional
-        The branch to clone and ingest. If `None`, the default branch is used.
+        Maximum allowed file size for file ingestion. Files larger than this size are ignored (default: 10 MB).
+    include_patterns : str | set[str] | None
+        Pattern or set of patterns specifying which files to include. If ``None``, all files are included.
+    exclude_patterns : str | set[str] | None
+        Pattern or set of patterns specifying which files to exclude. If ``None``, no files are excluded.
+    branch : str | None
+        The branch to clone and ingest (default: the default branch).
     include_gitignored : bool
-        If ``True``, include files ignored by ``.gitignore``. Defaults to ``False``.
-    token : str, optional
-        GitHub personal-access token (PAT). Needed when *source* refers to a
-        **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
-    output : str, optional
-        File path where the summary and content should be written. If `None`, the results are not written to a file.
+        If ``True``, include files ignored by ``.gitignore`` and ``.gitingestignore`` (default: ``False``).
+    token : str | None
+        GitHub personal access token (PAT) for accessing private repositories.
+        Can also be set via the ``GITHUB_TOKEN`` environment variable.
+    output : str | None
+        File path where the summary and content should be written.
+        If ``"-"`` (dash), the results are written to ``stdout``.
+        If ``None``, the results are not written to a file.
 
     Returns
     -------
-    Tuple[str, str, str]
+    tuple[str, str, str]
         A tuple containing:
         - A summary string of the analyzed repository or directory.
         - A tree-like string representation of the file structure.
@@ -166,7 +145,8 @@ def ingest(
 
     See Also
     --------
-    ingest_async : The asynchronous version of this function.
+    ``ingest_async`` : The asynchronous version of this function.
+
     """
     return asyncio.run(
         ingest_async(
@@ -178,5 +158,72 @@ def ingest(
             include_gitignored=include_gitignored,
             token=token,
             output=output,
-        )
+        ),
     )
+
+
+def _apply_gitignores(query: IngestionQuery) -> None:
+    """Update ``query.ignore_patterns`` in-place.
+
+    Parameters
+    ----------
+    query : IngestionQuery
+        The query to update.
+
+    """
+    for fname in (".gitignore", ".gitingestignore"):
+        query.ignore_patterns.update(load_ignore_patterns(query.local_path, filename=fname))
+
+
+async def _clone_if_remote(query: IngestionQuery, token: str | None) -> None:
+    """Clone the repo if *query* points to a remote URL.
+
+    Parameters
+    ----------
+    query : IngestionQuery
+        The query to clone.
+    token : str | None
+        GitHub personal access token (PAT) for accessing private repositories.
+
+    Raises
+    ------
+    TypeError
+        If ``clone_repo`` does not return a coroutine.
+
+    """
+    if not query.url:  # local path ingestion
+        return
+
+    # let CLI arg override, else keep the parsed branch
+    clone_cfg = query.extract_clone_config()
+    clone_coroutine = clone_repo(clone_cfg, token=token)
+    if not inspect.iscoroutine(clone_coroutine):
+        msg = "clone_repo did not return a coroutine as expected."
+        raise TypeError(msg)
+
+    if asyncio.get_event_loop().is_running():
+        await clone_coroutine
+    else:  # running under sync context (unit-test, etc.)
+        asyncio.run(clone_coroutine)
+
+
+async def _write_output(tree: str, content: str, target: str | None) -> None:
+    """Write combined output to ``target`` (``"-"`` ⇒ stdout).
+
+    Parameters
+    ----------
+    tree : str
+        The tree-like string representation of the file structure.
+    content : str
+        The content of the files in the repository or directory.
+    target : str | None
+        The path to the output file. If ``None``, the results are not written to a file.
+
+    """
+    data = f"{tree}\n{content}"
+    loop = asyncio.get_running_loop()
+    if target == "-":
+        await loop.run_in_executor(None, sys.stdout.write, data)
+        await loop.run_in_executor(None, sys.stdout.flush)
+    elif target is not None:
+        await loop.run_in_executor(None, Path(target).write_text, data, "utf-8")

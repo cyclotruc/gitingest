@@ -1,8 +1,6 @@
 -r requirements.txt
-black
-djlint
+eval-type-backport
 pre-commit
-pylint
 pytest
 pytest-asyncio
 pytest-mock
