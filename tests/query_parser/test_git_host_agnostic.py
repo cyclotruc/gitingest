@@ -1,19 +1,18 @@
-"""
-Tests to verify that the query parser is Git host agnostic.
+"""Tests to verify that the query parser is Git host agnostic.
 
-These tests confirm that `parse_query` correctly identifies user/repo pairs and canonical URLs for GitHub, GitLab,
+These tests confirm that ``parse_query`` correctly identifies user/repo pairs and canonical URLs for GitHub, GitLab,
 Bitbucket, Gitea, and Codeberg, even if the host is omitted.
 """
 
-from typing import List, Tuple
+from __future__ import annotations
 
 import pytest
 
-from gitingest.query_parsing import parse_query
+from gitingest.query_parser import parse_query
 from gitingest.utils.query_parser_utils import KNOWN_GIT_HOSTS
 
 # Repository matrix: (host, user, repo)
-_REPOS: List[Tuple[str, str, str]] = [
+_REPOS: list[tuple[str, str, str]] = [
     ("github.com", "tiangolo", "fastapi"),
     ("gitlab.com", "gitlab-org", "gitlab-runner"),
     ("bitbucket.org", "na-dna", "llm-knowledge-share"),
@@ -25,7 +24,7 @@ _REPOS: List[Tuple[str, str, str]] = [
 
 
 # Generate cartesian product of repository tuples with URL variants.
-@pytest.mark.parametrize("host, user, repo", _REPOS, ids=[f"{h}:{u}/{r}" for h, u, r in _REPOS])
+@pytest.mark.parametrize(("host", "user", "repo"), _REPOS, ids=[f"{h}:{u}/{r}" for h, u, r in _REPOS])
 @pytest.mark.parametrize("variant", ["full", "noscheme", "slug"])
 @pytest.mark.asyncio
 async def test_parse_query_without_host(
@@ -34,8 +33,7 @@ async def test_parse_query_without_host(
     repo: str,
     variant: str,
 ) -> None:
-    """Verify that `parse_query` handles URLs, host-omitted URLs and raw slugs."""
-
+    """Verify that ``parse_query`` handles URLs, host-omitted URLs and raw slugs."""
     # Build the input URL based on the selected variant
     if variant == "full":
         url = f"https://{host}/{user}/{repo}"
@@ -49,7 +47,7 @@ async def test_parse_query_without_host(
     # For slug form with a custom host (not in KNOWN_GIT_HOSTS) we expect a failure,
     # because the parser cannot guess which domain to use.
     if variant == "slug" and host not in KNOWN_GIT_HOSTS:
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Could not find a valid repository host"):
             await parse_query(url, max_file_size=50, from_web=True)
         return
 
