@@ -91,7 +91,7 @@ async def ingest_async(
 
         return summary, tree, content
     finally:
-        # Clean up the temporary directory if it was created
+        # Clean up the temporary directory for the repository
         if repo_cloned:
             shutil.rmtree(query.local_path)
 
