@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import re
+import sys
 from urllib.parse import urlparse
 
 from gitingest.utils.exceptions import InvalidGitHubTokenError
@@ -67,10 +68,13 @@ async def run_command(*args: str) -> tuple[bytes, bytes]:
 async def ensure_git_installed() -> None:
     """Ensure Git is installed and accessible on the system.
 
+    On Windows, this also enables support for long file paths via
+    `git config --system core.longpaths true`.
+
     Raises
     ------
     RuntimeError
-        If Git is not installed or not accessible.
+        If Git is not installed or not accessible, or if enabling long paths fails.
 
     """
     try:
@@ -78,6 +82,12 @@ async def ensure_git_installed() -> None:
     except RuntimeError as exc:
         msg = "Git is not installed or not accessible. Please install Git first."
         raise RuntimeError(msg) from exc
+    if sys.platform == "win32":
+        try:
+            await run_command("git", "config", "--system", "core.longpaths", "true")
+        except RuntimeError as exc:
+            msg = "Failed to enable long paths. You may need to run the app as Administrator."
+            raise RuntimeError(msg) from exc
 
 
 async def check_repo_exists(url: str, token: str | None = None) -> bool:
