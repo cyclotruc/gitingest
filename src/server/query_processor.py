@@ -1,29 +1,38 @@
 """Process a query by parsing input, cloning a repository, and generating a summary."""
 
+from __future__ import annotations
+
 from functools import partial
-from typing import Optional
+from pathlib import Path
+from typing import TYPE_CHECKING, cast
 
-from fastapi import Request
-from starlette.templating import _TemplateResponse
-
-from gitingest.cloning import clone_repo
+from gitingest.clone import clone_repo
 from gitingest.ingestion import ingest_query
-from gitingest.query_parsing import IngestionQuery, parse_query
-from server.server_config import EXAMPLE_REPOS, MAX_DISPLAY_SIZE, templates
+from gitingest.query_parser import IngestionQuery, parse_query
+from server.server_config import (
+    DEFAULT_FILE_SIZE_KB,
+    EXAMPLE_REPOS,
+    MAX_DISPLAY_SIZE,
+    templates,
+)
 from server.server_utils import Colors, log_slider_to_size
+
+if TYPE_CHECKING:
+    from fastapi import Request
+    from starlette.templating import _TemplateResponse
 
 
 async def process_query(
     request: Request,
+    *,
     input_text: str,
     slider_position: int,
     pattern_type: str = "exclude",
     pattern: str = "",
     is_index: bool = False,
-    token: Optional[str] = None,
+    token: str | None = None,
 ) -> _TemplateResponse:
-    """
-    Process a query by parsing input, cloning a repository, and generating a summary.
+    """Process a query by parsing input, cloning a repository, and generating a summary.
 
     Handle user input, process Git repository data, and prepare
     a response for rendering a template with the processed results or an error message.
@@ -37,14 +46,13 @@ async def process_query(
     slider_position : int
         Position of the slider, representing the maximum file size in the query.
     pattern_type : str
-        Type of pattern to use, either "include" or "exclude" (default is "exclude").
+        Type of pattern to use (either "include" or "exclude") (default: ``"exclude"``).
     pattern : str
         Pattern to include or exclude in the query, depending on the pattern type.
     is_index : bool
-        Flag indicating whether the request is for the index page (default is False).
-    token : str, optional
-        GitHub personal-access token (PAT). Needed when *input_text* refers to a
-        **private** repository.
+        Flag indicating whether the request is for the index page (default: ``False``).
+    token : str | None
+        GitHub personal access token (PAT) for accessing private repositories.
 
     Returns
     -------
@@ -55,6 +63,7 @@ async def process_query(
     ------
     ValueError
         If an invalid pattern type is provided.
+
     """
     if pattern_type == "include":
         include_patterns = pattern
@@ -63,7 +72,8 @@ async def process_query(
         exclude_patterns = pattern
         include_patterns = None
     else:
-        raise ValueError(f"Invalid pattern type: {pattern_type}")
+        msg = f"Invalid pattern type: {pattern_type}"
+        raise ValueError(msg)
 
     template = "index.jinja" if is_index else "git.jinja"
     template_response = partial(templates.TemplateResponse, name=template)
@@ -79,8 +89,10 @@ async def process_query(
         "token": token,
     }
 
+    query: IngestionQuery | None = None
+
     try:
-        query: IngestionQuery = await parse_query(
+        query = await parse_query(
             source=input_text,
             max_file_size=max_file_size,
             from_web=True,
@@ -88,21 +100,24 @@ async def process_query(
             ignore_patterns=exclude_patterns,
             token=token,
         )
-        if not query.url:
-            raise ValueError("The 'url' parameter is required.")
+        query.ensure_url()
 
         # Sets the "<user>/<repo>" for the page title
         context["short_repo_url"] = f"{query.user_name}/{query.repo_name}"
 
         clone_config = query.extract_clone_config()
         await clone_repo(clone_config, token=token)
+
         summary, tree, content = ingest_query(query)
-        with open(f"{clone_config.local_path}.txt", "w", encoding="utf-8") as f:
+
+        local_txt_file = Path(clone_config.local_path).with_suffix(".txt")
+
+        with local_txt_file.open("w", encoding="utf-8") as f:
             f.write(tree + "\n" + content)
+
     except Exception as exc:
-        # hack to print error message when query is not defined
-        if "query" in locals() and query is not None and isinstance(query, dict):
-            _print_error(query["url"], exc, max_file_size, pattern_type, pattern)
+        if query and query.url:
+            _print_error(query.url, exc, max_file_size, pattern_type, pattern)
         else:
             print(f"{Colors.BROWN}WARN{Colors.END}: {Colors.RED}<-  {Colors.END}", end="")
             print(f"{Colors.RED}{exc}{Colors.END}")
@@ -120,6 +135,9 @@ async def process_query(
             "download full ingest to see more)\n" + content[:MAX_DISPLAY_SIZE]
         )
 
+    query.ensure_url()
+    query.url = cast("str", query.url)
+
     _print_success(
         url=query.url,
         max_file_size=max_file_size,
@@ -135,16 +153,14 @@ async def process_query(
             "tree": tree,
             "content": content,
             "ingest_id": query.id,
-        }
+        },
     )
 
     return template_response(context=context)
 
 
 def _print_query(url: str, max_file_size: int, pattern_type: str, pattern: str) -> None:
-    """
-    Print a formatted summary of the query details, including the URL, file size,
-    and pattern information, for easier debugging or logging.
+    """Print a formatted summary of the query details for debugging.
 
     Parameters
     ----------
@@ -156,26 +172,28 @@ def _print_query(url: str, max_file_size: int, pattern_type: str, pattern: str) 
         Specifies the type of pattern to use, either "include" or "exclude".
     pattern : str
         The actual pattern string to include or exclude in the query.
+
     """
     print(f"{Colors.WHITE}{url:<20}{Colors.END}", end="")
-    if int(max_file_size / 1024) != 50:
-        print(f" | {Colors.YELLOW}Size: {int(max_file_size/1024)}kb{Colors.END}", end="")
+    if int(max_file_size / 1024) != DEFAULT_FILE_SIZE_KB:
+        print(
+            f" | {Colors.YELLOW}Size: {int(max_file_size / 1024)}kb{Colors.END}",
+            end="",
+        )
     if pattern_type == "include" and pattern != "":
         print(f" | {Colors.YELLOW}Include {pattern}{Colors.END}", end="")
     elif pattern_type == "exclude" and pattern != "":
         print(f" | {Colors.YELLOW}Exclude {pattern}{Colors.END}", end="")
 
 
-def _print_error(url: str, e: Exception, max_file_size: int, pattern_type: str, pattern: str) -> None:
-    """
-    Print a formatted error message including the URL, file size, pattern details, and the exception encountered,
-    for debugging or logging purposes.
+def _print_error(url: str, exc: Exception, max_file_size: int, pattern_type: str, pattern: str) -> None:
+    """Print a formatted error message for debugging.
 
     Parameters
     ----------
     url : str
         The URL associated with the query that caused the error.
-    e : Exception
+    exc : Exception
         The exception raised during the query or process.
     max_file_size : int
         The maximum file size allowed for the query, in bytes.
@@ -183,16 +201,15 @@ def _print_error(url: str, e: Exception, max_file_size: int, pattern_type: str, 
         Specifies the type of pattern to use, either "include" or "exclude".
     pattern : str
         The actual pattern string to include or exclude in the query.
+
     """
     print(f"{Colors.BROWN}WARN{Colors.END}: {Colors.RED}<-  {Colors.END}", end="")
     _print_query(url, max_file_size, pattern_type, pattern)
-    print(f" | {Colors.RED}{e}{Colors.END}")
+    print(f" | {Colors.RED}{exc}{Colors.END}")
 
 
 def _print_success(url: str, max_file_size: int, pattern_type: str, pattern: str, summary: str) -> None:
-    """
-    Print a formatted success message, including the URL, file size, pattern details, and a summary with estimated
-    tokens, for debugging or logging purposes.
+    """Print a formatted success message for debugging.
 
     Parameters
     ----------
@@ -206,6 +223,7 @@ def _print_success(url: str, max_file_size: int, pattern_type: str, pattern: str
         The actual pattern string to include or exclude in the query.
     summary : str
         A summary of the query result, including details like estimated tokens.
+
     """
     estimated_tokens = summary[summary.index("Estimated tokens:") + len("Estimated ") :]
     print(f"{Colors.GREEN}INFO{Colors.END}: {Colors.GREEN}<-  {Colors.END}", end="")

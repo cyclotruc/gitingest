@@ -1,23 +1,28 @@
-"""
-Tests for the `query_parsing` module.
+"""Tests for the ``query_parser`` module.
 
 These tests cover URL parsing, pattern parsing, and handling of branches/subpaths for HTTP(S) repositories and local
 paths.
 """
 
+from __future__ import annotations
+
 from pathlib import Path
-from typing import Callable, List, Optional
+from typing import TYPE_CHECKING, Callable
 from unittest.mock import AsyncMock
 
 import pytest
-from pytest_mock import MockerFixture
 
-from gitingest.query_parsing import _parse_patterns, _parse_remote_repo, parse_query
-from gitingest.schemas.ingestion_schema import IngestionQuery
+from gitingest.query_parser import _parse_patterns, _parse_remote_repo, parse_query
 from gitingest.utils.ignore_patterns import DEFAULT_IGNORE_PATTERNS
 from tests.conftest import DEMO_URL
 
-URLS_HTTPS: List[str] = [
+if TYPE_CHECKING:
+    from pytest_mock import MockerFixture
+
+    from gitingest.schemas.ingestion import IngestionQuery
+
+
+URLS_HTTPS: list[str] = [
     DEMO_URL,
     "https://gitlab.com/user/repo",
     "https://bitbucket.org/user/repo",
@@ -29,13 +34,13 @@ URLS_HTTPS: List[str] = [
     "https://gitlab.example.se/user/repo",
 ]
 
-URLS_HTTP: List[str] = [url.replace("https://", "http://") for url in URLS_HTTPS]
+URLS_HTTP: list[str] = [url.replace("https://", "http://") for url in URLS_HTTPS]
 
 
 @pytest.mark.parametrize("url", URLS_HTTPS, ids=lambda u: u)
 @pytest.mark.asyncio
 async def test_parse_url_valid_https(url: str) -> None:
-    """Valid HTTPS URLs parse correctly and `query.url` equals the input."""
+    """Valid HTTPS URLs parse correctly and ``query.url`` equals the input."""
     query = await _assert_basic_repo_fields(url)
 
     assert query.url == url  # HTTPS: canonical URL should equal input
@@ -50,11 +55,10 @@ async def test_parse_url_valid_http(url: str) -> None:
 
 @pytest.mark.asyncio
 async def test_parse_url_invalid() -> None:
-    """
-    Test `_parse_remote_repo` with an invalid URL.
+    """Test ``_parse_remote_repo`` with an invalid URL.
 
     Given an HTTPS URL lacking a repository structure (e.g., "https://github.com"),
-    When `_parse_remote_repo` is called,
+    When ``_parse_remote_repo`` is called,
     Then a ValueError should be raised indicating an invalid repository URL.
     """
     url = "https://github.com"
@@ -66,11 +70,10 @@ async def test_parse_url_invalid() -> None:
 @pytest.mark.asyncio
 @pytest.mark.parametrize("url", [DEMO_URL, "https://gitlab.com/user/repo"])
 async def test_parse_query_basic(url: str) -> None:
-    """
-    Test `parse_query` with a basic valid repository URL.
+    """Test ``parse_query`` with a basic valid repository URL.
 
     Given an HTTPS URL and ignore_patterns="*.txt":
-    When `parse_query` is called,
+    When ``parse_query`` is called,
     Then user/repo, URL, and ignore patterns should be parsed correctly.
     """
     query = await parse_query(source=url, max_file_size=50, from_web=True, ignore_patterns="*.txt")
@@ -84,11 +87,10 @@ async def test_parse_query_basic(url: str) -> None:
 
 @pytest.mark.asyncio
 async def test_parse_query_mixed_case() -> None:
-    """
-    Test `parse_query` with mixed-case URLs.
+    """Test ``parse_query`` with mixed-case URLs.
 
     Given a URL with mixed-case parts (e.g. "Https://GitHub.COM/UsEr/rEpO"):
-    When `parse_query` is called,
+    When ``parse_query`` is called,
     Then the user and repo names should be normalized to lowercase.
     """
     url = "Https://GitHub.COM/UsEr/rEpO"
@@ -100,11 +102,10 @@ async def test_parse_query_mixed_case() -> None:
 
 @pytest.mark.asyncio
 async def test_parse_query_include_pattern() -> None:
-    """
-    Test `parse_query` with a specified include pattern.
+    """Test ``parse_query`` with a specified include pattern.
 
     Given a URL and include_patterns="*.py":
-    When `parse_query` is called,
+    When ``parse_query`` is called,
     Then the include pattern should be set, and default ignore patterns remain applied.
     """
     query = await parse_query(DEMO_URL, max_file_size=50, from_web=True, include_patterns="*.py")
@@ -115,11 +116,10 @@ async def test_parse_query_include_pattern() -> None:
 
 @pytest.mark.asyncio
 async def test_parse_query_invalid_pattern() -> None:
-    """
-    Test `parse_query` with an invalid pattern.
+    """Test ``parse_query`` with an invalid pattern.
 
     Given an include pattern containing special characters (e.g., "*.py;rm -rf"):
-    When `parse_query` is called,
+    When ``parse_query`` is called,
     Then a ValueError should be raised indicating invalid characters.
     """
     with pytest.raises(ValueError, match="Pattern.*contains invalid characters"):
@@ -127,12 +127,11 @@ async def test_parse_query_invalid_pattern() -> None:
 
 
 @pytest.mark.asyncio
-async def test_parse_url_with_subpaths(stub_branches: Callable[[List[str]], None]) -> None:
-    """
-    Test `_parse_remote_repo` with a URL containing branch and subpath.
+async def test_parse_url_with_subpaths(stub_branches: Callable[[list[str]], None]) -> None:
+    """Test ``_parse_remote_repo`` with a URL containing branch and subpath.
 
     Given a URL referencing a branch ("main") and a subdir ("subdir/file"):
-    When `_parse_remote_repo` is called with remote branch fetching,
+    When ``_parse_remote_repo`` is called with remote branch fetching,
     Then user, repo, branch, and subpath should be identified correctly.
     """
     url = DEMO_URL + "/tree/main/subdir/file"
@@ -149,11 +148,10 @@ async def test_parse_url_with_subpaths(stub_branches: Callable[[List[str]], None
 
 @pytest.mark.asyncio
 async def test_parse_url_invalid_repo_structure() -> None:
-    """
-    Test `_parse_remote_repo` with a URL missing a repository name.
+    """Test ``_parse_remote_repo`` with a URL missing a repository name.
 
     Given a URL like "https://github.com/user":
-    When `_parse_remote_repo` is called,
+    When ``_parse_remote_repo`` is called,
     Then a ValueError should be raised indicating an invalid repository URL.
     """
     url = "https://github.com/user"
@@ -163,11 +161,10 @@ async def test_parse_url_invalid_repo_structure() -> None:
 
 
 def test_parse_patterns_valid() -> None:
-    """
-    Test `_parse_patterns` with valid comma-separated patterns.
+    """Test ``_parse_patterns`` with valid comma-separated patterns.
 
     Given patterns like "*.py, *.md, docs/*":
-    When `_parse_patterns` is called,
+    When ``_parse_patterns`` is called,
     Then it should return a set of parsed strings.
     """
     patterns = "*.py, *.md, docs/*"
@@ -177,11 +174,10 @@ def test_parse_patterns_valid() -> None:
 
 
 def test_parse_patterns_invalid_characters() -> None:
-    """
-    Test `_parse_patterns` with invalid characters.
+    """Test ``_parse_patterns`` with invalid characters.
 
     Given a pattern string containing special characters (e.g. "*.py;rm -rf"):
-    When `_parse_patterns` is called,
+    When ``_parse_patterns`` is called,
     Then a ValueError should be raised indicating invalid pattern syntax.
     """
     patterns = "*.py;rm -rf"
@@ -192,12 +188,11 @@ def test_parse_patterns_invalid_characters() -> None:
 
 @pytest.mark.asyncio
 async def test_parse_query_with_large_file_size() -> None:
-    """
-    Test `parse_query` with a very large file size limit.
+    """Test ``parse_query`` with a very large file size limit.
 
     Given a URL and max_file_size=10**9:
-    When `parse_query` is called,
-    Then `max_file_size` should be set correctly and default ignore patterns remain unchanged.
+    When ``parse_query`` is called,
+    Then ``max_file_size`` should be set correctly and default ignore patterns remain unchanged.
     """
     query = await parse_query(DEMO_URL, max_file_size=10**9, from_web=True)
 
@@ -207,12 +202,11 @@ async def test_parse_query_with_large_file_size() -> None:
 
 @pytest.mark.asyncio
 async def test_parse_query_empty_patterns() -> None:
-    """
-    Test `parse_query` with empty patterns.
+    """Test ``parse_query`` with empty patterns.
 
     Given empty include_patterns and ignore_patterns:
-    When `parse_query` is called,
-    Then include_patterns becomes None and default ignore patterns apply.
+    When ``parse_query`` is called,
+    Then ``include_patterns`` becomes ``None`` and default ignore patterns apply.
     """
     query = await parse_query(DEMO_URL, max_file_size=50, from_web=True, include_patterns="", ignore_patterns="")
 
@@ -222,11 +216,10 @@ async def test_parse_query_empty_patterns() -> None:
 
 @pytest.mark.asyncio
 async def test_parse_query_include_and_ignore_overlap() -> None:
-    """
-    Test `parse_query` with overlapping patterns.
+    """Test ``parse_query`` with overlapping patterns.
 
     Given include="*.py" and ignore={"*.py", "*.txt"}:
-    When `parse_query` is called,
+    When ``parse_query`` is called,
     Then "*.py" should be removed from ignore patterns.
     """
     query = await parse_query(
@@ -245,11 +238,10 @@ async def test_parse_query_include_and_ignore_overlap() -> None:
 
 @pytest.mark.asyncio
 async def test_parse_query_local_path() -> None:
-    """
-    Test `parse_query` with a local file path.
+    """Test ``parse_query`` with a local file path.
 
     Given "/home/user/project" and from_web=False:
-    When `parse_query` is called,
+    When ``parse_query`` is called,
     Then the local path should be set, id generated, and slug formed accordingly.
     """
     path = "/home/user/project"
@@ -263,12 +255,11 @@ async def test_parse_query_local_path() -> None:
 
 @pytest.mark.asyncio
 async def test_parse_query_relative_path() -> None:
-    """
-    Test `parse_query` with a relative path.
+    """Test ``parse_query`` with a relative path.
 
     Given "./project" and from_web=False:
-    When `parse_query` is called,
-    Then local_path resolves relatively, and slug ends with "project".
+    When ``parse_query`` is called,
+    Then ``local_path`` resolves relatively, and ``slug`` ends with "project".
     """
     path = "./project"
     query = await parse_query(path, max_file_size=100, from_web=False)
@@ -280,11 +271,10 @@ async def test_parse_query_relative_path() -> None:
 
 @pytest.mark.asyncio
 async def test_parse_query_empty_source() -> None:
-    """
-    Test `parse_query` with an empty string.
+    """Test ``parse_query`` with an empty string.
 
     Given an empty source string:
-    When `parse_query` is called,
+    When ``parse_query`` is called,
     Then a ValueError should be raised indicating an invalid repository URL.
     """
     url = ""
@@ -295,7 +285,7 @@ async def test_parse_query_empty_source() -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "path, expected_branch, expected_commit",
+    ("path", "expected_branch", "expected_commit"),
     [
         ("/tree/main", "main", None),
         ("/tree/abcd1234abcd1234abcd1234abcd1234abcd1234", None, "abcd1234abcd1234abcd1234abcd1234abcd1234"),
@@ -305,14 +295,13 @@ async def test_parse_url_branch_and_commit_distinction(
     path: str,
     expected_branch: str,
     expected_commit: str,
-    stub_branches: Callable[[List[str]], None],
+    stub_branches: Callable[[list[str]], None],
 ) -> None:
-    """
-    Test `_parse_remote_repo` distinguishing branch vs. commit hash.
+    """Test ``_parse_remote_repo`` distinguishing branch vs. commit hash.
 
     Given either a branch URL (e.g., ".../tree/main") or a 40-character commit URL:
-    When `_parse_remote_repo` is called with branch fetching,
-    Then the function should correctly set `branch` or `commit` based on the URL content.
+    When ``_parse_remote_repo`` is called with branch fetching,
+    Then the function should correctly set ``branch`` or ``commit`` based on the URL content.
     """
     stub_branches(["main", "dev", "feature-branch"])
 
@@ -325,11 +314,10 @@ async def test_parse_url_branch_and_commit_distinction(
 
 @pytest.mark.asyncio
 async def test_parse_query_uuid_uniqueness() -> None:
-    """
-    Test `parse_query` for unique UUID generation.
+    """Test ``parse_query`` for unique UUID generation.
 
     Given the same path twice:
-    When `parse_query` is called repeatedly,
+    When ``parse_query`` is called repeatedly,
     Then each call should produce a different query id.
     """
     path = "/home/user/project"
@@ -341,11 +329,10 @@ async def test_parse_query_uuid_uniqueness() -> None:
 
 @pytest.mark.asyncio
 async def test_parse_url_with_query_and_fragment() -> None:
-    """
-    Test `_parse_remote_repo` with query parameters and a fragment.
+    """Test ``_parse_remote_repo`` with query parameters and a fragment.
 
     Given a URL like "https://github.com/user/repo?arg=value#fragment":
-    When `_parse_remote_repo` is called,
+    When ``_parse_remote_repo`` is called,
     Then those parts should be stripped, leaving a clean user/repo URL.
     """
     url = DEMO_URL + "?arg=value#fragment"
@@ -358,11 +345,10 @@ async def test_parse_url_with_query_and_fragment() -> None:
 
 @pytest.mark.asyncio
 async def test_parse_url_unsupported_host() -> None:
-    """
-    Test `_parse_remote_repo` with an unsupported host.
+    """Test ``_parse_remote_repo`` with an unsupported host.
 
     Given "https://only-domain.com":
-    When `_parse_remote_repo` is called,
+    When ``_parse_remote_repo`` is called,
     Then a ValueError should be raised for the unknown domain.
     """
     url = "https://only-domain.com"
@@ -373,11 +359,10 @@ async def test_parse_url_unsupported_host() -> None:
 
 @pytest.mark.asyncio
 async def test_parse_query_with_branch() -> None:
-    """
-    Test `parse_query` when a branch is specified in a blob path.
+    """Test ``parse_query`` when a branch is specified in a blob path.
 
     Given "https://github.com/pandas-dev/pandas/blob/2.2.x/...":
-    When `parse_query` is called,
+    When ``parse_query`` is called,
     Then the branch should be identified, subpath set, and commit remain None.
     """
     url = "https://github.com/pandas-dev/pandas/blob/2.2.x/.github/ISSUE_TEMPLATE/documentation_improvement.yaml"
@@ -396,7 +381,7 @@ async def test_parse_query_with_branch() -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "path, expected_branch, expected_subpath",
+    ("path", "expected_branch", "expected_subpath"),
     [
         ("/tree/main/src", "main", "/src"),
         ("/tree/fix1", "fix1", "/"),
@@ -409,11 +394,10 @@ async def test_parse_repo_source_with_failed_git_command(
     expected_subpath: str,
     mocker: MockerFixture,
 ) -> None:
-    """
-    Test `_parse_remote_repo` when git fetch fails.
+    """Test ``_parse_remote_repo`` when git fetch fails.
 
     Given a URL referencing a branch, but Git fetching fails:
-    When `_parse_remote_repo` is called,
+    When ``_parse_remote_repo`` is called,
     Then it should fall back to path components for branch identification.
     """
     url = DEMO_URL + path
@@ -446,15 +430,17 @@ async def test_parse_repo_source_with_failed_git_command(
 )
 async def test_parse_repo_source_with_various_url_patterns(
     path: str,
-    expected_branch: Optional[str],
+    expected_branch: str | None,
     expected_subpath: str,
-    stub_branches: Callable[[List[str]], None],
+    stub_branches: Callable[[list[str]], None],
 ) -> None:
-    """
-    `_parse_remote_repo` should detect (or reject) a branch and resolve the
-    sub-path for various GitHub-style URL permutations.
+    """Test ``_parse_remote_repo`` with various GitHub-style URL permutations.
 
-    Branch discovery is stubbed so that only names passed to `stub_branches` are considered "remote".
+    Given various GitHub-style URL permutations:
+    When ``_parse_remote_repo`` is called,
+    Then it should detect (or reject) a branch and resolve the sub-path.
+
+    Branch discovery is stubbed so that only names passed to ``stub_branches`` are considered "remote".
     """
     stub_branches(["feature/fix1", "main", "feature-branch", "fix"])
 
@@ -466,8 +452,7 @@ async def test_parse_repo_source_with_various_url_patterns(
 
 
 async def _assert_basic_repo_fields(url: str) -> IngestionQuery:
-    """Run _parse_remote_repo and assert user, repo and slug are parsed."""
-
+    """Run ``_parse_remote_repo`` and assert user, repo and slug are parsed."""
     query = await _parse_remote_repo(url)
 
     assert query.user_name == "user"

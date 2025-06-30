@@ -1,13 +1,14 @@
 """Utility functions for parsing and validating query parameters."""
 
+from __future__ import annotations
+
 import os
 import string
-from typing import List, Set, Tuple
 
-HEX_DIGITS: Set[str] = set(string.hexdigits)
+HEX_DIGITS: set[str] = set(string.hexdigits)
 
 
-KNOWN_GIT_HOSTS: List[str] = [
+KNOWN_GIT_HOSTS: list[str] = [
     "github.com",
     "gitlab.com",
     "bitbucket.org",
@@ -18,8 +19,7 @@ KNOWN_GIT_HOSTS: List[str] = [
 
 
 def _is_valid_git_commit_hash(commit: str) -> bool:
-    """
-    Validate if the provided string is a valid Git commit hash.
+    """Validate if the provided string is a valid Git commit hash.
 
     This function checks if the commit hash is a 40-character string consisting only
     of hexadecimal digits, which is the standard format for Git commit hashes.
@@ -32,18 +32,19 @@ def _is_valid_git_commit_hash(commit: str) -> bool:
     Returns
     -------
     bool
-        True if the string is a valid 40-character Git commit hash, otherwise False.
+        ``True`` if the string is a valid 40-character Git commit hash, otherwise ``False``.
+
     """
-    return len(commit) == 40 and all(c in HEX_DIGITS for c in commit)
+    sha_hex_length = 40
+    return len(commit) == sha_hex_length and all(c in HEX_DIGITS for c in commit)
 
 
 def _is_valid_pattern(pattern: str) -> bool:
-    """
-    Validate if the given pattern contains only valid characters.
+    """Validate if the given pattern contains only valid characters.
 
     This function checks if the pattern contains only alphanumeric characters or one
-    of the following allowed characters: dash (`-`), underscore (`_`), dot (`.`),
-    forward slash (`/`), plus (`+`), asterisk (`*`), or the at sign (`@`).
+    of the following allowed characters: dash ('-'), underscore ('_'), dot ('.'),
+    forward slash ('/'), plus ('+'), asterisk ('*'), or the at sign ('@').
 
     Parameters
     ----------
@@ -53,18 +54,18 @@ def _is_valid_pattern(pattern: str) -> bool:
     Returns
     -------
     bool
-        True if the pattern is valid, otherwise False.
+        ``True`` if the pattern is valid, otherwise ``False``.
+
     """
     return all(c.isalnum() or c in "-_./+*@" for c in pattern)
 
 
 def _validate_host(host: str) -> None:
-    """
-    Validate a hostname.
+    """Validate a hostname.
 
-    The host is accepted if it is either present in the hard-coded `KNOWN_GIT_HOSTS` list or if it satisfies the
-    simple heuristics in `_looks_like_git_host`, which try to recognise common self-hosted Git services (e.g. GitLab
-    instances on sub-domains such as `gitlab.example.com` or `git.example.com`).
+    The host is accepted if it is either present in the hard-coded ``KNOWN_GIT_HOSTS`` list or if it satisfies the
+    simple heuristics in ``_looks_like_git_host``, which try to recognise common self-hosted Git services (e.g. GitLab
+    instances on sub-domains such as 'gitlab.example.com' or 'git.example.com').
 
     Parameters
     ----------
@@ -75,18 +76,19 @@ def _validate_host(host: str) -> None:
     ------
     ValueError
         If the host cannot be recognised as a probable Git hosting domain.
+
     """
     host = host.lower()
     if host not in KNOWN_GIT_HOSTS and not _looks_like_git_host(host):
-        raise ValueError(f"Unknown domain '{host}' in URL")
+        msg = f"Unknown domain '{host}' in URL"
+        raise ValueError(msg)
 
 
 def _looks_like_git_host(host: str) -> bool:
-    """
-    Check if the given host looks like a Git host.
+    """Check if the given host looks like a Git host.
 
-    The current heuristic returns `True` when the host starts with `git.` (e.g. `git.example.com`) or starts with
-    `gitlab.` (e.g. `gitlab.company.com`).
+    The current heuristic returns ``True`` when the host starts with ``git.`` (e.g. 'git.example.com'), starts with
+    'gitlab.' (e.g. 'gitlab.company.com'), or starts with 'github.' (e.g. 'github.company.com' for GitHub Enterprise).
 
     Parameters
     ----------
@@ -96,15 +98,15 @@ def _looks_like_git_host(host: str) -> bool:
     Returns
     -------
     bool
-        True if the host looks like a Git host, otherwise False.
+        ``True`` if the host looks like a Git host, otherwise ``False``.
+
     """
     host = host.lower()
-    return host.startswith(("git.", "gitlab."))
+    return host.startswith(("git.", "gitlab.", "github."))
 
 
 def _validate_url_scheme(scheme: str) -> None:
-    """
-    Validate the given scheme against the known schemes.
+    """Validate the given scheme against the known schemes.
 
     Parameters
     ----------
@@ -115,15 +117,16 @@ def _validate_url_scheme(scheme: str) -> None:
     ------
     ValueError
         If the scheme is not 'http' or 'https'.
+
     """
     scheme = scheme.lower()
     if scheme not in ("https", "http"):
-        raise ValueError(f"Invalid URL scheme '{scheme}' in URL")
+        msg = f"Invalid URL scheme '{scheme}' in URL"
+        raise ValueError(msg)
 
 
-def _get_user_and_repo_from_path(path: str) -> Tuple[str, str]:
-    """
-    Extract the user and repository names from a given path.
+def _get_user_and_repo_from_path(path: str) -> tuple[str, str]:
+    """Extract the user and repository names from a given path.
 
     Parameters
     ----------
@@ -132,26 +135,28 @@ def _get_user_and_repo_from_path(path: str) -> Tuple[str, str]:
 
     Returns
     -------
-    Tuple[str, str]
+    tuple[str, str]
         A tuple containing the user and repository names.
 
     Raises
     ------
     ValueError
         If the path does not contain at least two parts.
+
     """
+    min_path_parts = 2
     path_parts = path.lower().strip("/").split("/")
-    if len(path_parts) < 2:
-        raise ValueError(f"Invalid repository URL '{path}'")
+    if len(path_parts) < min_path_parts:
+        msg = f"Invalid repository URL '{path}'"
+        raise ValueError(msg)
     return path_parts[0], path_parts[1]
 
 
 def _normalize_pattern(pattern: str) -> str:
-    """
-    Normalize the given pattern by removing leading separators and appending a wildcard.
+    """Normalize the given pattern by removing leading separators and appending a wildcard.
 
     This function processes the pattern string by stripping leading directory separators
-    and appending a wildcard (`*`) if the pattern ends with a separator.
+    and appending a wildcard (``*``) if the pattern ends with a separator.
 
     Parameters
     ----------
@@ -162,6 +167,7 @@ def _normalize_pattern(pattern: str) -> str:
     -------
     str
         The normalized pattern.
+
     """
     pattern = pattern.lstrip(os.sep)
     if pattern.endswith(os.sep):

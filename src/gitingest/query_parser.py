@@ -1,10 +1,11 @@
-"""This module contains functions to parse and validate input sources and patterns."""
+"""Module containing functions to parse and validate input sources and patterns."""
+
+from __future__ import annotations
 
 import re
 import uuid
 import warnings
 from pathlib import Path
-from typing import List, Optional, Set, Union
 from urllib.parse import unquote, urlparse
 
 from gitingest.config import TMP_BASE_PATH
@@ -25,18 +26,14 @@ from gitingest.utils.query_parser_utils import (
 
 async def parse_query(
     source: str,
+    *,
     max_file_size: int,
     from_web: bool,
-    include_patterns: Optional[Union[str, Set[str]]] = None,
-    ignore_patterns: Optional[Union[str, Set[str]]] = None,
-    token: Optional[str] = None,
+    include_patterns: set[str] | str | None = None,
+    ignore_patterns: set[str] | str | None = None,
+    token: str | None = None,
 ) -> IngestionQuery:
-    """
-    Parse the input source (URL or path) to extract relevant details for the query.
-
-    This function parses the input source to extract details such as the username, repository name,
-    commit hash, branch name, and other relevant information. It also processes the include and ignore
-    patterns to filter the files and directories to include or exclude from the query.
+    """Parse the input source to extract details for the query and process the include and ignore patterns.
 
     Parameters
     ----------
@@ -46,20 +43,20 @@ async def parse_query(
         The maximum file size in bytes to include.
     from_web : bool
         Flag indicating whether the source is a web URL.
-    include_patterns : Union[str, Set[str]], optional
-        Patterns to include, by default None. Can be a set of strings or a single string.
-    ignore_patterns : Union[str, Set[str]], optional
-        Patterns to ignore, by default None. Can be a set of strings or a single string.
-    token : str, optional
-        GitHub personal-access token (PAT). Needed when *source* refers to a
-        **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
-        Must start with 'github_pat_' or 'gph_' for GitHub repositories.
+    include_patterns : set[str] | str | None
+        Patterns to include. Can be a set of strings or a single string.
+    ignore_patterns : set[str] | str | None
+        Patterns to ignore. Can be a set of strings or a single string.
+    token : str | None
+        GitHub personal access token (PAT) for accessing private repositories.
+        Can also be set via the ``GITHUB_TOKEN`` environment variable.
+
     Returns
     -------
     IngestionQuery
         A dataclass object containing the parsed details of the repository or file path.
-    """
 
+    """
     # Determine the parsing method based on the source type
     if from_web or urlparse(source).scheme in ("https", "http") or any(h in source for h in KNOWN_GIT_HOSTS):
         # We either have a full URL or a domain-less slug
@@ -98,27 +95,27 @@ async def parse_query(
     )
 
 
-async def _parse_remote_repo(source: str, token: Optional[str] = None) -> IngestionQuery:
-    """
-    Parse a repository URL into a structured query dictionary.
+async def _parse_remote_repo(source: str, token: str | None = None) -> IngestionQuery:
+    """Parse a repository URL into a structured query dictionary.
 
     If source is:
-      - A fully qualified URL (https://gitlab.com/...), parse & verify that domain
-      - A URL missing 'https://' (gitlab.com/...), add 'https://' and parse
-      - A 'slug' (like 'pandas-dev/pandas'), attempt known domains until we find one that exists.
+      - A fully qualified URL ('https://gitlab.com/...'), parse & verify that domain
+      - A URL missing 'https://' ('gitlab.com/...'), add 'https://' and parse
+      - A *slug* ('pandas-dev/pandas'), attempt known domains until we find one that exists.
 
     Parameters
     ----------
     source : str
         The URL or domain-less slug to parse.
-    token : str, optional
-        GitHub personal-access token (PAT). Needed when *source* refers to a
-        **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
+    token : str | None
+        GitHub personal access token (PAT) for accessing private repositories.
+        Can also be set via the ``GITHUB_TOKEN`` environment variable.
 
     Returns
     -------
     IngestionQuery
         A dictionary containing the parsed details of the repository.
+
     """
     source = unquote(source)
 
@@ -190,26 +187,27 @@ async def _parse_remote_repo(source: str, token: Optional[str] = None) -> Ingest
     return parsed
 
 
-async def _configure_branch_and_subpath(remaining_parts: List[str], url: str) -> Optional[str]:
-    """
-    Configure the branch and subpath based on the remaining parts of the URL.
+async def _configure_branch_and_subpath(remaining_parts: list[str], url: str) -> str | None:
+    """Configure the branch and subpath based on the remaining parts of the URL.
+
     Parameters
     ----------
-    remaining_parts : List[str]
+    remaining_parts : list[str]
         The remaining parts of the URL path.
     url : str
         The URL of the repository.
+
     Returns
     -------
-    str, optional
-        The branch name if found, otherwise None.
+    str | None
+        The branch name if found, otherwise ``None``.
 
     """
     try:
         # Fetch the list of branches from the remote repository
-        branches: List[str] = await fetch_remote_branch_list(url)
+        branches: list[str] = await fetch_remote_branch_list(url)
     except RuntimeError as exc:
-        warnings.warn(f"Warning: Failed to fetch branch list: {exc}", RuntimeWarning)
+        warnings.warn(f"Warning: Failed to fetch branch list: {exc}", RuntimeWarning, stacklevel=2)
         return remaining_parts.pop(0)
 
     branch = []
@@ -222,21 +220,20 @@ async def _configure_branch_and_subpath(remaining_parts: List[str], url: str) ->
     return None
 
 
-def _parse_patterns(pattern: Union[str, Set[str]]) -> Set[str]:
-    """
-    Parse and validate file/directory patterns for inclusion or exclusion.
+def _parse_patterns(pattern: set[str] | str) -> set[str]:
+    """Parse and validate file/directory patterns for inclusion or exclusion.
 
     Takes either a single pattern string or set of pattern strings and processes them into a normalized list.
     Patterns are split on commas and spaces, validated for allowed characters, and normalized.
 
     Parameters
     ----------
-    pattern : Set[str] | str
+    pattern : set[str] | str
         Pattern(s) to parse - either a single string or set of strings
 
     Returns
     -------
-    Set[str]
+    set[str]
         A set of normalized patterns.
 
     Raises
@@ -245,10 +242,11 @@ def _parse_patterns(pattern: Union[str, Set[str]]) -> Set[str]:
         If any pattern contains invalid characters. Only alphanumeric characters,
         dash (-), underscore (_), dot (.), forward slash (/), plus (+), and
         asterisk (*) are allowed.
+
     """
     patterns = pattern if isinstance(pattern, set) else {pattern}
 
-    parsed_patterns: Set[str] = set()
+    parsed_patterns: set[str] = set()
     for p in patterns:
         parsed_patterns = parsed_patterns.union(set(re.split(",| ", p)))
 
@@ -267,8 +265,7 @@ def _parse_patterns(pattern: Union[str, Set[str]]) -> Set[str]:
 
 
 def _parse_local_dir_path(path_str: str) -> IngestionQuery:
-    """
-    Parse the given file path into a structured query dictionary.
+    """Parse the given file path into a structured query dictionary.
 
     Parameters
     ----------
@@ -279,6 +276,7 @@ def _parse_local_dir_path(path_str: str) -> IngestionQuery:
     -------
     IngestionQuery
         A dictionary containing the parsed details of the file path.
+
     """
     path_obj = Path(path_str).resolve()
     slug = path_obj.name if path_str == "." else path_str.strip("/")
@@ -292,9 +290,8 @@ def _parse_local_dir_path(path_str: str) -> IngestionQuery:
     )
 
 
-async def try_domains_for_user_and_repo(user_name: str, repo_name: str, token: Optional[str] = None) -> str:
-    """
-    Attempt to find a valid repository host for the given user_name and repo_name.
+async def try_domains_for_user_and_repo(user_name: str, repo_name: str, token: str | None = None) -> str:
+    """Attempt to find a valid repository host for the given ``user_name`` and ``repo_name``.
 
     Parameters
     ----------
@@ -302,9 +299,9 @@ async def try_domains_for_user_and_repo(user_name: str, repo_name: str, token: O
         The username or owner of the repository.
     repo_name : str
         The name of the repository.
-    token : str, optional
-        GitHub personal-access token (PAT). Needed when *source* refers to a
-        **private** repository. Can also be set via the ``GITHUB_TOKEN`` env var.
+    token : str | None
+        GitHub personal access token (PAT) for accessing private repositories.
+        Can also be set via the ``GITHUB_TOKEN`` environment variable.
 
     Returns
     -------
@@ -314,10 +311,13 @@ async def try_domains_for_user_and_repo(user_name: str, repo_name: str, token: O
     Raises
     ------
     ValueError
-        If no valid repository host is found for the given user_name and repo_name.
+        If no valid repository host is found for the given ``user_name`` and ``repo_name``.
+
     """
     for domain in KNOWN_GIT_HOSTS:
         candidate = f"https://{domain}/{user_name}/{repo_name}"
         if await check_repo_exists(candidate, token=token if domain == "github.com" else None):
             return domain
-    raise ValueError(f"Could not find a valid repository host for '{user_name}/{repo_name}'.")
+
+    msg = f"Could not find a valid repository host for '{user_name}/{repo_name}'."
+    raise ValueError(msg)

@@ -1,24 +1,21 @@
 """Functions to ingest and analyze a codebase directory or single file."""
 
-import warnings
+from __future__ import annotations
+
 from pathlib import Path
-from typing import Tuple
+from typing import TYPE_CHECKING
 
 from gitingest.config import MAX_DIRECTORY_DEPTH, MAX_FILES, MAX_TOTAL_SIZE_BYTES
-from gitingest.output_formatters import format_node
-from gitingest.query_parsing import IngestionQuery
+from gitingest.output_formatter import format_node
 from gitingest.schemas import FileSystemNode, FileSystemNodeType, FileSystemStats
 from gitingest.utils.ingestion_utils import _should_exclude, _should_include
 
-try:
-    import tomllib  # type: ignore[import]
-except ImportError:
-    import tomli as tomllib
+if TYPE_CHECKING:
+    from gitingest.query_parser import IngestionQuery
 
 
-def ingest_query(query: IngestionQuery) -> Tuple[str, str, str]:
-    """
-    Run the ingestion process for a parsed query.
+def ingest_query(query: IngestionQuery) -> tuple[str, str, str]:
+    """Run the ingestion process for a parsed query.
 
     This is the main entry point for analyzing a codebase directory or single file. It processes the query
     parameters, reads the file or directory content, and generates a summary, directory structure, and file content,
@@ -31,26 +28,27 @@ def ingest_query(query: IngestionQuery) -> Tuple[str, str, str]:
 
     Returns
     -------
-    Tuple[str, str, str]
+    tuple[str, str, str]
         A tuple containing the summary, directory structure, and file contents.
 
     Raises
     ------
     ValueError
         If the path cannot be found, is not a file, or the file has no content.
+
     """
     subpath = Path(query.subpath.strip("/")).as_posix()
     path = query.local_path / subpath
 
-    apply_gitingest_file(path, query)
-
     if not path.exists():
-        raise ValueError(f"{query.slug} cannot be found")
+        msg = f"{query.slug} cannot be found"
+        raise ValueError(msg)
 
     if (query.type and query.type == "blob") or query.local_path.is_file():
         # TODO: We do this wrong! We should still check the branch and commit!
         if not path.is_file():
-            raise ValueError(f"Path {path} is not a file")
+            msg = f"Path {path} is not a file"
+            raise ValueError(msg)
 
         relative_path = path.relative_to(query.local_path)
 
@@ -64,7 +62,8 @@ def ingest_query(query: IngestionQuery) -> Tuple[str, str, str]:
         )
 
         if not file_node.content:
-            raise ValueError(f"File {file_node.name} has no content")
+            msg = f"File {file_node.name} has no content"
+            raise ValueError(msg)
 
         return format_node(file_node, query)
 
@@ -86,78 +85,8 @@ def ingest_query(query: IngestionQuery) -> Tuple[str, str, str]:
     return format_node(root_node, query)
 
 
-def apply_gitingest_file(path: Path, query: IngestionQuery) -> None:
-    """
-    Apply the .gitingest file to the query object.
-
-    This function reads the .gitingest file in the specified path and updates the query object with the ignore
-    patterns found in the file.
-
-    Parameters
-    ----------
-    path : Path
-        The path of the directory to ingest.
-    query : IngestionQuery
-        The parsed query object containing information about the repository and query parameters.
-        It should have an attribute `ignore_patterns` which is either None or a set of strings.
-    """
-    path_gitingest = path / ".gitingest"
-
-    if not path_gitingest.is_file():
-        return
-
-    try:
-        with path_gitingest.open("rb") as f:
-            data = tomllib.load(f)
-    except tomllib.TOMLDecodeError as exc:
-        warnings.warn(f"Invalid TOML in {path_gitingest}: {exc}", UserWarning)
-        return
-
-    config_section = data.get("config", {})
-    ignore_patterns = config_section.get("ignore_patterns")
-
-    if not ignore_patterns:
-        return
-
-    # If a single string is provided, make it a list of one element
-    if isinstance(ignore_patterns, str):
-        ignore_patterns = [ignore_patterns]
-
-    if not isinstance(ignore_patterns, (list, set)):
-        warnings.warn(
-            f"Expected a list/set for 'ignore_patterns', got {type(ignore_patterns)} in {path_gitingest}. Skipping.",
-            UserWarning,
-        )
-        return
-
-    # Filter out duplicated patterns
-    ignore_patterns = set(ignore_patterns)
-
-    # Filter out any non-string entries
-    valid_patterns = {pattern for pattern in ignore_patterns if isinstance(pattern, str)}
-    invalid_patterns = ignore_patterns - valid_patterns
-
-    if invalid_patterns:
-        warnings.warn(f"Ignore patterns {invalid_patterns} are not strings. Skipping.", UserWarning)
-
-    if not valid_patterns:
-        return
-
-    if query.ignore_patterns is None:
-        query.ignore_patterns = valid_patterns
-    else:
-        query.ignore_patterns.update(valid_patterns)
-
-    return
-
-
-def _process_node(
-    node: FileSystemNode,
-    query: IngestionQuery,
-    stats: FileSystemStats,
-) -> None:
-    """
-    Process a file or directory item within a directory.
+def _process_node(node: FileSystemNode, query: IngestionQuery, stats: FileSystemStats) -> None:
+    """Process a file or directory item within a directory.
 
     This function handles each file or directory item, checking if it should be included or excluded based on the
     provided patterns. It handles symlinks, directories, and files accordingly.
@@ -170,13 +99,12 @@ def _process_node(
         The parsed query object containing information about the repository and query parameters.
     stats : FileSystemStats
         Statistics tracking object for the total file count and size.
-    """
 
+    """
     if limit_exceeded(stats, node.depth):
         return
 
     for sub_path in node.path.iterdir():
-
         if query.ignore_patterns and _should_exclude(sub_path, query.local_path, query.ignore_patterns):
             continue
 
@@ -188,7 +116,6 @@ def _process_node(
         elif sub_path.is_file():
             _process_file(path=sub_path, parent_node=node, stats=stats, local_path=query.local_path)
         elif sub_path.is_dir():
-
             child_directory_node = FileSystemNode(
                 name=sub_path.name,
                 type=FileSystemNodeType.DIRECTORY,
@@ -217,8 +144,7 @@ def _process_node(
 
 
 def _process_symlink(path: Path, parent_node: FileSystemNode, stats: FileSystemStats, local_path: Path) -> None:
-    """
-    Process a symlink in the file system.
+    """Process a symlink in the file system.
 
     This function checks the symlink's target.
 
@@ -232,6 +158,7 @@ def _process_symlink(path: Path, parent_node: FileSystemNode, stats: FileSystemS
         Statistics tracking object for the total file count and size.
     local_path : Path
         The base path of the repository or directory being processed.
+
     """
     child = FileSystemNode(
         name=path.name,
@@ -246,8 +173,7 @@ def _process_symlink(path: Path, parent_node: FileSystemNode, stats: FileSystemS
 
 
 def _process_file(path: Path, parent_node: FileSystemNode, stats: FileSystemStats, local_path: Path) -> None:
-    """
-    Process a file in the file system.
+    """Process a file in the file system.
 
     This function checks the file's size, increments the statistics, and reads its content.
     If the file size exceeds the maximum allowed, it raises an error.
@@ -262,6 +188,7 @@ def _process_file(path: Path, parent_node: FileSystemNode, stats: FileSystemStat
         Statistics tracking object for the total file count and size.
     local_path : Path
         The base path of the repository or directory being processed.
+
     """
     file_size = path.stat().st_size
     if stats.total_size + file_size > MAX_TOTAL_SIZE_BYTES:
@@ -291,8 +218,7 @@ def _process_file(path: Path, parent_node: FileSystemNode, stats: FileSystemStat
 
 
 def limit_exceeded(stats: FileSystemStats, depth: int) -> bool:
-    """
-    Check if any of the traversal limits have been exceeded.
+    """Check if any of the traversal limits have been exceeded.
 
     This function checks if the current traversal has exceeded any of the configured limits:
     maximum directory depth, maximum number of files, or maximum total size in bytes.
@@ -307,7 +233,8 @@ def limit_exceeded(stats: FileSystemStats, depth: int) -> bool:
     Returns
     -------
     bool
-        True if any limit has been exceeded, False otherwise.
+        ``True`` if any limit has been exceeded, ``False`` otherwise.
+
     """
     if depth > MAX_DIRECTORY_DEPTH:
         print(f"Maximum depth limit ({MAX_DIRECTORY_DEPTH}) reached")
@@ -318,7 +245,7 @@ def limit_exceeded(stats: FileSystemStats, depth: int) -> bool:
         return True  # TODO: end recursion
 
     if stats.total_size >= MAX_TOTAL_SIZE_BYTES:
-        print(f"Maxumum total size limit ({MAX_TOTAL_SIZE_BYTES/1024/1024:.1f}MB) reached")
+        print(f"Maxumum total size limit ({MAX_TOTAL_SIZE_BYTES / 1024 / 1024:.1f}MB) reached")
         return True  # TODO: end recursion
 
     return False
