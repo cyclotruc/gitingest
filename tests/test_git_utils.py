@@ -29,9 +29,12 @@ if TYPE_CHECKING:
     "token",
     [
         # Valid tokens: correct prefixes and at least 36 allowed characters afterwards
-        "github_pat_" + "a" * 36,
+        "github_pat_" + "a" * 22 + "_" + "b" * 59,
         "ghp_" + "A" * 36,
-        "github_pat_1234567890abcdef1234567890abcdef1234",
+        "ghu_" + "B" * 36,
+        "ghs_" + "C" * 36,
+        "ghr_" + "D" * 36,
+        "gho_" + "E" * 36,
     ],
 )
 def test_validate_github_token_valid(token: str) -> None:
@@ -47,6 +50,7 @@ def test_validate_github_token_valid(token: str) -> None:
         "ghp_" + "b" * 35,  # one character short
         "invalidprefix_" + "c" * 36,  # Wrong prefix
         "github_pat_" + "!" * 36,  # Disallowed characters
+        "github_pat_" + "a" * 36,  # Too short after 'github_pat_' prefix
         "",  # Empty string
     ],
 )
