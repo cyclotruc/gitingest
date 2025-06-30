@@ -9,6 +9,7 @@ import sys
 from urllib.parse import urlparse
 
 from gitingest.utils.exceptions import InvalidGitHubTokenError
+from server.server_utils import Colors
 
 GITHUB_PAT_PATTERN = r"^(?:github_pat_|ghp_)[A-Za-z0-9_]{36,}$"
 
@@ -68,13 +69,13 @@ async def run_command(*args: str) -> tuple[bytes, bytes]:
 async def ensure_git_installed() -> None:
     """Ensure Git is installed and accessible on the system.
 
-    On Windows, this also enables support for long file paths via
-    `git config --system core.longpaths true`.
+    On Windows, this also checks whether Git is configured to support long file paths.
 
     Raises
     ------
     RuntimeError
         If Git is not installed or not accessible, or if enabling long paths fails.
+        If checking the long path setting fails on Windows.
 
     """
     try:
@@ -84,9 +85,20 @@ async def ensure_git_installed() -> None:
         raise RuntimeError(msg) from exc
     if sys.platform == "win32":
         try:
-            await run_command("git", "config", "--system", "core.longpaths", "true")
+            stdout, _ = await run_command("git", "config", "--system", "core.longpaths")
+            if stdout.decode().strip().lower() != "true":
+                print(
+                    f"{Colors.BROWN}WARN{Colors.END}: {Colors.RED}Git clone may fail on Windows "
+                    f"due to long file paths:{Colors.END}",
+                )
+                print(f"{Colors.RED}To avoid this issue, consider enabling long path support with:{Colors.END}")
+                print(f"{Colors.RED}    git config --system core.longpaths true{Colors.END}")
+                print(f"{Colors.RED}Note: This command may require administrator privileges.{Colors.END}")
         except RuntimeError as exc:
-            msg = "Failed to enable long paths. You may need to run the app as Administrator."
+            msg = (
+                "Unable to verify or access Git long path configuration. "
+                "Run this application as Administrator or configure it manually."
+            )
             raise RuntimeError(msg) from exc
 
 
