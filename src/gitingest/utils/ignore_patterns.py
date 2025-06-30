@@ -85,7 +85,6 @@ DEFAULT_IGNORE_PATTERNS: set[str] = {
     "*.user",
     "*.userosscache",
     "*.sln.docstates",
-    "packages/",
     "*.nupkg",
     # Go / .NET / C#
     "bin/",
