@@ -179,68 +179,8 @@ async def tokencount_ui(request: Request):
     )
 
 @router.get("/api/tokencount", response_class=HTMLResponse)
-async def api_token_count_docs():
-    """Serve a simple documentation page for the token count API."""
-    html = f'''
-    <html>
-    <head>
-        <title>Token Estimator API</title>
-        <style>
-            body {{ font-family: system-ui, sans-serif; max-width: 800px; margin: 2em auto; padding: 0 1em; line-height: 1.5; }}
-            pre {{ background: #f5f5f5; padding: 1em; border-radius: 4px; overflow-x: auto; }}
-            .endpoint {{ color: #2563eb; }}
-            .example {{ margin: 1em 0; }}
-        </style>
-    </head>
-    <body>
-        <h1>Token Estimator API</h1>
-        <p>This API endpoint counts tokens for various AI language models.</p>
-        
-        <h2>Endpoint</h2>
-        <p class="endpoint">POST /api/tokencount</p>
-        
-        <h2>Request Format</h2>
-        <p>Send a POST request with either:</p>
-        <h3>JSON Body:</h3>
-        <pre>{{
-    "input_text": "Your text here",
-    "model_id": "openai-community/gpt2"  // optional
-}}</pre>
-        
-        <h3>Or Form Data:</h3>
-        <pre>input_text: Your text here
-model_id: openai-community/gpt2  // optional</pre>
-        
-        <h2>Response Format</h2>
-        <pre>{{
-    "token_count": 123,
-    "model_id": "openai-community/gpt2",
-    "character_count": 456
-}}</pre>
-        
-        <h2>Try it out</h2>
-        <form action="/api/tokencount" method="post">
-            <p><label>
-                Text to analyze:<br>
-                <textarea name="input_text" rows="4" style="width: 100%; margin-top: 0.5em;"></textarea>
-            </label></p>
-            <p><label>
-                Model ID (optional):<br>
-                <select name="model_id" style="margin-top: 0.5em;">
-                    {
-                        ''.join([f'<option value="{model_id}">{name}</option>'
-                                for name, model_id in SUPPORTED_MODELS.items()])
-                    }
-                </select>
-            </label></p>
-            <p><button type="submit">Count Tokens</button></p>
-        </form>
-        
-        <h2>Example using curl</h2>
-        <pre>curl -X POST http://localhost:8000/api/tokencount \\
-    -H "Content-Type: application/json" \\
-    -d '{{"input_text": "Hello, world!", "model_id": "openai-community/gpt2"}}'</pre>
-    </body>
-    </html>
-    '''
-    return HTMLResponse(content=html)
+async def api_token_count_docs(request: Request):
+    return templates.TemplateResponse(
+        "tokencount_api.jinja",
+        {"request": request}
+    )
