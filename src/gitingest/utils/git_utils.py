@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 
 from gitingest.utils.exceptions import InvalidGitHubTokenError
 
-GITHUB_PAT_PATTERN = r"^(?:github_pat_|ghp_)[A-Za-z0-9_]{36,}$"
+GITHUB_PAT_PATTERN = r"^(?:gh[pousr]_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9]{22}_[A-Za-z0-9]{59})$"
 
 
 def is_github_host(url: str) -> bool:
