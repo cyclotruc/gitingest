@@ -145,7 +145,29 @@
                                        name="token"
                                        placeholder="Personal Access Token"
                                        value="{{ token if token else '' }}"
-                                       class="py-2 px-2 bg-[#E8F0FE] focus:outline-none w-full rounded">
+                                       class="py-2 pl-2 pr-8 bg-[#E8F0FE] focus:outline-none w-full rounded">
+                                <!-- Info icon with tooltip -->
+                                <span class="absolute right-3 top-1/2 -translate-y-1/2">
+                                    <!-- Icon -->
+                                    <svg class="w-4 h-4 text-gray-600 cursor-pointer peer"
+                                         xmlns="http://www.w3.org/2000/svg"
+                                         fill="none"
+                                         viewBox="0 0 24 24"
+                                         stroke="currentColor"
+                                         stroke-width="2">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 16v-4m0-4h.01" />
+                                    </svg>
+                                    <!-- Tooltip (tooltip listens to peer-hover) -->
+                                    <div class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs leading-tight py-1 px-2 rounded shadow-lg opacity-0 pointer-events-none peer-hover:opacity-100 peer-hover:pointer-events-auto transition-opacity duration-200 whitespace-nowrap">
+                                        <ul class="list-disc pl-4">
+                                            <li>PAT is never stored in the backend</li>
+                                            <li>Used once for cloning, then discarded from memory</li>
+                                            <li>No browser caching</li>
+                                            <li>Cloned repos are deleted after processing</li>
+                                        </ul>
+                                    </div>
+                                </span>
                             </div>
                         </div>
                         <!-- Help section -->
