@@ -178,9 +178,9 @@
             <!-- Modal for PAT Help -->
             <div id="pat-modal"
                  class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div class="bg-white rounded-lg p-6 w-11/12 max-w-md shadow-lg">
-                    <h2 class="text-lg font-semibold mb-4">🔐 How We Handle Your GitHub Token</h2>
-                    <ul class="list-disc list-inside text-gray-700 text-sm mb-4">
+                <div class="bg-white rounded-xl p-6 w-11/12 max-w-md shadow-[4px_4px_0_#000] border-[3px] border-gray-900">
+                    <h2 class="text-lg font-semibold mb-4 text-gray-900">About Your GitHub Token</h2>
+                    <ul class="list-disc list-inside text-gray-800 text-sm space-y-2">
                         <li>
                             <strong>Your Personal Access Token is never stored on our servers or in any database, ensuring complete token privacy.</strong>
                         </li>
@@ -191,9 +191,13 @@
                             <strong>The token is not cached or saved in the browser's local storage or memory, preventing any unintended exposure on the client side.</strong>
                         </li>
                     </ul>
-                    <div class="text-right">
-                        <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                                onclick="document.getElementById('pat-modal').classList.add('hidden')">Got it</button>
+                    <div class="relative w-fit group ml-auto">
+                        <div class="w-full h-full rounded bg-gray-800 translate-y-1 translate-x-1 absolute inset-0 z-10"></div>
+                        <button type="button"
+                                onclick="document.getElementById('pat-modal').classList.add('hidden')"
+                                class="py-2.5 px-5 group-hover:-translate-y-px group-hover:-translate-x-px ease-out duration-300 z-20 relative border-[3px] border-gray-900 font-medium bg-[#ffc480] text-gray-900 rounded">
+                            Got it
+                        </button>
                     </div>
                 </div>
             </div>
