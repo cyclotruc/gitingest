@@ -1,22 +1,21 @@
-"""
-Tests for the gitignore functionality in Gitingest.
-"""
+"""Tests for the gitignore functionality in Gitingest."""
 
 from pathlib import Path
 
 import pytest
 
 from gitingest.entrypoint import ingest_async
-from gitingest.utils.ignore_patterns import load_gitignore_patterns
+from gitingest.utils.ignore_patterns import load_ignore_patterns
 
 
 @pytest.fixture(name="repo_path")
 def repo_fixture(tmp_path: Path) -> Path:
-    """
-    Create a temporary repository structure with:
-      - A .gitignore that excludes 'exclude.txt'
-      - 'include.txt' (should be processed)
-      - 'exclude.txt' (should be skipped when gitignore rules are respected)
+    """Create a temporary repository structure.
+
+    The repository structure includes:
+    - A ``.gitignore`` that excludes ``exclude.txt``
+    - ``include.txt`` (should be processed)
+    - ``exclude.txt`` (should be skipped when gitignore rules are respected)
     """
     # Create a .gitignore file that excludes 'exclude.txt'
     gitignore_file = tmp_path / ".gitignore"
@@ -33,15 +32,13 @@ def repo_fixture(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def test_load_gitignore_patterns(tmp_path: Path):
-    """
-    Test that load_gitignore_patterns() correctly loads patterns from a .gitignore file.
-    """
+def test_load_gitignore_patterns(tmp_path: Path) -> None:
+    """Test that ``load_ignore_patterns()`` correctly loads patterns from a ``.gitignore`` file."""
     gitignore = tmp_path / ".gitignore"
     # Write some sample patterns with a comment line included
     gitignore.write_text("exclude.txt\n*.log\n# a comment\n")
 
-    patterns = load_gitignore_patterns(tmp_path)
+    patterns = load_ignore_patterns(tmp_path, filename=".gitignore")
 
     # Check that the expected patterns are loaded
     assert "exclude.txt" in patterns
@@ -52,11 +49,10 @@ def test_load_gitignore_patterns(tmp_path: Path):
 
 
 @pytest.mark.asyncio
-async def test_ingest_with_gitignore(repo_path: Path):
-    """
-    Integration test for ingest_async() respecting .gitignore rules.
+async def test_ingest_with_gitignore(repo_path: Path) -> None:
+    """Integration test for ``ingest_async()`` respecting ``.gitignore`` rules.
 
-    When ``include_gitignored`` is ``False`` (default), the content of 'exclude.txt' should be omitted.
+    When ``include_gitignored`` is ``False`` (default), the content of ``exclude.txt`` should be omitted.
     When ``include_gitignored`` is ``True``, both files should be present.
     """
     # Run ingestion with the gitignore functionality enabled.

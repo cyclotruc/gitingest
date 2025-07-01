@@ -1,10 +1,10 @@
 """Default ignore patterns for Gitingest."""
 
-import os
-from pathlib import Path
-from typing import Set
+from __future__ import annotations
 
-DEFAULT_IGNORE_PATTERNS: Set[str] = {
+from pathlib import Path
+
+DEFAULT_IGNORE_PATTERNS: set[str] = {
     # Python
     "*.pyc",
     "*.pyo",
@@ -85,7 +85,6 @@ DEFAULT_IGNORE_PATTERNS: Set[str] = {
     "*.user",
     "*.userosscache",
     "*.sln.docstates",
-    "packages/",
     "*.nupkg",
     # Go / .NET / C#
     "bin/",
@@ -94,6 +93,7 @@ DEFAULT_IGNORE_PATTERNS: Set[str] = {
     ".svn",
     ".hg",
     ".gitignore",
+    ".gitingestignore",  # Ignore rules specific to Gitingest
     ".gitattributes",
     ".gitmodules",
     # Images and media
@@ -164,45 +164,74 @@ DEFAULT_IGNORE_PATTERNS: Set[str] = {
 }
 
 
-def load_gitignore_patterns(root: Path) -> Set[str]:
-    """
-    Recursively load ignore patterns from all .gitignore files under the given root directory.
+def load_ignore_patterns(root: Path, filename: str) -> set[str]:
+    """Load ignore patterns from ``filename`` found under ``root``.
+
+    The loader walks the directory tree, looks for the supplied ``filename``,
+    and returns a unified set of patterns. It implements the same parsing rules
+    we use for ``.gitignore`` and ``.gitingestignore`` (git-wildmatch syntax with
+    support for negation and root-relative paths).
 
     Parameters
     ----------
     root : Path
-        The root directory to search for .gitignore files.
+        Directory to walk.
+    filename : str
+        The filename to look for in each directory.
 
     Returns
     -------
-    Set[str]
-        A set of ignore patterns extracted from all .gitignore files found under the root directory.
+    set[str]
+        A set of ignore patterns extracted from the ``filename`` file found under the ``root`` directory.
+
     """
-    patterns: Set[str] = set()
-    for dirpath, _, filenames in os.walk(root):
-        if ".gitignore" not in filenames:
-            continue
+    patterns: set[str] = set()
 
-        gitignore_path = Path(dirpath) / ".gitignore"
-        with gitignore_path.open("r", encoding="utf-8") as f:
-            for line in f:
-                stripped = line.strip()
+    for ignore_file in root.rglob(filename):
+        if ignore_file.is_file():
+            patterns.update(_parse_ignore_file(ignore_file, root))
 
-                if not stripped or stripped.startswith("#"):
-                    continue
+    return patterns
 
-                negated = stripped.startswith("!")
-                if negated:
-                    stripped = stripped[1:]
 
-                rel_dir = os.path.relpath(dirpath, root)
-                if stripped.startswith("/"):
-                    pattern_body = os.path.join(rel_dir, stripped.lstrip("/"))
-                else:
-                    pattern_body = os.path.join(rel_dir, stripped) if rel_dir != "." else stripped
+def _parse_ignore_file(ignore_file: Path, root: Path) -> set[str]:
+    """Parse an ignore file and return a set of ignore patterns.
 
-                pattern_body = pattern_body.replace("\\", "/")
-                pattern = f"!{pattern_body}" if negated else pattern_body
-                patterns.add(pattern)
+    Parameters
+    ----------
+    ignore_file : Path
+        The path to the ignore file.
+    root : Path
+        The root directory of the repository.
+
+    Returns
+    -------
+    set[str]
+        A set of ignore patterns.
+
+    """
+    patterns: set[str] = set()
+
+    # Path of the ignore file relative to the repository root
+    rel_dir = ignore_file.parent.relative_to(root)
+    base_dir = Path() if rel_dir == Path() else rel_dir
+
+    with ignore_file.open(encoding="utf-8") as fh:
+        for raw in fh:
+            line = raw.strip()
+            if not line or line.startswith("#"):  # comments / blank lines
+                continue
+
+            # Handle negation ("!foobar")
+            negated = line.startswith("!")
+            if negated:
+                line = line[1:]
+
+            # Handle leading slash ("/foobar")
+            if line.startswith("/"):
+                line = line.lstrip("/")
+
+            pattern_body = (base_dir / line).as_posix()
+            patterns.add(f"!{pattern_body}" if negated else pattern_body)
 
     return patterns

@@ -1,5 +1,4 @@
-"""
-Tests for the `notebook_utils` module.
+"""Tests for the ``notebook`` utils module.
 
 These tests validate how notebooks are processed into Python-like output, ensuring that markdown/raw cells are
 converted to triple-quoted blocks, code cells remain executable code, and various edge cases (multiple worksheets,
@@ -8,32 +7,34 @@ empty cells, outputs, etc.) are handled appropriately.
 
 import pytest
 
-from gitingest.utils.notebook_utils import process_notebook
+from gitingest.utils.notebook import process_notebook
 from tests.conftest import WriteNotebookFunc
 
 
 def test_process_notebook_all_cells(write_notebook: WriteNotebookFunc) -> None:
-    """
-    Test processing a notebook containing markdown, code, and raw cells.
+    """Test processing a notebook containing markdown, code, and raw cells.
 
     Given a notebook with:
       - One markdown cell
       - One code cell
       - One raw cell
-    When `process_notebook` is invoked,
+    When ``process_notebook`` is invoked,
     Then markdown and raw cells should appear in triple-quoted blocks, and code cells remain as normal code.
     """
+    expected_count = 4
     notebook_content = {
         "cells": [
             {"cell_type": "markdown", "source": ["# Markdown cell"]},
             {"cell_type": "code", "source": ['print("Hello Code")']},
             {"cell_type": "raw", "source": ["<raw content>"]},
-        ]
+        ],
     }
     nb_path = write_notebook("all_cells.ipynb", notebook_content)
     result = process_notebook(nb_path)
 
-    assert result.count('"""') == 4, "Two non-code cells => 2 triple-quoted blocks => 4 total triple quotes."
+    assert result.count('"""') == expected_count, (
+        "Two non-code cells => 2 triple-quoted blocks => 4 total triple quotes."
+    )
 
     # Ensure markdown and raw cells are in triple quotes
     assert "# Markdown cell" in result
@@ -45,13 +46,12 @@ def test_process_notebook_all_cells(write_notebook: WriteNotebookFunc) -> None:
 
 
 def test_process_notebook_with_worksheets(write_notebook: WriteNotebookFunc) -> None:
-    """
-    Test a notebook containing the (as of IPEP-17 deprecated) 'worksheets' key.
+    """Test a notebook containing the (as of IPEP-17 deprecated) ``worksheets`` key.
 
-    Given a notebook that uses the 'worksheets' key with a single worksheet,
-    When `process_notebook` is called,
-    Then a `DeprecationWarning` should be raised, and the content should match an equivalent notebook
-    that has top-level 'cells'.
+    Given a notebook that uses the ``worksheets`` key with a single worksheet,
+    When ``process_notebook`` is called,
+    Then a ``DeprecationWarning`` should be raised, and the content should match an equivalent notebook
+    that has top-level ``cells``.
     """
     with_worksheets = {
         "worksheets": [
@@ -60,9 +60,9 @@ def test_process_notebook_with_worksheets(write_notebook: WriteNotebookFunc) -> 
                     {"cell_type": "markdown", "source": ["# Markdown cell"]},
                     {"cell_type": "code", "source": ['print("Hello Code")']},
                     {"cell_type": "raw", "source": ["<raw content>"]},
-                ]
-            }
-        ]
+                ],
+            },
+        ],
     }
     without_worksheets = with_worksheets["worksheets"][0]  # same, but no 'worksheets' key
 
@@ -79,13 +79,12 @@ def test_process_notebook_with_worksheets(write_notebook: WriteNotebookFunc) -> 
 
 
 def test_process_notebook_multiple_worksheets(write_notebook: WriteNotebookFunc) -> None:
-    """
-    Test a notebook containing multiple 'worksheets'.
+    """Test a notebook containing multiple ``worksheets``.
 
     Given a notebook with two worksheets:
       - First with a markdown cell
       - Second with a code cell
-    When `process_notebook` is called,
+    When ``process_notebook`` is called,
     Then a warning about multiple worksheets should be raised, and the second worksheet's content should appear
     in the final output.
     """
@@ -93,13 +92,13 @@ def test_process_notebook_multiple_worksheets(write_notebook: WriteNotebookFunc)
         "worksheets": [
             {"cells": [{"cell_type": "markdown", "source": ["# First Worksheet"]}]},
             {"cells": [{"cell_type": "code", "source": ["# Second Worksheet"]}]},
-        ]
+        ],
     }
 
     single_worksheet = {
         "worksheets": [
             {"cells": [{"cell_type": "markdown", "source": ["# First Worksheet"]}]},
-        ]
+        ],
     }
 
     nb_multi = write_notebook("multiple_worksheets.ipynb", multi_worksheets)
@@ -107,16 +106,18 @@ def test_process_notebook_multiple_worksheets(write_notebook: WriteNotebookFunc)
 
     # Expect DeprecationWarning + UserWarning
     with pytest.warns(
-        DeprecationWarning, match="Worksheets are deprecated as of IPEP-17. Consider updating the notebook."
+        DeprecationWarning,
+        match="Worksheets are deprecated as of IPEP-17. Consider updating the notebook.",
+    ), pytest.warns(
+        UserWarning,
+        match="Multiple worksheets detected. Combining all worksheets into a single script.",
     ):
-        with pytest.warns(
-            UserWarning, match="Multiple worksheets detected. Combining all worksheets into a single script."
-        ):
-            result_multi = process_notebook(nb_multi)
+        result_multi = process_notebook(nb_multi)
 
     # Expect DeprecationWarning only
     with pytest.warns(
-        DeprecationWarning, match="Worksheets are deprecated as of IPEP-17. Consider updating the notebook."
+        DeprecationWarning,
+        match="Worksheets are deprecated as of IPEP-17. Consider updating the notebook.",
     ):
         result_single = process_notebook(nb_single)
 
@@ -129,18 +130,17 @@ def test_process_notebook_multiple_worksheets(write_notebook: WriteNotebookFunc)
 
 
 def test_process_notebook_code_only(write_notebook: WriteNotebookFunc) -> None:
-    """
-    Test a notebook containing only code cells.
+    """Test a notebook containing only code cells.
 
     Given a notebook with code cells only:
-    When `process_notebook` is called,
+    When ``process_notebook`` is called,
     Then no triple quotes should appear in the output.
     """
     notebook_content = {
         "cells": [
             {"cell_type": "code", "source": ["print('Code Cell 1')"]},
             {"cell_type": "code", "source": ["x = 42"]},
-        ]
+        ],
     }
     nb_path = write_notebook("code_only.ipynb", notebook_content)
     result = process_notebook(nb_path)
@@ -151,85 +151,84 @@ def test_process_notebook_code_only(write_notebook: WriteNotebookFunc) -> None:
 
 
 def test_process_notebook_markdown_only(write_notebook: WriteNotebookFunc) -> None:
-    """
-    Test a notebook with only markdown cells.
+    """Test a notebook with only markdown cells.
 
     Given a notebook with two markdown cells:
-    When `process_notebook` is called,
+    When ``process_notebook`` is called,
     Then each markdown cell should become a triple-quoted block (2 blocks => 4 triple quotes total).
     """
+    expected_count = 4
     notebook_content = {
         "cells": [
             {"cell_type": "markdown", "source": ["# Markdown Header"]},
             {"cell_type": "markdown", "source": ["Some more markdown."]},
-        ]
+        ],
     }
     nb_path = write_notebook("markdown_only.ipynb", notebook_content)
     result = process_notebook(nb_path)
 
-    assert result.count('"""') == 4, "Two markdown cells => 2 blocks => 4 triple quotes total."
+    assert result.count('"""') == expected_count, "Two markdown cells => 2 blocks => 4 triple quotes total."
     assert "# Markdown Header" in result
     assert "Some more markdown." in result
 
 
 def test_process_notebook_raw_only(write_notebook: WriteNotebookFunc) -> None:
-    """
-    Test a notebook with only raw cells.
+    """Test a notebook with only raw cells.
 
     Given two raw cells:
-    When `process_notebook` is called,
+    When ``process_notebook`` is called,
     Then each raw cell should become a triple-quoted block (2 blocks => 4 triple quotes total).
     """
+    expected_count = 4
     notebook_content = {
         "cells": [
             {"cell_type": "raw", "source": ["Raw content line 1"]},
             {"cell_type": "raw", "source": ["Raw content line 2"]},
-        ]
+        ],
     }
     nb_path = write_notebook("raw_only.ipynb", notebook_content)
     result = process_notebook(nb_path)
 
-    assert result.count('"""') == 4, "Two raw cells => 2 blocks => 4 triple quotes."
+    assert result.count('"""') == expected_count, "Two raw cells => 2 blocks => 4 triple quotes."
     assert "Raw content line 1" in result
     assert "Raw content line 2" in result
 
 
 def test_process_notebook_empty_cells(write_notebook: WriteNotebookFunc) -> None:
-    """
-    Test that cells with an empty 'source' are skipped.
+    """Test that cells with an empty ``source`` are skipped.
 
-    Given a notebook with 4 cells, 3 of which have empty `source`:
-    When `process_notebook` is called,
+    Given a notebook with 4 cells, 3 of which have empty ``source``:
+    When ``process_notebook`` is called,
     Then only the non-empty cell should appear in the output (1 block => 2 triple quotes).
     """
+    expected_count = 2
     notebook_content = {
         "cells": [
             {"cell_type": "markdown", "source": []},
             {"cell_type": "code", "source": []},
             {"cell_type": "raw", "source": []},
             {"cell_type": "markdown", "source": ["# Non-empty markdown"]},
-        ]
+        ],
     }
     nb_path = write_notebook("empty_cells.ipynb", notebook_content)
     result = process_notebook(nb_path)
 
-    assert result.count('"""') == 2, "Only one non-empty cell => 1 block => 2 triple quotes"
+    assert result.count('"""') == expected_count, "Only one non-empty cell => 1 block => 2 triple quotes"
     assert "# Non-empty markdown" in result
 
 
 def test_process_notebook_invalid_cell_type(write_notebook: WriteNotebookFunc) -> None:
-    """
-    Test a notebook with an unknown cell type.
+    """Test a notebook with an unknown cell type.
 
-    Given a notebook cell whose `cell_type` is unrecognized:
-    When `process_notebook` is called,
+    Given a notebook cell whose ``cell_type`` is unrecognized:
+    When ``process_notebook`` is called,
     Then a ValueError should be raised.
     """
     notebook_content = {
         "cells": [
             {"cell_type": "markdown", "source": ["# Valid markdown"]},
             {"cell_type": "unknown", "source": ["Unrecognized cell type"]},
-        ]
+        ],
     }
     nb_path = write_notebook("invalid_cell_type.ipynb", notebook_content)
 
@@ -238,11 +237,10 @@ def test_process_notebook_invalid_cell_type(write_notebook: WriteNotebookFunc) -
 
 
 def test_process_notebook_with_output(write_notebook: WriteNotebookFunc) -> None:
-    """
-    Test a notebook that has code cells with outputs.
+    """Test a notebook that has code cells with outputs.
 
     Given a code cell and multiple output objects:
-    When `process_notebook` is called with `include_output=True`,
+    When ``process_notebook`` is called with ``include_output=True``,
     Then the outputs should be appended as commented lines under the code.
     """
     notebook_content = {
@@ -261,32 +259,24 @@ def test_process_notebook_with_output(write_notebook: WriteNotebookFunc) -> None
                     {"output_type": "execute_result", "data": {"text/plain": ["[1, 2, 3, 4, 5]"]}},
                     {"output_type": "display_data", "data": {"text/plain": ["<Figure size 640x480 with 1 Axes>"]}},
                 ],
-            }
-        ]
+            },
+        ],
     }
 
     nb_path = write_notebook("with_output.ipynb", notebook_content)
     with_output = process_notebook(nb_path, include_output=True)
     without_output = process_notebook(nb_path, include_output=False)
 
-    expected_source = "\n".join(
-        [
-            "# Jupyter notebook converted to Python script.\n",
-            "import matplotlib.pyplot as plt",
-            "print('my_data')",
-            "my_data = [1, 2, 3, 4, 5]",
-            "plt.plot(my_data)",
-            "my_data\n",
-        ]
+    expected_source = (
+        "# Jupyter notebook converted to Python script.\n\n"
+        "import matplotlib.pyplot as plt\n"
+        "print('my_data')\n"
+        "my_data = [1, 2, 3, 4, 5]\n"
+        "plt.plot(my_data)\n"
+        "my_data\n"
     )
-    expected_output = "\n".join(
-        [
-            "# Output:",
-            "#   my_data",
-            "#   [1, 2, 3, 4, 5]",
-            "#   <Figure size 640x480 with 1 Axes>\n",
-        ]
-    )
+
+    expected_output = "# Output:\n#   my_data\n#   [1, 2, 3, 4, 5]\n#   <Figure size 640x480 with 1 Axes>\n"
 
     expected_combined = expected_source + expected_output
 

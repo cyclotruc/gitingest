@@ -6,16 +6,15 @@ readme = {file = "README.md", content-type = "text/markdown" }
 requires-python = ">= 3.8"
 dependencies = [
     "click>=8.0.0",
-    "fastapi[standard]>=0.109.1",  # Vulnerable to https://osv.dev/vulnerability/PYSEC-2024-38
+    "fastapi[standard]>=0.109.1",  # Minimum safe release (https://osv.dev/vulnerability/PYSEC-2024-38)
     "pydantic",
     "python-dotenv",
     "slowapi",
-    "starlette>=0.40.0",  # Vulnerable to https://osv.dev/vulnerability/GHSA-f96h-pmfr-66vw
+    "starlette>=0.40.0",  # Minimum safe release (https://osv.dev/vulnerability/GHSA-f96h-pmfr-66vw)
     "tiktoken>=0.7.0",  # Support for o200k_base encoding
-    "tomli",
     "pathspec>=0.12.1",
-    "typing_extensions; python_version < '3.10'",
-    "uvicorn>=0.11.7",  # Vulnerable to https://osv.dev/vulnerability/PYSEC-2020-150
+    "typing_extensions>= 4.0.0; python_version < '3.10'",
+    "uvicorn>=0.11.7",  # Minimum safe release (https://osv.dev/vulnerability/PYSEC-2020-150)
 ]
 
 license = {file = "LICENSE"}
@@ -62,19 +61,45 @@ disable = [
     "fixme",
 ]
 
+[tool.ruff]
+line-length = 119
+fix = true
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [  # https://docs.astral.sh/ruff/rules/...
+    "D107", # undocumented-public-init
+    "FIX002", # line-contains-todo
+    "TD002", # missing-todo-author
+    "PLR0913", # too-many-arguments,
+
+    # TODO: fix the following issues:
+    "TD003", # missing-todo-link, TODO: add issue links
+    "T201", # print, TODO: replace with logging
+    "S108", # hardcoded-temp-file, TODO: replace with tempfile
+    "BLE001", # blind-except, TODO: replace with specific exceptions
+    "FAST003", # fast-api-unused-path-parameter, TODO: fix
+]
+per-file-ignores = { "tests/**/*.py" = ["S101"] } # Skip the “assert used” warning
+
+[tool.ruff.lint.pylint]
+max-returns = 10
+
+[tool.ruff.lint.isort]
+order-by-type = true
+case-sensitive = true
+
 [tool.pycln]
 all = true
 
+# TODO: Remove this once we figure out how to use ruff-isort
 [tool.isort]
 profile = "black"
 line_length = 119
 remove_redundant_aliases = true
-float_to_top = true
+float_to_top = true  # https://github.com/astral-sh/ruff/issues/6514
 order_by_type = true
 filter_files = true
-
-[tool.black]
-line-length = 119
 
 # Test configuration
 [tool.pytest.ini_options]
