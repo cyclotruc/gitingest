@@ -19,7 +19,7 @@ Thanks for your interest in contributing to Gitingest! 🚀 Gitingest aims to be
    cd gitingest
    ```
 
-   **Note**: To contrubute, ensure you have **Python 3.9 or newer** installed, as some of the `pre-commit` hooks (e.g. `pyupgrade`) require Python 3.9+.
+   **Note**: To contribute, ensure you have **Python 3.9 or newer** installed, as some of the `pre-commit` hooks (e.g. `pyupgrade`) require Python 3.9+.
 
 3. Set up the development environment and install dependencies:
 
