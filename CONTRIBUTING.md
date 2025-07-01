@@ -1,97 +1,116 @@
 # Contributing to Gitingest
 
-Thanks for your interest in contributing to Gitingest! 🚀 Gitingest aims to be friendly for first time contributors, with a simple Python and HTML codebase. We would love your help to make it even better. If you need any help while working with the code, please reach out to us on [Discord](https://discord.com/invite/zerRaGK9EC).
+Thanks for your interest in contributing to **Gitingest** 🚀 Our goal is to keep the codebase friendly to first-time contributors.
+If you ever get stuck, reach out on [Discord](https://discord.com/invite/zerRaGK9EC).
+
+---
 
 ## How to Contribute (non-technical)
 
-- **Create an Issue**: If you find a bug or have an idea for a new feature, please [create an issue](https://github.com/cyclotruc/gitingest/issues/new) on GitHub. This will help us track and prioritize your request.
-- **Spread the Word**: If you like Gitingest, please share it with your friends, colleagues, and on social media. This will help us grow the community and make Gitingest even better.
-- **Use Gitingest**: The best feedback comes from real-world usage! If you encounter any issues or have ideas for improvement, please let us know by [creating an issue](https://github.com/cyclotruc/gitingest/issues/new) on GitHub or by reaching out to us on [Discord](https://discord.com/invite/zerRaGK9EC).
+- **Create an Issue** – found a bug or have a feature idea?
+  [Open an issue](https://github.com/cyclotruc/gitingest/issues/new).
+- **Spread the Word** – tweet, blog, or tell a friend.
+- **Use Gitingest** – real-world usage gives the best feedback. File issues or ping us on [Discord](https://discord.com/invite/zerRaGK9EC) with anything you notice.
+
+---
 
 ## How to submit a Pull Request
 
-1. Fork the repository.
+> **Prerequisites**: The project uses **Python 3.9+** and `pre-commit` for development.
+> If you plan to touch the frontend, you'll also need **Node ≥18** (for Tailwind).
 
-2. Clone the forked repository:
+1. **Fork** the repository.
+
+2. **Clone** your fork:
 
    ```bash
    git clone https://github.com/cyclotruc/gitingest.git
    cd gitingest
    ```
 
-   **Note**: To contribute, ensure you have **Python 3.9 or newer** installed, as some of the `pre-commit` hooks (e.g. `pyupgrade`) require Python 3.9+.
-
-3. Set up the development environment and install dependencies:
+3. **Set up the dev environment**:
 
    ```bash
    python -m venv .venv
    source .venv/bin/activate
-   pip install -r requirements-dev.txt
+   pip install -e ".[dev]"
    pre-commit install
    ```
 
-4. Create a new branch for your changes:
+4. **Create a branch** for your changes:
 
-    ```bash
-    git checkout -S -b your-branch
-    ```
+   ```bash
+   git checkout -b your-branch
+   ```
 
-5. Make your changes. Make sure to add corresponding tests for your changes.
+5. **Make your changes** (and add tests when relevant).
 
-6. Stage your changes:
+6. **Stage** the changes:
 
-    ```bash
-    git add .
-    ```
+   ```bash
+   git add .
+   ```
 
-7. Run the tests:
+7. **Run the backend test suite**:
 
    ```bash
    pytest
    ```
 
-8. Run the local web server
+8. *(Optional)* **Run `pre-commit` on all files** to check hooks without committing:
 
-   1. Navigate to src folder
+   ```bash
+   pre-commit run --all-files
+   ```
 
-        ``` bash
-        cd src
-        ```
+9. **If you edited templates or CSS** rebuild Tailwind:
 
-   2. Run the local web server:
+   ```bash
+   # one-time install
+   npm ci
 
-      ``` bash
-      uvicorn server.main:app
-      ```
+   # build once
+   npm run build:css
 
-   3. Open your browser and navigate to `http://localhost:8000` to see the app running.
+   # or watch & rebuild on every save
+   npm run dev:css
+   ```
 
-9. Confirm that everything is working as expected. If you encounter any issues, fix them and repeat steps 6 to 8.
+   *Skip this step if your PR only touches Python code.*
 
-10. Commit your changes (signed):
-
-    All commits to Gitingest must be [GPG-signed](https://docs.github.com/en/authentication/managing-commit-signature-verification) so that the project can verify the authorship of every contribution. You can either configure Git globally with:
+10. **Run the local server** to sanity-check:
 
     ```bash
-    git config --global commit.gpgSign true
+    cd src
+    uvicorn server.main:app
     ```
 
-    or pass the `-S` flag as shown below.
+    Open [http://localhost:8000](http://localhost:8000) to confirm everything works.
+
+11. **Commit** (signed):
 
     ```bash
     git commit -S -m "Your commit message"
     ```
 
-    If `pre-commit` raises any issues, fix them and repeat steps 6 to 9.
+    If *pre-commit* complains, fix the problems and repeat **6 – 10**.
 
-11. Push your changes:
+12. **Push** your branch:
 
     ```bash
     git push origin your-branch
     ```
 
-12. Open a pull request on GitHub. Make sure to include a detailed description of your changes.
+13. **Open a pull request** on GitHub with a clear description.
 
-13. Wait for the maintainers to review your pull request. If there are any issues, fix them and repeat steps 6 to 12.
+14. **Iterate** on any review feedback—update your branch and repeat **6 – 13** as needed.
 
-    *(Optional) Invite project maintainer to your branch for easier collaboration.*
+*(Optional) Invite a maintainer to your branch for easier collaboration.*
+
+---
+
+## CSS & build artefacts
+
+- **Do not commit `src/static/css/site.css`.** The CI pipeline runs `npm run build:css` during the container/image build, so the artefact is produced automatically.
+
+- When developing locally you may run the build yourself (see step 9) so you can preview the styles.

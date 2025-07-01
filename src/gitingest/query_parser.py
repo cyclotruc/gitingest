@@ -11,7 +11,7 @@ from urllib.parse import unquote, urlparse
 from gitingest.config import TMP_BASE_PATH
 from gitingest.schemas import IngestionQuery
 from gitingest.utils.exceptions import InvalidPatternError
-from gitingest.utils.git_utils import check_repo_exists, fetch_remote_branch_list
+from gitingest.utils.git_utils import check_repo_exists, fetch_remote_branches_or_tags
 from gitingest.utils.ignore_patterns import DEFAULT_IGNORE_PATTERNS
 from gitingest.utils.query_parser_utils import (
     KNOWN_GIT_HOSTS,
@@ -165,28 +165,58 @@ async def _parse_remote_repo(source: str, token: str | None = None) -> Ingestion
         return parsed
 
     # If this is an issues page or pull requests, return early without processing subpath
-    if remaining_parts and possible_type in ("issues", "pull"):
+    # TODO: Handle issues and pull requests
+    if remaining_parts and possible_type in {"issues", "pull"}:
+        msg = f"Warning: Issues and pull requests are not yet supported: {url}. Returning repository root."
+        warnings.warn(msg, RuntimeWarning, stacklevel=2)
         return parsed
 
-    parsed.type = possible_type
+    if possible_type not in {"tree", "blob"}:
+        # TODO: Handle other types
+        msg = f"Warning: Type '{possible_type}' is not yet supported: {url}. Returning repository root."
+        warnings.warn(msg, RuntimeWarning, stacklevel=2)
+        return parsed
 
-    # Commit or branch
-    commit_or_branch = remaining_parts[0]
-    if _is_valid_git_commit_hash(commit_or_branch):
-        parsed.commit = commit_or_branch
-        remaining_parts.pop(0)
-    else:
-        parsed.branch = await _configure_branch_and_subpath(remaining_parts, url)
+    parsed.type = possible_type  # 'tree' or 'blob'
 
-    # Subpath if anything left
-    if remaining_parts:
+    # Commit, branch, or tag
+    commit_or_branch_or_tag = remaining_parts[0]
+    if _is_valid_git_commit_hash(commit_or_branch_or_tag):  # Commit
+        parsed.commit = commit_or_branch_or_tag
+        remaining_parts.pop(0)  # Consume the commit hash
+    else:  # Branch or tag
+        # Try to resolve a tag
+        parsed.tag = await _configure_branch_or_tag(
+            remaining_parts,
+            url=url,
+            ref_type="tags",
+            token=token,
+        )
+
+        # If no tag found, try to resolve a branch
+        if not parsed.tag:
+            parsed.branch = await _configure_branch_or_tag(
+                remaining_parts,
+                url=url,
+                ref_type="branches",
+                token=token,
+            )
+
+    # Only configure subpath if we have identified a commit, branch, or tag.
+    if remaining_parts and (parsed.commit or parsed.branch or parsed.tag):
         parsed.subpath += "/".join(remaining_parts)
 
     return parsed
 
 
-async def _configure_branch_and_subpath(remaining_parts: list[str], url: str) -> str | None:
-    """Configure the branch and subpath based on the remaining parts of the URL.
+async def _configure_branch_or_tag(
+    remaining_parts: list[str],
+    *,
+    url: str,
+    ref_type: str,
+    token: str | None = None,
+) -> str | None:
+    """Configure the branch or tag based on the remaining parts of the URL.
 
     Parameters
     ----------
@@ -194,27 +224,49 @@ async def _configure_branch_and_subpath(remaining_parts: list[str], url: str) ->
         The remaining parts of the URL path.
     url : str
         The URL of the repository.
+    ref_type : str
+        The type of reference to configure. Can be "branches" or "tags".
+    token : str | None
+        GitHub personal access token (PAT) for accessing private repositories.
 
     Returns
     -------
     str | None
-        The branch name if found, otherwise ``None``.
+        The branch or tag name if found, otherwise ``None``.
+
+    Raises
+    ------
+    ValueError
+        If the ``ref_type`` parameter is not "branches" or "tags".
 
     """
+    if ref_type not in ("branches", "tags"):
+        msg = f"Invalid reference type: {ref_type}"
+        raise ValueError(msg)
+
+    _ref_type = "tags" if ref_type == "tags" else "branches"
+
     try:
-        # Fetch the list of branches from the remote repository
-        branches: list[str] = await fetch_remote_branch_list(url)
+        # Fetch the list of branches or tags from the remote repository
+        branches_or_tags: list[str] = await fetch_remote_branches_or_tags(url, ref_type=_ref_type, token=token)
     except RuntimeError as exc:
-        warnings.warn(f"Warning: Failed to fetch branch list: {exc}", RuntimeWarning, stacklevel=2)
-        return remaining_parts.pop(0)
+        # If remote discovery fails, we optimistically treat the first path segment as the branch/tag.
+        msg = f"Warning: Failed to fetch {_ref_type}: {exc}"
+        warnings.warn(msg, RuntimeWarning, stacklevel=2)
+        return remaining_parts.pop(0) if remaining_parts else None
 
-    branch = []
-    while remaining_parts:
-        branch.append(remaining_parts.pop(0))
-        branch_name = "/".join(branch)
-        if branch_name in branches:
-            return branch_name
+    # Iterate over the path components and try to find a matching branch/tag
+    candidate_parts: list[str] = []
 
+    for part in remaining_parts:
+        candidate_parts.append(part)
+        candidate_name = "/".join(candidate_parts)
+        if candidate_name in branches_or_tags:
+            # We found a match — now consume exactly the parts that form the branch/tag
+            del remaining_parts[: len(candidate_parts)]
+            return candidate_name
+
+    # No match found; leave remaining_parts intact
     return None
 
 
@@ -278,14 +330,7 @@ def _parse_local_dir_path(path_str: str) -> IngestionQuery:
     """
     path_obj = Path(path_str).resolve()
     slug = path_obj.name if path_str == "." else path_str.strip("/")
-    return IngestionQuery(
-        user_name=None,
-        repo_name=None,
-        url=None,
-        local_path=path_obj,
-        slug=slug,
-        id=str(uuid.uuid4()),
-    )
+    return IngestionQuery(local_path=path_obj, slug=slug, id=str(uuid.uuid4()))
 
 
 async def try_domains_for_user_and_repo(user_name: str, repo_name: str, token: str | None = None) -> str:

@@ -1,0 +1,15 @@
+{
+  "private": true,
+  "name": "gitingest-frontend",
+  "version": "0.0.0",
+  "scripts": {
+    "build:css": "tailwindcss -i ./src/static/css/tailwind.css -o ./src/static/css/site.css --minify",
+    "dev:css": "tailwindcss -i ./src/static/css/tailwind.css -o ./src/static/css/site.css --watch"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "simple-icons": "^15.4.0",
+    "tailwindcss": "^3.4.17"
+  }
+}

@@ -1,52 +1,39 @@
 name: OSSF Scorecard
 on:
-  # For Branch-Protection check. Only the default branch is supported. See
-  # https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection
   branch_protection_rule:
-  # To guarantee Maintained check is occasionally updated. See
-  # https://github.com/ossf/scorecard/blob/main/docs/checks.md#maintained
   schedule:
-    - cron: '33 11 * * 2'
+    - cron: '33 11 * * 2'  # Every Tuesday at 11:33 AM UTC
   push:
-    branches: [ "main" ]
+    branches: [ main ]
 
-# Declare default permissions as read only.
-permissions: read-all
+permissions: read-all  # Default for the whole workflow
+
+concurrency:            # (optional) avoid overlapping runs
+  group: scorecard-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   analysis:
     name: Scorecard analysis
     runs-on: ubuntu-latest
     permissions:
-      # Needed to upload the results to code-scanning dashboard.
-      security-events: write
-      # Needed to publish results and get a badge (see publish_results below).
-      id-token: write
+      security-events: write # upload SARIF to code-scanning
+      id-token: write # publish results for the badge
 
     steps:
-      - name: "Checkout code"
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         with:
           persist-credentials: false
 
-      - name: "Run analysis"
-        uses: ossf/scorecard-action@0864cf19026789058feabb7e87baa5f140aac736 # v2.3.1
+      - name: Run Scorecard
+        uses: ossf/scorecard-action@0864cf19026789058feabb7e87baa5f140aac736
         with:
           results_file: results.sarif
           results_format: sarif
+          publish_results: true  # enables the public badge
 
-          # Public repositories:
-          #   - Publish results to OpenSSF REST API for easy access by consumers
-          #   - Allows the repository to include the Scorecard badge.
-          #   - See https://github.com/ossf/scorecard-action#publishing-results.
-          publish_results: true
-
-      # Upload the results as artifacts (optional). Commenting out will disable uploads of run results in SARIF
-      # format to the repository Actions tab.
-
-      # Upload the results to GitHub's code scanning dashboard (optional).
-      # Commenting out will disable upload of results to your repo's Code Scanning dashboard
-      - name: "Upload to code-scanning"
+      - name: Upload to code-scanning
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: results.sarif
