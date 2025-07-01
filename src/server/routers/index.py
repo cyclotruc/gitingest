@@ -1,11 +1,10 @@
 """Module defining the FastAPI router for the home page of the application."""
 
-from fastapi import APIRouter, Depends, Request, Form, HTTPException, Body
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi import APIRouter, Depends, Request, Form, HTTPException
+from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from autotiktokenizer import AutoTikTokenizer
 import tiktoken
-from pydantic import BaseModel, Field
 from typing import Optional
 
 from gitingest.utils.compat_typing import Annotated
@@ -13,6 +12,7 @@ from server.models import QueryForm
 from server.query_processor import process_query
 from server.server_config import EXAMPLE_REPOS
 from server.server_utils import limiter
+from pydantic import BaseModel, Field
 
 router = APIRouter()
 
@@ -175,12 +175,35 @@ async def api_token_count(
 async def tokencount_ui(request: Request):
     return templates.TemplateResponse(
         "tokencount.jinja",
-        {"request": request, "supported_models": SUPPORTED_MODELS}
+        {"request": request, "supported_models": SUPPORTED_MODELS, "input_text": "", "model_id": "openai-community/gpt2", "result": None, "error": None}
     )
 
-@router.get("/api/tokencount", response_class=HTMLResponse)
-async def api_token_count_docs(request: Request):
+@router.post("/tokencount", response_class=HTMLResponse)
+async def tokencount_post(request: Request, input_text: str = Form(...), model_id: str = Form("openai-community/gpt2")):
+    error = None
+    result = None
+    if not input_text or not input_text.strip():
+        error = "Input text cannot be empty."
+    elif model_id not in SUPPORTED_MODELS.values():
+        error = f"Unsupported model ID. Must be one of: {', '.join(SUPPORTED_MODELS.values())}"
+    else:
+        try:
+            token_count = count_tokens(input_text, model_id)
+            result = {
+                "token_count": token_count,
+                "model_id": model_id,
+                "character_count": len(input_text)
+            }
+        except Exception as e:
+            error = str(e)
     return templates.TemplateResponse(
-        "tokencount_api.jinja",
-        {"request": request}
+        "tokencount.jinja",
+        {
+            "request": request,
+            "supported_models": SUPPORTED_MODELS,
+            "input_text": input_text,
+            "model_id": model_id,
+            "result": result,
+            "error": error
+        }
     )

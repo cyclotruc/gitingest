@@ -1,6 +1,6 @@
 """The dynamic router module defines handlers for dynamic path requests."""
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import HTMLResponse
 
 from gitingest.utils.compat_typing import Annotated
@@ -33,6 +33,8 @@ async def catch_all(request: Request, full_path: str) -> HTMLResponse:
         and other default parameters such as loading state and file size.
 
     """
+    if full_path.startswith("api/"):
+        raise HTTPException(status_code=405, detail="Method Not Allowed")
     return templates.TemplateResponse(
         "git.jinja",
         {

@@ -5,7 +5,7 @@ client = TestClient(app, base_url="http://localhost")
 
 
 def test_tokencount_valid():
-    response = client.post("/api/tokencount", json={"input_text": "Hello world!", "model_id": "openai-community/gpt2"}, headers={"host": "localhost"})
+    response = client.post("/tokencount", json={"input_text": "Hello world!", "model_id": "openai-community/gpt2"}, headers={"host": "localhost"})
     if response.status_code != 200:
         print("Response content:", response.content)
     assert response.status_code == 200
@@ -15,7 +15,7 @@ def test_tokencount_valid():
     assert data["token_count"] > 0
 
 def test_tokencount_missing_input():
-    response = client.post("/api/tokencount", json={"model_id": "openai-community/gpt2"}, headers={"host": "localhost"})
+    response = client.post("/tokencount", json={"model_id": "openai-community/gpt2"}, headers={"host": "localhost"})
     if response.status_code != 400:
         print("Response content:", response.content)
     assert response.status_code == 400

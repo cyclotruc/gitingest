@@ -15,6 +15,7 @@ dependencies = [
     "pathspec>=0.12.1",
     "typing_extensions>= 4.0.0; python_version < '3.10'",
     "uvicorn>=0.11.7",  # Minimum safe release (https://osv.dev/vulnerability/PYSEC-2020-150)
+    "autotiktokenizer=*",
 ]
 
 license = {file = "LICENSE"}
@@ -80,7 +81,7 @@ ignore = [  # https://docs.astral.sh/ruff/rules/...
     "BLE001", # blind-except, TODO: replace with specific exceptions
     "FAST003", # fast-api-unused-path-parameter, TODO: fix
 ]
-per-file-ignores = { "tests/**/*.py" = ["S101"] } # Skip the “assert used” warning
+per-file-ignores = { "tests/**/*.py" = ["S101"] } # Skip the "assert used" warning
 
 [tool.ruff.lint.pylint]
 max-returns = 10

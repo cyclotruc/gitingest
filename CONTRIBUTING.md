@@ -85,3 +85,7 @@ Thanks for your interest in contributing to Gitingest! 🚀 Gitingest aims to be
 13. Wait for the maintainers to review your pull request. If there are any issues, fix them and repeat steps 6 to 12.
 
     *(Optional) Invite project maintainer to your branch for easier collaboration.*
+
+## Dependency Management
+
+When you add a new import from an external package, make sure to add it to both `requirements.txt` and `pyproject.toml` (if applicable). This ensures all environments and CI/CD pipelines have the correct dependencies installed.
