@@ -41,6 +41,9 @@ class InvalidNotebookError(Exception):
 class InvalidGitHubTokenError(ValueError):
     """Exception raised when a GitHub Personal Access Token is malformed."""
 
-    def __init__(self, token: str) -> None:
-        msg = f"Invalid GitHub token format: {token!r}. To generate a token, see https://github.com/settings/tokens."
+    def __init__(self) -> None:
+        msg = (
+            "Invalid GitHub token format. To generate a token, go to "
+            "https://github.com/settings/tokens/new?description=gitingest&scopes=repo."
+        )
         super().__init__(msg)

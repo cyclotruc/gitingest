@@ -9,16 +9,21 @@ import re
 from typing import Final
 from urllib.parse import urlparse
 
+from starlette.status import (
+    HTTP_200_OK,
+    HTTP_301_MOVED_PERMANENTLY,
+    HTTP_302_FOUND,
+    HTTP_401_UNAUTHORIZED,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+)
+
 from gitingest.utils.exceptions import InvalidGitHubTokenError
 
 # GitHub Personal-Access tokens (classic + fine-grained).
 #   - ghp_ / gho_ / ghu_ / ghs_ / ghr_  → 36 alphanumerics
 #   - github_pat_                       → 22 alphanumerics + "_" + 59 alphanumerics
 _GITHUB_PAT_PATTERN: Final[str] = r"^(?:gh[pousr]_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9]{22}_[A-Za-z0-9]{59})$"
-
-_OK: Final[set[str]] = {"200", "301"}  # reachable / canonical redirect
-_MISSING: Final[set[str]] = {"404", "302"}  # not found / redirect
-_NEEDS_AUTH: Final[set[str]] = {"401", "403"}  # login or forbidden
 
 
 def is_github_host(url: str) -> bool:
@@ -109,6 +114,7 @@ async def check_repo_exists(url: str, token: str | None = None) -> bool:
         If the host returns an unrecognised status code.
 
     """
+    # TODO: use `requests` instead of `curl`
     cmd: list[str] = [
         "curl",
         "--silent",
@@ -139,14 +145,15 @@ async def check_repo_exists(url: str, token: str | None = None) -> bool:
     if proc.returncode != 0:
         return False
 
-    status = stdout.decode().strip()
-    if status in _OK:
+    status = int(stdout.decode().strip())
+    if status in {HTTP_200_OK, HTTP_301_MOVED_PERMANENTLY}:
         return True
-    if status in _MISSING:
+    # TODO: handle 302 redirects
+    if status in {HTTP_404_NOT_FOUND, HTTP_302_FOUND}:
         return False
-    if status in _NEEDS_AUTH:
+    if status in {HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN}:
         return False
-    msg = f"Unexpected HTTP status {status!r} for {url}"
+    msg = f"Unexpected HTTP status {status} for {url}"
     raise RuntimeError(msg)
 
 
@@ -294,4 +301,4 @@ def validate_github_token(token: str) -> None:
 
     """
     if not re.fullmatch(_GITHUB_PAT_PATTERN, token):
-        raise InvalidGitHubTokenError(token)
+        raise InvalidGitHubTokenError
