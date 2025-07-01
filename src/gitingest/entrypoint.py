@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 from gitingest.clone import clone_repo
-from gitingest.config import MAX_FILE_SIZE, TMP_BASE_PATH
+from gitingest.config import MAX_FILE_SIZE
 from gitingest.ingestion import ingest_query
 from gitingest.query_parser import IngestionQuery, parse_query
 from gitingest.utils.auth import resolve_token
@@ -91,9 +91,9 @@ async def ingest_async(
 
         return summary, tree, content
     finally:
-        # Clean up the temporary directory if it was created
+        # Clean up the temporary directory for the repository
         if repo_cloned:
-            shutil.rmtree(TMP_BASE_PATH, ignore_errors=True)
+            shutil.rmtree(query.local_path.parent)
 
 
 def ingest(
