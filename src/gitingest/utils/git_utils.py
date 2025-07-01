@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import os
 import re
 from typing import Final
 from urllib.parse import urlparse
@@ -116,7 +117,7 @@ async def check_repo_exists(url: str, token: str | None = None) -> bool:
         "--write-out",
         "%{http_code}",
         "-o",
-        "/dev/null",
+        os.devnull,
     ]
 
     if token and is_github_host(url):
