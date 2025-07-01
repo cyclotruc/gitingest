@@ -93,7 +93,6 @@ DEFAULT_IGNORE_PATTERNS: set[str] = {
     ".svn",
     ".hg",
     ".gitignore",
-    ".gitingestignore",  # Ignore rules specific to Gitingest
     ".gitattributes",
     ".gitmodules",
     # Images and media
@@ -155,7 +154,6 @@ DEFAULT_IGNORE_PATTERNS: set[str] = {
     ## Source maps
     "*.map",
     ## Terraform
-    ".terraform",
     "*.tfstate*",
     ## Dependencies in various languages
     "vendor/",
