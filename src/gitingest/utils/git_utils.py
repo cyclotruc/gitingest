@@ -74,7 +74,7 @@ async def ensure_git_installed() -> None:
     Raises
     ------
     RuntimeError
-        If Git is not installed or not accessible, or if enabling long paths fails.
+        If Git is not installed or not accessible.
         If checking the long path setting fails on Windows.
 
     """
