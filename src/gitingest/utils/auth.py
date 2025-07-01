@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import os
 
+from gitingest.utils.git_utils import validate_github_token
+
 
 def resolve_token(token: str | None) -> str | None:
     """Resolve the token to use for the query.
@@ -19,4 +21,7 @@ def resolve_token(token: str | None) -> str | None:
         The resolved token.
 
     """
-    return token or os.getenv("GITHUB_TOKEN")
+    token = token or os.getenv("GITHUB_TOKEN")
+    if token:
+        validate_github_token(token)
+    return token
