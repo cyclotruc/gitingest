@@ -184,12 +184,12 @@ gitingest https://github.com/user/repo -i "*.py" -s 51200 -o -
 ```
 
 **Key Parameters for AI Agents**:
-- `-o` / `--output`: Stream to STDOUT with `-` (default saves to `digest.txt`)
 - `-s` / `--max-size`: Maximum file size in bytes to process (default: no limit)
 - `-i` / `--include-pattern`: Include files matching Unix shell-style wildcards
 - `-e` / `--exclude-pattern`: Exclude files matching Unix shell-style wildcards
 - `-b` / `--branch`: Specify branch to analyze (defaults to repository's default branch)
 - `-t` / `--token`: GitHub personal access token for private repositories
+- `-o` / `--output`: Stream to STDOUT with `-` (default saves to `digest.txt`)
 
 ### 4.2 Python Package (Best for Code Integration)
 ```python
