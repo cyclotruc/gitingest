@@ -131,7 +131,6 @@ async def _async_main(
         If ``True``, also ingest files matched by ``.gitignore`` or ``.gitingestignore`` (default: ``False``).
     token : str | None
         GitHub personal access token (PAT) for accessing private repositories.
-        Can also be set via the ``GITHUB_TOKEN`` environment variable.
     output : str | None
         The path where the output file will be written (default: ``digest.txt`` in current directory).
         Use ``"-"`` to write to ``stdout``.

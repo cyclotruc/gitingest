@@ -107,17 +107,6 @@ def test_create_git_command(
     assert cmd[len(expected_prefix) :] == expected_suffix
 
 
-def test_create_git_command_invalid_token() -> None:
-    """Test that supplying an invalid token for a GitHub URL raises ``InvalidGitHubTokenError``."""
-    with pytest.raises(InvalidGitHubTokenError):
-        create_git_command(
-            ["git", "clone"],
-            "/some/path",
-            "https://github.com/owner/repo.git",
-            "invalid_token",
-        )
-
-
 @pytest.mark.parametrize(
     "token",
     [
@@ -149,19 +138,16 @@ def test_create_git_command_helper_calls(
     token: str | None,
     should_call: bool,
 ) -> None:
-    """Test that ``validate_github_token`` and ``create_git_auth_header`` are invoked only when appropriate."""
+    """Test that ``create_git_auth_header`` is invoked only when appropriate."""
     work_dir = tmp_path / "repo"
-    validate_mock = mocker.patch("gitingest.utils.git_utils.validate_github_token")
     header_mock = mocker.patch("gitingest.utils.git_utils.create_git_auth_header", return_value="HEADER")
 
     cmd = create_git_command(["git", "clone"], str(work_dir), url, token)
 
     if should_call:
-        validate_mock.assert_called_once_with(token)
         header_mock.assert_called_once_with(token, url=url)
         assert "HEADER" in cmd
     else:
-        validate_mock.assert_not_called()
         header_mock.assert_not_called()
         assert "HEADER" not in cmd
 

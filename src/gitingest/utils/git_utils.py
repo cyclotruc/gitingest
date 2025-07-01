@@ -5,11 +5,19 @@ from __future__ import annotations
 import asyncio
 import base64
 import re
+from typing import Final
 from urllib.parse import urlparse
 
 from gitingest.utils.exceptions import InvalidGitHubTokenError
 
-GITHUB_PAT_PATTERN = r"^(?:gh[pousr]_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9]{22}_[A-Za-z0-9]{59})$"
+# GitHub Personal-Access tokens (classic + fine-grained).
+#   - ghp_ / gho_ / ghu_ / ghs_ / ghr_  → 36 alphanumerics
+#   - github_pat_                       → 22 alphanumerics + "_" + 59 alphanumerics
+_GITHUB_PAT_PATTERN: Final[str] = r"^(?:gh[pousr]_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9]{22}_[A-Za-z0-9]{59})$"
+
+_OK: Final[set[str]] = {"200", "301"}  # reachable / canonical redirect
+_MISSING: Final[set[str]] = {"404", "302"}  # not found / redirect
+_NEEDS_AUTH: Final[set[str]] = {"401", "403"}  # login or forbidden
 
 
 def is_github_host(url: str) -> bool:
@@ -27,7 +35,7 @@ def is_github_host(url: str) -> bool:
 
     """
     hostname = urlparse(url).hostname or ""
-    return hostname == "github.com" or hostname.startswith("github.")
+    return hostname.startswith("github.")
 
 
 async def run_command(*args: str) -> tuple[bytes, bytes]:
@@ -57,8 +65,7 @@ async def run_command(*args: str) -> tuple[bytes, bytes]:
     )
     stdout, stderr = await proc.communicate()
     if proc.returncode != 0:
-        error_message = stderr.decode().strip()
-        msg = f"Command failed: {' '.join(args)}\nError: {error_message}"
+        msg = f"Command failed: {' '.join(args)}\nError: {stderr.decode().strip()}"
         raise RuntimeError(msg)
 
     return stdout, stderr
@@ -81,100 +88,45 @@ async def ensure_git_installed() -> None:
 
 
 async def check_repo_exists(url: str, token: str | None = None) -> bool:
-    """Check if a Git repository exists at the provided URL.
+    """Check whether a remote Git repository is reachable.
 
     Parameters
     ----------
     url : str
-        The URL of the Git repository to check.
+        URL of the Git repository to check.
     token : str | None
         GitHub personal access token (PAT) for accessing private repositories.
-        Can also be set via the ``GITHUB_TOKEN`` environment variable.
 
     Returns
     -------
     bool
-        True if the repository exists, False otherwise.
+        ``True`` if the repository exists, ``False`` otherwise.
 
     Raises
     ------
     RuntimeError
-        If the curl command returns an unexpected status code.
+        If the host returns an unrecognised status code.
 
     """
-    if token and is_github_host(url):
-        return await _check_github_repo_exists(url, token=token)
-
-    proc = await asyncio.create_subprocess_exec(
-        "curl",
-        "-I",
-        url,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    stdout, _ = await proc.communicate()
-
-    if proc.returncode != 0:
-        return False  # likely unreachable or private
-
-    response = stdout.decode()
-    status_line = response.splitlines()[0].strip()
-    parts = status_line.split(" ")
-
-    expected_path_length = 2
-    if len(parts) >= expected_path_length:
-        status = parts[1]
-        if status in ("200", "301"):
-            return True
-        if status in ("302", "404"):
-            return False
-    msg = f"Unexpected status line: {status_line}"
-    raise RuntimeError(msg)
-
-
-async def _check_github_repo_exists(url: str, token: str | None = None) -> bool:
-    """Return True iff the authenticated user can see ``url``.
-
-    Parameters
-    ----------
-    url : str
-        The URL of the GitHub repository to check.
-    token : str | None
-        GitHub personal access token (PAT) for accessing private repositories.
-        Can also be set via the ``GITHUB_TOKEN`` environment variable.
-
-    Returns
-    -------
-    bool
-        True if the repository exists, False otherwise.
-
-    Raises
-    ------
-    RuntimeError
-        If the repository is not found, if the provided URL is invalid, or if the token format is invalid.
-
-    """
-    host, owner, repo = _parse_github_url(url)
-
-    if host == "github.com":
-        api = f"https://api.github.com/repos/{owner}/{repo}"
-    else:  # GitHub Enterprise
-        api = f"https://{host}/api/v3/repos/{owner}/{repo}"
-
-    cmd = [
+    cmd: list[str] = [
         "curl",
         "--silent",
         "--location",
+        "--head",
         "--write-out",
         "%{http_code}",
         "-o",
         "/dev/null",
-        "-H",
-        "Accept: application/vnd.github+json",
     ]
-    if token:
-        cmd += ["-H", f"Authorization: Bearer {token}"]
-    cmd.append(api)
+
+    if token and is_github_host(url):
+        host, owner, repo = _parse_github_url(url)
+        # Public GitHub vs. GitHub Enterprise
+        base_api = "https://api.github.com" if host == "github.com" else f"https://{host}/api/v3"
+        url = f"{base_api}/repos/{owner}/{repo}"
+        cmd += ["-H", "Accept: application/vnd.github+json", "-H", f"Authorization: Bearer {token}"]
+
+    cmd.append(url)
 
     proc = await asyncio.create_subprocess_exec(
         *cmd,
@@ -182,16 +134,18 @@ async def _check_github_repo_exists(url: str, token: str | None = None) -> bool:
         stderr=asyncio.subprocess.PIPE,
     )
     stdout, _ = await proc.communicate()
-    status = stdout.decode()[-3:]  # just the %{http_code}
 
-    if status == "200":
-        return True
-    if status == "404":
+    if proc.returncode != 0:
         return False
-    if status in ("401", "403"):
-        msg = "Token invalid or lacks permissions"
-        raise RuntimeError(msg)
-    msg = f"GitHub API returned unexpected HTTP {status}"
+
+    status = stdout.decode().strip()
+    if status in _OK:
+        return True
+    if status in _MISSING:
+        return False
+    if status in _NEEDS_AUTH:
+        return False
+    msg = f"Unexpected HTTP status {status!r} for {url}"
     raise RuntimeError(msg)
 
 
@@ -214,7 +168,6 @@ def _parse_github_url(url: str) -> tuple[str, str, str]:
         If the URL is not a valid GitHub repository URL.
 
     """
-    expected_path_length = 2
     parsed = urlparse(url)
     if parsed.scheme not in {"http", "https"}:
         msg = f"URL must start with http:// or https://: {url!r}"
@@ -225,6 +178,7 @@ def _parse_github_url(url: str) -> tuple[str, str, str]:
         raise ValueError(msg)
 
     parts = parsed.path.strip("/").removesuffix(".git").split("/")
+    expected_path_length = 2
     if len(parts) != expected_path_length:
         msg = f"Path must look like /<owner>/<repo>: {parsed.path!r}"
         raise ValueError(msg)
@@ -242,7 +196,6 @@ async def fetch_remote_branch_list(url: str, token: str | None = None) -> list[s
         The URL of the Git repository to fetch branches from.
     token : str | None
         GitHub personal access token (PAT) for accessing private repositories.
-        Can also be set via the ``GITHUB_TOKEN`` environment variable.
 
     Returns
     -------
@@ -250,21 +203,20 @@ async def fetch_remote_branch_list(url: str, token: str | None = None) -> list[s
         A list of branch names available in the remote repository.
 
     """
-    fetch_branches_command = ["git"]
+    cmd = ["git"]
 
     # Add authentication if needed
     if token and is_github_host(url):
-        fetch_branches_command += ["-c", create_git_auth_header(token, url=url)]
+        cmd += ["-c", create_git_auth_header(token, url=url)]
 
-    fetch_branches_command += ["ls-remote", "--heads", url]
+    cmd += ["ls-remote", "--heads", url]
 
     await ensure_git_installed()
-    stdout, _ = await run_command(*fetch_branches_command)
-    stdout_decoded = stdout.decode()
+    stdout, _ = await run_command(*cmd)
 
     return [
         line.split("refs/heads/", 1)[1]
-        for line in stdout_decoded.splitlines()
+        for line in stdout.decode().splitlines()
         if line.strip() and "refs/heads/" in line
     ]
 
@@ -291,7 +243,6 @@ def create_git_command(base_cmd: list[str], local_path: str, url: str, token: st
     """
     cmd = [*base_cmd, "-C", local_path]
     if token and is_github_host(url):
-        validate_github_token(token)
         cmd += ["-c", create_git_auth_header(token, url=url)]
     return cmd
 
@@ -312,8 +263,17 @@ def create_git_auth_header(token: str, url: str = "https://github.com") -> str:
     str
         The git config command for setting the authentication header.
 
+    Raises
+    ------
+    ValueError
+        If the URL is not a valid GitHub repository URL.
+
     """
     hostname = urlparse(url).hostname
+    if not hostname:
+        msg = f"Invalid GitHub URL: {url!r}"
+        raise ValueError(msg)
+
     basic = base64.b64encode(f"x-oauth-basic:{token}".encode()).decode()
     return f"http.https://{hostname}/.extraheader=Authorization: Basic {basic}"
 
@@ -332,5 +292,5 @@ def validate_github_token(token: str) -> None:
         If the token format is invalid.
 
     """
-    if not re.match(GITHUB_PAT_PATTERN, token):
-        raise InvalidGitHubTokenError
+    if not re.fullmatch(_GITHUB_PAT_PATTERN, token):
+        raise InvalidGitHubTokenError(token)

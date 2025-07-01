@@ -13,7 +13,6 @@ from gitingest.utils.git_utils import (
     ensure_git_installed,
     is_github_host,
     run_command,
-    validate_github_token,
 )
 from gitingest.utils.os_utils import ensure_directory
 from gitingest.utils.timeout_wrapper import async_timeout
@@ -23,7 +22,7 @@ if TYPE_CHECKING:
 
 
 @async_timeout(DEFAULT_TIMEOUT)
-async def clone_repo(config: CloneConfig, token: str | None = None) -> None:
+async def clone_repo(config: CloneConfig, *, token: str | None = None) -> None:
     """Clone a repository to a local path based on the provided configuration.
 
     This function handles the process of cloning a Git repository to the local file system.
@@ -36,7 +35,6 @@ async def clone_repo(config: CloneConfig, token: str | None = None) -> None:
         The configuration for cloning the repository.
     token : str | None
         GitHub personal access token (PAT) for accessing private repositories.
-        Can also be set via the ``GITHUB_TOKEN`` environment variable.
 
     Raises
     ------
@@ -50,10 +48,6 @@ async def clone_repo(config: CloneConfig, token: str | None = None) -> None:
     commit: str | None = config.commit
     branch: str | None = config.branch
     partial_clone: bool = config.subpath != "/"
-
-    # Validate token if provided
-    if token and is_github_host(url):
-        validate_github_token(token)
 
     # Create parent directory if it doesn't exist
     await ensure_directory(Path(local_path).parent)

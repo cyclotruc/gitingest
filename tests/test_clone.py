@@ -89,9 +89,9 @@ async def test_clone_nonexistent_repository(repo_exists_true: AsyncMock) -> None
 @pytest.mark.parametrize(
     ("mock_stdout", "return_code", "expected"),
     [
-        (b"HTTP/1.1 200 OK\n", 0, True),  # Existing repo
-        (b"HTTP/1.1 404 Not Found\n", 0, False),  # Non-existing repo
-        (b"HTTP/1.1 200 OK\n", 1, False),  # Failed request
+        (b"200\n", 0, True),  # Existing repo
+        (b"404\n", 0, False),  # Non-existing repo
+        (b"200\n", 1, False),  # Failed request
     ],
 )
 async def test_check_repo_exists(
@@ -209,7 +209,7 @@ async def test_check_repo_exists_with_redirect(mocker: MockerFixture) -> None:
     """
     mock_exec = mocker.patch("asyncio.create_subprocess_exec", new_callable=AsyncMock)
     mock_process = AsyncMock()
-    mock_process.communicate.return_value = (b"HTTP/1.1 302 Found\n", b"")
+    mock_process.communicate.return_value = (b"302\n", b"")
     mock_process.returncode = 0  # Simulate successful request
     mock_exec.return_value = mock_process
 
@@ -228,7 +228,7 @@ async def test_check_repo_exists_with_permanent_redirect(mocker: MockerFixture) 
     """
     mock_exec = mocker.patch("asyncio.create_subprocess_exec", new_callable=AsyncMock)
     mock_process = AsyncMock()
-    mock_process.communicate.return_value = (b"HTTP/1.1 301 Found\n", b"")
+    mock_process.communicate.return_value = (b"301\n", b"")
     mock_process.returncode = 0  # Simulate successful request
     mock_exec.return_value = mock_process
 

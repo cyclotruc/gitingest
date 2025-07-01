@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, cast
 from gitingest.clone import clone_repo
 from gitingest.ingestion import ingest_query
 from gitingest.query_parser import IngestionQuery, parse_query
+from gitingest.utils.git_utils import validate_github_token
 from server.server_config import (
     DEFAULT_FILE_SIZE_KB,
     EXAMPLE_REPOS,
@@ -75,6 +76,9 @@ async def process_query(
         msg = f"Invalid pattern type: {pattern_type}"
         raise ValueError(msg)
 
+    if token:
+        validate_github_token(token)
+
     template = "index.jinja" if is_index else "git.jinja"
     template_response = partial(templates.TemplateResponse, name=template)
     max_file_size = log_slider_to_size(slider_position)
@@ -124,9 +128,7 @@ async def process_query(
 
         context["error_message"] = f"Error: {exc}"
         if "405" in str(exc):
-            context["error_message"] = (
-                "Repository not found. Please make sure it is public (private repositories will be supported soon)"
-            )
+            context["error_message"] = "Repository not found. Please make sure it is public."
         return template_response(context=context)
 
     if len(content) > MAX_DISPLAY_SIZE:

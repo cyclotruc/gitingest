@@ -49,7 +49,6 @@ async def parse_query(
         Patterns to ignore. Can be a set of strings or a single string.
     token : str | None
         GitHub personal access token (PAT) for accessing private repositories.
-        Can also be set via the ``GITHUB_TOKEN`` environment variable.
 
     Returns
     -------
@@ -109,7 +108,6 @@ async def _parse_remote_repo(source: str, token: str | None = None) -> Ingestion
         The URL or domain-less slug to parse.
     token : str | None
         GitHub personal access token (PAT) for accessing private repositories.
-        Can also be set via the ``GITHUB_TOKEN`` environment variable.
 
     Returns
     -------
@@ -301,7 +299,6 @@ async def try_domains_for_user_and_repo(user_name: str, repo_name: str, token: s
         The name of the repository.
     token : str | None
         GitHub personal access token (PAT) for accessing private repositories.
-        Can also be set via the ``GITHUB_TOKEN`` environment variable.
 
     Returns
     -------
