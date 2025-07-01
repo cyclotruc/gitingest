@@ -176,7 +176,7 @@ gitingest https://github.com/user/private-repo -t $GITHUB_TOKEN -o -
 # Specific branch analysis (short flag)
 gitingest https://github.com/user/repo -b main -o -
 
-# Save to file (default: <repo_name>.txt in current directory)
+# Save to file (default: digest.txt in current directory)
 gitingest https://github.com/user/repo -o my_analysis.txt
 
 # Ultra-concise example for small files only
@@ -184,12 +184,12 @@ gitingest https://github.com/user/repo -i "*.py" -s 51200 -o -
 ```
 
 **Key Parameters for AI Agents**:
-- `-o` / `--output`: Stream to STDOUT with `-` (default saves to `<repo_name>.txt`)
 - `-s` / `--max-size`: Maximum file size in bytes to process (default: no limit)
 - `-i` / `--include-pattern`: Include files matching Unix shell-style wildcards
 - `-e` / `--exclude-pattern`: Exclude files matching Unix shell-style wildcards
 - `-b` / `--branch`: Specify branch to analyze (defaults to repository's default branch)
 - `-t` / `--token`: GitHub personal access token for private repositories
+- `-o` / `--output`: Stream to STDOUT with `-` (default saves to `digest.txt`)
 
 ### 4.2 Python Package (Best for Code Integration)
 ```python

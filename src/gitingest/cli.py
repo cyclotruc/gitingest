@@ -61,10 +61,40 @@ class _CLIArgs(TypedDict):
     "--output",
     "-o",
     default=None,
-    help="Write to PATH (or '-' for stdout, default: <repo>.txt).",
+    help="Output file path (default: digest.txt in current directory). Use '-' for stdout.",
 )
 def main(**cli_kwargs: Unpack[_CLIArgs]) -> None:
-    """Run the CLI entry point to analyze a repo / directory and dump its contents."""
+    """Run the CLI entry point to analyze a repo / directory and dump its contents.
+
+    Parameters
+    ----------
+    **cli_kwargs : Unpack[_CLIArgs]
+        A dictionary of keyword arguments forwarded to ``ingest_async``.
+
+    Notes
+    -----
+    See ``ingest_async`` for a detailed description of each argument.
+
+    Examples
+    --------
+    Basic usage:
+        $ gitingest
+        $ gitingest /path/to/repo
+        $ gitingest https://github.com/user/repo
+
+    Output to stdout:
+        $ gitingest -o -
+        $ gitingest https://github.com/user/repo --output -
+
+    With filtering:
+        $ gitingest -i "*.py" -e "*.log"
+        $ gitingest --include-pattern "*.js" --exclude-pattern "node_modules/*"
+
+    Private repositories:
+        $ gitingest https://github.com/user/private-repo -t ghp_token
+        $ GITHUB_TOKEN=ghp_token gitingest https://github.com/user/private-repo
+
+    """
     asyncio.run(_async_main(**cli_kwargs))
 
 
@@ -88,7 +118,7 @@ async def _async_main(
     Parameters
     ----------
     source : str
-        Directory path or Git repository URL.
+        A directory path or a Git repository URL.
     max_size : int
         Maximum file size in bytes to ingest (default: 10 MB).
     exclude_pattern : tuple[str, ...] | None
@@ -103,7 +133,7 @@ async def _async_main(
         GitHub personal access token (PAT) for accessing private repositories.
         Can also be set via the ``GITHUB_TOKEN`` environment variable.
     output : str | None
-        Destination file path. If ``None``, the output is written to ``<repo_name>.txt`` in the current directory.
+        The path where the output file will be written (default: ``digest.txt`` in current directory).
         Use ``"-"`` to write to ``stdout``.
 
     Raises
