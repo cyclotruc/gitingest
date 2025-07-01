@@ -78,17 +78,17 @@ def main(**cli_kwargs: Unpack[_CLIArgs]) -> None:
     Examples
     --------
     Basic usage:
-        $ gitingest .
+        $ gitingest
         $ gitingest /path/to/repo
         $ gitingest https://github.com/user/repo
 
     Output to stdout:
-        $ gitingest . -o -
+        $ gitingest -o -
         $ gitingest https://github.com/user/repo --output -
 
     With filtering:
-        $ gitingest . -i "*.py" -e "*.log"
-        $ gitingest . --include-pattern "*.js" --exclude-pattern "node_modules/*"
+        $ gitingest -i "*.py" -e "*.log"
+        $ gitingest --include-pattern "*.js" --exclude-pattern "node_modules/*"
 
     Private repositories:
         $ gitingest https://github.com/user/private-repo -t ghp_token
