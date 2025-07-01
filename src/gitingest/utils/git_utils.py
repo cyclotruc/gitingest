@@ -102,7 +102,6 @@ async def check_repo_exists(url: str, token: str | None = None) -> bool:
         If the curl command returns an unexpected status code.
 
     """
-    expected_path_length = 2
     if token and is_github_host(url):
         return await _check_github_repo_exists(url, token=token)
 
@@ -121,11 +120,13 @@ async def check_repo_exists(url: str, token: str | None = None) -> bool:
     response = stdout.decode()
     status_line = response.splitlines()[0].strip()
     parts = status_line.split(" ")
+
+    expected_path_length = 2
     if len(parts) >= expected_path_length:
-        status_code_str = parts[1]
-        if status_code_str in ("200", "301"):
+        status = parts[1]
+        if status in ("200", "301"):
             return True
-        if status_code_str in ("302", "404"):
+        if status in ("302", "404"):
             return False
     msg = f"Unexpected status line: {status_line}"
     raise RuntimeError(msg)
