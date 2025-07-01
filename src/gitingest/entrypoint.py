@@ -93,7 +93,7 @@ async def ingest_async(
     finally:
         # Clean up the temporary directory for the repository
         if repo_cloned:
-            shutil.rmtree(query.local_path)
+            shutil.rmtree(query.local_path.parent)
 
 
 def ingest(
