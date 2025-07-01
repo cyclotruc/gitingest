@@ -313,7 +313,7 @@ async def try_domains_for_user_and_repo(user_name: str, repo_name: str, token: s
     """
     for domain in KNOWN_GIT_HOSTS:
         candidate = f"https://{domain}/{user_name}/{repo_name}"
-        if await check_repo_exists(candidate, token=token if domain == "github.com" else None):
+        if await check_repo_exists(candidate, token=token if domain.startswith("github.") else None):
             return domain
 
     msg = f"Could not find a valid repository host for '{user_name}/{repo_name}'."

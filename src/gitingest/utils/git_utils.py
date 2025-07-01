@@ -124,7 +124,7 @@ async def check_repo_exists(url: str, token: str | None = None) -> bool:
         # Public GitHub vs. GitHub Enterprise
         base_api = "https://api.github.com" if host == "github.com" else f"https://{host}/api/v3"
         url = f"{base_api}/repos/{owner}/{repo}"
-        cmd += ["-H", "Accept: application/vnd.github+json", "-H", f"Authorization: Bearer {token}"]
+        cmd += [f"Authorization: Bearer {token}"]
 
     cmd.append(url)
 
