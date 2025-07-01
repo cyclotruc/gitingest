@@ -147,38 +147,69 @@
                         </div>
                         <!-- Help section -->
                         <div class="mt-2 flex items-center space-x-1">
-                            <a href="https://github.com/settings/tokens/new?description=gitingest&scopes=repo"
-                               target="_blank"
-                               rel="noopener noreferrer"
-                               class="text-sm text-gray-600 hover:text-gray-800 flex items-center space-x-1 underline">
-                                <span>Get your token</span>
-                                <svg class="w-3 h-3"
-                                     fill="none"
-                                     stroke="currentColor"
-                                     viewBox="0 0 24 24"
-                                     xmlns="http://www.w3.org/2000/svg">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14">
-                                    </path>
-                                </svg>
-                            </a>
+                            <!-- Help button to open modal -->
+                            <div class="mt-1">
+                                <button type="button"
+                                        class="text-sm text-blue-500 underline hover:text-blue-700"
+                                        onclick="document.getElementById('pat-modal').classList.remove('hidden')">
+                                    ❓ How is my token used?
+                                </button>
+                                <a href="https://github.com/settings/tokens/new?description=gitingest&scopes=repo"
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   class="text-sm text-gray-600 hover:text-gray-800 flex items-center space-x-1 underline">
+                                    <span>Get your token</span>
+                                    <svg class="w-3 h-3"
+                                         fill="none"
+                                         stroke="currentColor"
+                                         viewBox="0 0 24 24"
+                                         xmlns="http://www.w3.org/2000/svg">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14">
+                                        </path>
+                                    </svg>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </form>
-        <!-- Example repositories section -->
-        {% if show_examples %}
-            <div class="mt-4">
-                <p class="opacity-70 mb-1">Try these example repositories:</p>
-                <div class="flex flex-wrap gap-2">
-                    {% for example in examples %}
-                        <button onclick="submitExample('{{ example.url }}')"
-                                class="px-4 py-1 bg-[#EBDBB7] hover:bg-[#FFC480] text-gray-900 rounded transition-colors duration-200 border-[3px] border-gray-900 relative hover:-translate-y-px hover:-translate-x-px">
-                            {{ example.name }}
-                        </button>
-                    {% endfor %}
+                <!-- Modal for PAT Help -->
+                <div id="pat-modal"
+                     class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div class="bg-white rounded-lg p-6 w-11/12 max-w-md shadow-lg">
+                        <h2 class="text-lg font-semibold mb-4">🔐 How We Handle Your GitHub Token</h2>
+                        <ul class="list-disc list-inside text-gray-700 text-sm mb-4">
+                            <li>
+                                <strong>Your Personal Access Token is never stored on our servers or in any database, ensuring complete token privacy.</strong>
+                            </li>
+                            <li>
+                                <strong>It is used only once during the cloning process and is immediately discarded after use.</strong>
+                            </li>
+                            <li>
+                                <strong>The token is not cached or saved in the browser's local storage or memory, preventing any unintended exposure on the client side.</strong>
+                            </li>
+                        </ul>
+                        <div class="text-right">
+                            <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                                    onclick="document.getElementById('pat-modal').classList.add('hidden')">
+                                Got it
+                            </button>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        {% endif %}
+            </form>
+            <!-- Example repositories section -->
+            {% if show_examples %}
+                <div class="mt-4">
+                    <p class="opacity-70 mb-1">Try these example repositories:</p>
+                    <div class="flex flex-wrap gap-2">
+                        {% for example in examples %}
+                            <button onclick="submitExample('{{ example.url }}')"
+                                    class="px-4 py-1 bg-[#EBDBB7] hover:bg-[#FFC480] text-gray-900 rounded transition-colors duration-200 border-[3px] border-gray-900 relative hover:-translate-y-px hover:-translate-x-px">
+                                {{ example.name }}
+                            </button>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
     </div>
-</div>

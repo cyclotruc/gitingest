@@ -72,7 +72,6 @@ async def head_root() -> HTMLResponse:
     return HTMLResponse(content=None, headers={"content-type": "text/html; charset=utf-8"})
 
 
-@app.get("/api/", response_class=HTMLResponse)
 @app.get("/api", response_class=HTMLResponse)
 async def api_docs(request: Request) -> HTMLResponse:
     """
