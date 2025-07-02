@@ -102,10 +102,7 @@ async def process_query(
             print(f"{Colors.BROWN}WARN{Colors.END}: {Colors.RED}<-  {Colors.END}", end="")
             print(f"{Colors.RED}{exc}{Colors.END}")
 
-        return IngestErrorResponse(
-            error="Repository not found. Please make sure it is public." if "405" in str(exc) else "",
-            repo_url=short_repo_url,
-        )
+        return IngestErrorResponse(error=str(exc), repo_url=short_repo_url)
 
     if len(content) > MAX_DISPLAY_SIZE:
         content = (

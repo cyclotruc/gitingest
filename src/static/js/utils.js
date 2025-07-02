@@ -102,10 +102,7 @@ function handleSubmit(event, showLoading = false) {
     }
 
     // Submit the form to /api/ingest
-    fetch('/api/ingest', {
-        method: 'POST',
-        body: formData
-    })
+    fetch('/api/ingest', {method: 'POST', body: formData})
         .then(response => response.json())
         .then(data => {
             // Hide loading overlay
@@ -309,9 +306,6 @@ function formatSize(sizeInKB) {
     }
     return Math.round(sizeInKB) + 'kB';
 }
-
-// Initialize slider on page load
-document.addEventListener('DOMContentLoaded', initializeSlider);
 
 // Make sure these are available globally
 window.copyText = copyText;

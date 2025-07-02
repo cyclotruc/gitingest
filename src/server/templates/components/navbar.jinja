@@ -1,26 +1,3 @@
-<script>
-    function formatStarCount(count) {
-        if (count >= 1000) {
-            return (count / 1000).toFixed(1) + 'k';
-        }
-        return count.toString();
-    }
-
-    async function fetchGitHubStars() {
-        try {
-            const response = await fetch('https://api.github.com/repos/cyclotruc/gitingest');
-            const data = await response.json();
-            const starCount = data.stargazers_count;
-
-            document.getElementById('github-stars').textContent = formatStarCount(starCount);
-        } catch (error) {
-            console.error('Error fetching GitHub stars:', error);
-            document.getElementById('github-stars').parentElement.style.display = 'none';
-        }
-    }
-
-    fetchGitHubStars();
-</script>
 <header class="sticky top-0 bg-[#FFFDF8] border-b-[3px] border-gray-900 z-50">
     <div class="max-w-4xl mx-auto px-4">
         <div class="flex justify-between items-center h-16">
@@ -36,7 +13,7 @@
             <nav class="flex items-center space-x-6">
                 <a href="/llm.txt"
                    class="text-gray-900 hover:-translate-y-0.5 transition-transform flex items-center">
-                    {% include "components/badge_new.jinja" %}
+                    <span class="badge-new">NEW</span>
                     /llm.txt
                 </a>
                 <div class="flex items-center gap-2">
@@ -66,3 +43,5 @@
         </div>
     </div>
 </header>
+{# Load GitHub stars script #}
+<script defer src="/static/js/navbar.js"></script>

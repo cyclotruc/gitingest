@@ -1,12 +1,27 @@
 version: 2
 updates:
+  # ─── Python (pip) ─────────────────────────────
   - package-ecosystem: "pip"
     directory: "/"
-    schedule:
-      interval: "daily"
-      time: "06:00"
-      timezone: "UTC"
-    open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "pip"
+    schedule: { interval: "weekly" }
+    labels: [ "dependencies", "pip" ]
+    groups: # Group patches & minors from dev-only tools
+      dev-py:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+
+  # ─── Node (npm) ───────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule: { interval: "weekly" }
+    labels: [ "dependencies", "npm" ]
+    cooldown:  # wait before opening PRs
+      semver-major-days: 30
+      semver-minor-days: 7
+      semver-patch-days: 3
+
+  # ─── GitHub Actions ───────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule: { interval: "weekly" }
+    labels: [ "dependencies", "gh-actions" ]

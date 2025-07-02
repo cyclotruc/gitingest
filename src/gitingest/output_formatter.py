@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 import tiktoken
 
 from gitingest.schemas import FileSystemNode, FileSystemNodeType
+from gitingest.utils.compat_func import readlink
 
 if TYPE_CHECKING:
     from gitingest.query_parser import IngestionQuery
@@ -157,7 +158,7 @@ def _create_tree_structure(
     if node.type == FileSystemNodeType.DIRECTORY:
         display_name += "/"
     elif node.type == FileSystemNodeType.SYMLINK:
-        display_name += " -> " + node.path.readlink().name
+        display_name += " -> " + readlink(node.path).name
 
     tree_str += f"{prefix}{current_prefix}{display_name}\n"
 

@@ -18,7 +18,10 @@ dependencies = [
 ]
 
 license = {file = "LICENSE"}
-authors = [{name = "Romain Courtois", email = "romain@coderamp.io"}]
+authors = [
+    { name = "Romain Courtois", email = "romain@coderamp.io" },
+    { name = "Filip Christiansen"},
+]
 classifiers=[
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -29,6 +32,15 @@ classifiers=[
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+]
+
+[project.optional-dependencies]
+dev = [
+    "eval-type-backport",
+    "pre-commit",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-mock",
 ]
 
 [project.scripts]
@@ -45,6 +57,7 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools]
 packages = {find = {where = ["src"]}}
 include-package-data = true
+package-data = {"gitingest" = ["static/css/*.css"]}
 
 # Linting configuration
 [tool.pylint.format]
@@ -80,7 +93,7 @@ ignore = [  # https://docs.astral.sh/ruff/rules/...
     "BLE001", # blind-except, TODO: replace with specific exceptions
     "FAST003", # fast-api-unused-path-parameter, TODO: fix
 ]
-per-file-ignores = { "tests/**/*.py" = ["S101"] } # Skip the “assert used” warning
+per-file-ignores = { "tests/**/*.py" = ["S101"] } # Skip the "assert used" warning
 
 [tool.ruff.lint.pylint]
 max-returns = 10

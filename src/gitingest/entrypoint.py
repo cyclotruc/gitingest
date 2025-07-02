@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import asyncio
-import inspect
 import shutil
 import sys
+import warnings
+from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import AsyncGenerator
 
 from gitingest.clone import clone_repo
 from gitingest.config import MAX_FILE_SIZE
@@ -19,10 +21,11 @@ from gitingest.utils.ignore_patterns import load_ignore_patterns
 async def ingest_async(
     source: str,
     *,
-    max_file_size: int = MAX_FILE_SIZE,  # 10 MB
+    max_file_size: int = MAX_FILE_SIZE,
     include_patterns: str | set[str] | None = None,
     exclude_patterns: str | set[str] | None = None,
     branch: str | None = None,
+    tag: str | None = None,
     include_gitignored: bool = False,
     token: str | None = None,
     output: str | None = None,
@@ -45,6 +48,8 @@ async def ingest_async(
         Pattern or set of patterns specifying which files to exclude. If ``None``, no files are excluded.
     branch : str | None
         The branch to clone and ingest (default: the default branch).
+    tag : str | None
+        The tag to clone and ingest. If ``None``, no tag is used.
     include_gitignored : bool
         If ``True``, include files ignored by ``.gitignore`` and ``.gitingestignore`` (default: ``False``).
     token : str | None
@@ -78,22 +83,13 @@ async def ingest_async(
     if not include_gitignored:
         _apply_gitignores(query)
 
-    if branch:
-        query.branch = branch
+    if query.url:
+        _override_branch_and_tag(query, branch=branch, tag=tag)
 
-    repo_cloned = False
-    try:
-        await _clone_if_remote(query, token=token)
-        repo_cloned = bool(query.url)
-
+    async with _clone_repo_if_remote(query, token=token):
         summary, tree, content = ingest_query(query)
         await _write_output(tree, content=content, target=output)
-
         return summary, tree, content
-    finally:
-        # Clean up the temporary directory for the repository
-        if repo_cloned:
-            shutil.rmtree(query.local_path.parent)
 
 
 def ingest(
@@ -103,6 +99,7 @@ def ingest(
     include_patterns: str | set[str] | None = None,
     exclude_patterns: str | set[str] | None = None,
     branch: str | None = None,
+    tag: str | None = None,
     include_gitignored: bool = False,
     token: str | None = None,
     output: str | None = None,
@@ -125,6 +122,8 @@ def ingest(
         Pattern or set of patterns specifying which files to exclude. If ``None``, no files are excluded.
     branch : str | None
         The branch to clone and ingest (default: the default branch).
+    tag : str | None
+        The tag to clone and ingest. If ``None``, no tag is used.
     include_gitignored : bool
         If ``True``, include files ignored by ``.gitignore`` and ``.gitingestignore`` (default: ``False``).
     token : str | None
@@ -155,11 +154,49 @@ def ingest(
             include_patterns=include_patterns,
             exclude_patterns=exclude_patterns,
             branch=branch,
+            tag=tag,
             include_gitignored=include_gitignored,
             token=token,
             output=output,
         ),
     )
+
+
+def _override_branch_and_tag(query: IngestionQuery, branch: str | None, tag: str | None) -> None:
+    """Compare the caller-supplied ``branch`` and ``tag`` with the ones already in ``query``.
+
+    If they differ, update ``query`` to the chosen values and issue a warning.
+    If both are specified, the tag wins over the branch.
+
+    Parameters
+    ----------
+    query : IngestionQuery
+        The query to update.
+    branch : str | None
+        The branch to use.
+    tag : str | None
+        The tag to use.
+
+    """
+    if tag and query.tag and tag != query.tag:
+        msg = f"Warning: The specified tag '{tag}' overrides the tag found in the URL '{query.tag}'."
+        warnings.warn(msg, RuntimeWarning, stacklevel=3)
+
+    query.tag = tag or query.tag
+
+    if branch and query.branch and branch != query.branch:
+        msg = f"Warning: The specified branch '{branch}' overrides the branch found in the URL '{query.branch}'."
+        warnings.warn(msg, RuntimeWarning, stacklevel=3)
+
+    query.branch = branch or query.branch
+
+    if tag and branch:
+        msg = "Warning: Both tag and branch are specified. The tag will be used."
+        warnings.warn(msg, RuntimeWarning, stacklevel=3)
+
+    # Tag wins over branch if both supplied
+    if query.tag:
+        query.branch = None
 
 
 def _apply_gitignores(query: IngestionQuery) -> None:
@@ -175,36 +212,30 @@ def _apply_gitignores(query: IngestionQuery) -> None:
         query.ignore_patterns.update(load_ignore_patterns(query.local_path, filename=fname))
 
 
-async def _clone_if_remote(query: IngestionQuery, token: str | None) -> None:
-    """Clone the repo if *query* points to a remote URL.
+@asynccontextmanager
+async def _clone_repo_if_remote(query: IngestionQuery, *, token: str | None) -> AsyncGenerator[None]:
+    """Async context-manager that clones ``query.url`` if present.
+
+    If ``query.url`` is set, the repo is cloned, control is yielded, and the temp directory is removed on exit.
+    If no URL is given, the function simply yields immediately.
 
     Parameters
     ----------
     query : IngestionQuery
-        The query to clone.
+        Parsed query describing the source to ingest.
     token : str | None
         GitHub personal access token (PAT) for accessing private repositories.
 
-    Raises
-    ------
-    TypeError
-        If ``clone_repo`` does not return a coroutine.
-
     """
-    if not query.url:  # local path ingestion
-        return
-
-    # let CLI arg override, else keep the parsed branch
-    clone_cfg = query.extract_clone_config()
-    clone_coroutine = clone_repo(clone_cfg, token=token)
-    if not inspect.iscoroutine(clone_coroutine):
-        msg = "clone_repo did not return a coroutine as expected."
-        raise TypeError(msg)
-
-    if asyncio.get_event_loop().is_running():
-        await clone_coroutine
-    else:  # running under sync context (unit-test, etc.)
-        asyncio.run(clone_coroutine)
+    if query.url:
+        clone_config = query.extract_clone_config()
+        await clone_repo(clone_config, token=token)
+        try:
+            yield
+        finally:
+            shutil.rmtree(query.local_path.parent)
+    else:
+        yield
 
 
 async def _write_output(tree: str, content: str, target: str | None) -> None:

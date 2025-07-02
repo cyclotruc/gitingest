@@ -170,6 +170,9 @@ cython_debug/
 # JavaScript tooling
 node_modules/
 
+# CSS
+src/static/css/site.css
+
 # Project specific
 history.txt
 cleanup.py

@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable
-from unittest.mock import AsyncMock
 
 import pytest
 
@@ -17,8 +16,6 @@ from gitingest.utils.ignore_patterns import DEFAULT_IGNORE_PATTERNS
 from tests.conftest import DEMO_URL
 
 if TYPE_CHECKING:
-    from pytest_mock import MockerFixture
-
     from gitingest.schemas.ingestion import IngestionQuery
 
 
@@ -377,43 +374,6 @@ async def test_parse_query_with_branch() -> None:
     assert query.branch == "2.2.x"
     assert query.commit is None
     assert query.type == "blob"
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize(
-    ("path", "expected_branch", "expected_subpath"),
-    [
-        ("/tree/main/src", "main", "/src"),
-        ("/tree/fix1", "fix1", "/"),
-        ("/tree/nonexistent-branch/src", "nonexistent-branch", "/src"),
-    ],
-)
-async def test_parse_repo_source_with_failed_git_command(
-    path: str,
-    expected_branch: str,
-    expected_subpath: str,
-    mocker: MockerFixture,
-) -> None:
-    """Test ``_parse_remote_repo`` when git fetch fails.
-
-    Given a URL referencing a branch, but Git fetching fails:
-    When ``_parse_remote_repo`` is called,
-    Then it should fall back to path components for branch identification.
-    """
-    url = DEMO_URL + path
-
-    mock_fetch_branches = mocker.patch("gitingest.utils.git_utils.fetch_remote_branch_list", new_callable=AsyncMock)
-    mock_fetch_branches.side_effect = Exception("Failed to fetch branch list")
-
-    with pytest.warns(
-        RuntimeWarning,
-        match="Warning: Failed to fetch branch list: Command failed: "
-        "git ls-remote --heads https://github.com/user/repo",
-    ):
-        query = await _parse_remote_repo(url)
-
-    assert query.branch == expected_branch
-    assert query.subpath == expected_subpath
 
 
 @pytest.mark.asyncio

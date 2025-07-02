@@ -1,39 +1,88 @@
-name: "Publish to PyPI"
+name: Publish to PyPI
 
 on:
   release:
-    types: [created]
-  workflow_dispatch:
+    types: [created] # Run when you click “Publish release”
+  workflow_dispatch: # ... or run it manually from the Actions tab
 
 permissions:
   contents: read
 
+# ── Build the Tailwind CSS bundle ───────────────────────────────
 jobs:
-  release-build:
+  frontend-build:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install deps + build Tailwind
+        run: |
+          npm ci
+          npm run build:css
+
+      - name: Upload built CSS
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-assets
+          path: src/static/css/site.css
+          if-no-files-found: error
+
+# ── Build wheel/sdist (needs CSS) and upload “dist/” ────────────
+  release-build:
+    needs: frontend-build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Grab site.css produced above
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-assets
+          path: src/static/css/
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - name: Build package
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install build backend
         run: |
-          pip install build
+          python -m pip install --upgrade pip
+          python -m pip install build twine
           python -m build
-      - uses: actions/upload-artifact@v4
+          twine check dist/*
+      - name: Upload dist artefact
+        uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/
 
+# ── Publish to PyPI (only if “dist/” succeeded) ─────────────────
   pypi-publish:
-    needs: [release-build]
+    needs: release-build
     runs-on: ubuntu-latest
-    environment: pypi
+    environment: pypi # Creates the “pypi” environment in repo-settings
+
     permissions:
-      id-token: write
+      id-token: write # OIDC token for trusted publishing
+
     steps:
       - uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist/
+
       - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          verbose: true

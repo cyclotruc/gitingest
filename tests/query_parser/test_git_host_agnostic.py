@@ -64,6 +64,7 @@ async def test_parse_query_without_host(
         "subpath": "/",
         "type": None,
         "branch": None,
+        "tag": None,
         "commit": None,
         "max_file_size": 50,
         "include_patterns": None,

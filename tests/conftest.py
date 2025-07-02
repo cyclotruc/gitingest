@@ -39,15 +39,12 @@ def sample_query() -> IngestionQuery:
     return IngestionQuery(
         user_name="test_user",
         repo_name="test_repo",
-        url=None,
-        subpath="/",
         local_path=Path("/tmp/test_repo").resolve(),
         slug="test_user/test_repo",
         id="id",
         branch="main",
         max_file_size=1_000_000,
         ignore_patterns={"*.pyc", "__pycache__", ".git"},
-        include_patterns=None,
     )
 
 
@@ -150,7 +147,7 @@ def stub_branches(mocker: MockerFixture) -> Callable[[list[str]], None]:
             return_value=("\n".join(f"refs/heads/{b}" for b in branches).encode() + b"\n", b""),
         )
         mocker.patch(
-            "gitingest.utils.git_utils.fetch_remote_branch_list",
+            "gitingest.utils.git_utils.fetch_remote_branches_or_tags",
             new_callable=AsyncMock,
             return_value=branches,
         )
