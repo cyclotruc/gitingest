@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
+from starlette.status import HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
 
 from gitingest.config import TMP_BASE_PATH
 
@@ -32,14 +33,17 @@ async def download_ingest(digest_id: str) -> FileResponse:
     directory = TMP_BASE_PATH / digest_id
 
     if not directory.is_dir():
-        raise HTTPException(status_code=404, detail=f"Digest {digest_id!r} not found")
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"Digest {digest_id!r} not found")
 
     try:
         first_txt_file = next(directory.glob("*.txt"))
     except StopIteration as exc:
-        raise HTTPException(status_code=404, detail=f"No .txt file found for digest {digest_id!r}") from exc
+        raise HTTPException(
+            status_code=HTTP_404_NOT_FOUND,
+            detail=f"No .txt file found for digest {digest_id!r}",
+        ) from exc
 
     try:
         return FileResponse(path=first_txt_file, media_type="text/plain", filename=first_txt_file.name)
     except PermissionError as exc:
-        raise HTTPException(status_code=403, detail=f"Permission denied for {first_txt_file}") from exc
+        raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail=f"Permission denied for {first_txt_file}") from exc
