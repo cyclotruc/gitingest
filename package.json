@@ -3,8 +3,8 @@
   "name": "gitingest-frontend",
   "version": "0.0.0",
   "scripts": {
-    "build:css": "tailwindcss -i ./src/static/css/tailwind.css -o ./src/static/css/site.css --minify",
-    "dev:css": "tailwindcss -i ./src/static/css/tailwind.css -o ./src/static/css/site.css --watch"
+    "build:css": "npx @tailwindcss/cli -i ./src/static/css/tailwind.css -o ./src/static/css/site.css --minify",
+    "dev:css": "npx @tailwindcss/cli -i ./src/static/css/tailwind.css -o ./src/static/css/site.css --watch"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.21",
