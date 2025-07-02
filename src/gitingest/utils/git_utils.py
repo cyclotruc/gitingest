@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import ctypes
 import os
 import re
 import sys
@@ -88,7 +89,6 @@ async def ensure_git_installed() -> None:
     ------
     RuntimeError
         If Git is not installed or not accessible.
-        If checking the long path setting fails on Windows.
 
     """
     try:
@@ -98,21 +98,20 @@ async def ensure_git_installed() -> None:
         raise RuntimeError(msg) from exc
     if sys.platform == "win32":
         try:
-            stdout, _ = await run_command("git", "config", "--system", "core.longpaths")
-            if stdout.decode().strip().lower() != "true":
-                print(
-                    f"{Colors.BROWN}WARN{Colors.END}: {Colors.RED}Git clone may fail on Windows "
-                    f"due to long file paths:{Colors.END}",
-                )
-                print(f"{Colors.RED}To avoid this issue, consider enabling long path support with:{Colors.END}")
-                print(f"{Colors.RED}    git config --system core.longpaths true{Colors.END}")
-                print(f"{Colors.RED}Note: This command may require administrator privileges.{Colors.END}")
-        except RuntimeError as exc:
-            msg = (
-                "Unable to verify or access Git long path configuration. "
-                "Run this application as Administrator or configure it manually."
-            )
-            raise RuntimeError(msg) from exc
+            if ctypes.windll.shell32.IsUserAnAdmin():
+                stdout, _ = await run_command("git", "config", "--system", "core.longpaths")
+                if stdout.decode().strip().lower() == "true":
+                    return
+        except RuntimeError:
+            # Ignore if checking 'core.longpaths' fails due to lack of administrator rights.
+            pass
+        print(
+            f"{Colors.BROWN}WARN{Colors.END}: {Colors.RED}Git clone may fail on Windows "
+            f"due to long file paths:{Colors.END}",
+        )
+        print(f"{Colors.RED}To avoid this issue, consider enabling long path support with:{Colors.END}")
+        print(f"{Colors.RED}    git config --system core.longpaths true{Colors.END}")
+        print(f"{Colors.RED}Note: This command may require administrator privileges.{Colors.END}")
 
 
 async def check_repo_exists(url: str, token: str | None = None) -> bool:
