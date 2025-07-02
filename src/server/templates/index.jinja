@@ -47,7 +47,7 @@
              id="error-message"
              data-message="{{ error_message }}">{{ error_message }}</div>
     {% endif %}
-    {% with is_index=true, show_examples=true %}
+    {% with show_examples=true %}
         {% include 'components/git_form.jinja' %}
     {% endwith %}
     <p class="text-gray-600 text-sm max-w-2xl mx-auto text-center mt-4">

@@ -6,14 +6,13 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from server.routers import download, dynamic, index
-from server.server_config import templates
+from server.routers import dynamic, index, ingest
 from server.server_utils import lifespan, limiter, rate_limit_exception_handler
 
 # Load environment variables from .env file
@@ -58,7 +57,7 @@ async def health_check() -> dict[str, str]:
     return {"status": "healthy"}
 
 
-@app.head("/")
+@app.head("/", include_in_schema=False)
 async def head_root() -> HTMLResponse:
     """Respond to HTTP HEAD requests for the root URL.
 
@@ -73,26 +72,7 @@ async def head_root() -> HTMLResponse:
     return HTMLResponse(content=None, headers={"content-type": "text/html; charset=utf-8"})
 
 
-@app.get("/api/", response_class=HTMLResponse)
-@app.get("/api", response_class=HTMLResponse)
-async def api_docs(request: Request) -> HTMLResponse:
-    """Render the API documentation page.
-
-    Parameters
-    ----------
-    request : Request
-        The incoming HTTP request.
-
-    Returns
-    -------
-    HTMLResponse
-        A rendered HTML page displaying API documentation.
-
-    """
-    return templates.TemplateResponse("api.jinja", {"request": request})
-
-
-@app.get("/robots.txt")
+@app.get("/robots.txt", include_in_schema=False)
 async def robots() -> FileResponse:
     """Serve the ``robots.txt`` file to guide search engine crawlers.
 
@@ -120,5 +100,5 @@ async def llm_txt() -> FileResponse:
 
 # Include routers for modular endpoints
 app.include_router(index)
-app.include_router(download)
+app.include_router(ingest)
 app.include_router(dynamic)
