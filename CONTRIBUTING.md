@@ -19,6 +19,8 @@ Thanks for your interest in contributing to Gitingest! 🚀 Gitingest aims to be
    cd gitingest
    ```
 
+   **Note**: To contribute, ensure you have **Python 3.9 or newer** installed, as some of the `pre-commit` hooks (e.g. `pyupgrade`) require Python 3.9+.
+
 3. Set up the development environment and install dependencies:
 
    ```bash
@@ -31,7 +33,7 @@ Thanks for your interest in contributing to Gitingest! 🚀 Gitingest aims to be
 4. Create a new branch for your changes:
 
     ```bash
-    git checkout -b your-branch
+    git checkout -S -b your-branch
     ```
 
 5. Make your changes. Make sure to add corresponding tests for your changes.
@@ -66,10 +68,18 @@ Thanks for your interest in contributing to Gitingest! 🚀 Gitingest aims to be
 
 9. Confirm that everything is working as expected. If you encounter any issues, fix them and repeat steps 6 to 8.
 
-10. Commit your changes:
+10. Commit your changes (signed):
+
+    All commits to Gitingest must be [GPG-signed](https://docs.github.com/en/authentication/managing-commit-signature-verification) so that the project can verify the authorship of every contribution. You can either configure Git globally with:
 
     ```bash
-    git commit -m "Your commit message"
+    git config --global commit.gpgSign true
+    ```
+
+    or pass the `-S` flag as shown below.
+
+    ```bash
+    git commit -S -m "Your commit message"
     ```
 
     If `pre-commit` raises any issues, fix them and repeat steps 6 to 9.
