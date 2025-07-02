@@ -59,13 +59,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
       - name: Install Node deps
         run: npm ci
 
       - name: Build CSS
-        run: npx tailwindcss -i ./src/static/css/tailwind.css -o ./src/static/css/site.css --minify
+        run: npm run build:css  # Creates src/static/css/site.css
 
       - name: Upload artefact
         uses: actions/upload-artifact@v4
