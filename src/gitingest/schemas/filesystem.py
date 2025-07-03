@@ -29,7 +29,6 @@ class FileSystemNodeType(Enum):
 class FileSystemStats:
     """Class for tracking statistics during file system traversal."""
 
-    visited: set[Path] = field(default_factory=set)
     total_files: int = 0
     total_size: int = 0
 
