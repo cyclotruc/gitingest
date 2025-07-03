@@ -49,6 +49,7 @@ async def clone_repo(config: CloneConfig, *, token: str | None = None) -> None:
     branch: str | None = config.branch
     tag: str | None = config.tag
     partial_clone: bool = config.subpath != "/"
+    include_submodules: bool = config.include_submodules
 
     # Create parent directory if it doesn't exist
     await ensure_directory(Path(local_path).parent)
@@ -63,7 +64,8 @@ async def clone_repo(config: CloneConfig, *, token: str | None = None) -> None:
         clone_cmd += ["-c", create_git_auth_header(token, url=url)]
 
     clone_cmd += ["clone", "--single-branch"]
-    # TODO: Re-enable --recurse-submodules when submodule support is needed
+    if include_submodules:
+        clone_cmd += ["--recurse-submodules"]
 
     if partial_clone:
         clone_cmd += ["--filter=blob:none", "--sparse"]
@@ -86,15 +88,36 @@ async def clone_repo(config: CloneConfig, *, token: str | None = None) -> None:
 
     # Checkout the subpath if it is a partial clone
     if partial_clone:
-        subpath = config.subpath.lstrip("/")
-        if config.blob:
-            # When ingesting from a file url (blob/branch/path/file.txt), we need to remove the file name.
-            subpath = str(Path(subpath).parent.as_posix())
-
-        checkout_cmd = create_git_command(["git"], local_path, url, token)
-        await run_command(*checkout_cmd, "sparse-checkout", "set", subpath)
+        await _checkout_partial_clone(config, token)
 
     # Checkout the commit if it is provided
     if commit:
         checkout_cmd = create_git_command(["git"], local_path, url, token)
         await run_command(*checkout_cmd, "checkout", commit)
+
+
+def _checkout_partial_clone(config: CloneConfig, token: str | None) -> None:
+    """Handle sparse-checkout for partial clones.
+
+    This helper function sets the sparse-checkout configuration for a partial clone,
+    optionally adjusting the subpath if ingesting from a file URL.
+
+    Parameters
+    ----------
+    config : CloneConfig
+        The configuration for cloning the repository, including subpath and blob flag.
+    token : str | None
+        GitHub personal access token (PAT) for accessing private repositories.
+        Can also be set via the ``GITHUB_TOKEN`` environment variable.
+
+    Returns
+    -------
+    None
+
+    """
+    subpath = config.subpath.lstrip("/")
+    if config.blob:
+        # When ingesting from a file url (blob/branch/path/file.txt), we need to remove the file name.
+        subpath = str(Path(subpath).parent.as_posix())
+    checkout_cmd = create_git_command(["git"], config.local_path, config.url, token)
+    return run_command(*checkout_cmd, "sparse-checkout", "set", subpath)

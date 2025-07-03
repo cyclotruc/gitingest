@@ -414,3 +414,25 @@ async def test_clone_with_commit_and_subpath(run_command_mock: AsyncMock) -> Non
     )
 
     assert run_command_mock.call_count == expected_call_count
+
+
+@pytest.mark.asyncio
+async def test_clone_with_include_submodules(run_command_mock: AsyncMock) -> None:
+    """Test cloning a repository with submodules included.
+
+    Given a valid URL and include_submodules=True:
+    When `clone_repo` is called,
+    Then the repository should be cloned with --recurse-submodules in the git command.
+    """
+    clone_config = CloneConfig(url=DEMO_URL, local_path=LOCAL_REPO_PATH, branch="main", include_submodules=True)
+
+    await clone_repo(clone_config)
+
+    # Check that --recurse-submodules is in the clone command
+    found = False
+    for call in run_command_mock.call_args_list:
+        args = call[0]
+        if "clone" in args and "--recurse-submodules" in args:
+            found = True
+            break
+    assert found, "--recurse-submodules not found in git clone command when include_submodules=True"

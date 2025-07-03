@@ -20,6 +20,7 @@ class _CLIArgs(TypedDict):
     include_pattern: tuple[str, ...]
     branch: str | None
     include_gitignored: bool
+    include_submodules: bool
     token: str | None
     output: str | None
 
@@ -46,6 +47,12 @@ class _CLIArgs(TypedDict):
     is_flag=True,
     default=False,
     help="Include files matched by .gitignore and .gitingestignore",
+)
+@click.option(
+    "--include-submodules",
+    is_flag=True,
+    help="Include repository's submodules in the analysis",
+    default=False,
 )
 @click.option(
     "--token",
@@ -106,6 +113,7 @@ async def _async_main(
     include_pattern: tuple[str, ...] | None = None,
     branch: str | None = None,
     include_gitignored: bool = False,
+    include_submodules: bool = False,
     token: str | None = None,
     output: str | None = None,
 ) -> None:
@@ -129,6 +137,9 @@ async def _async_main(
         Git branch to ingest. If ``None``, the repository's default branch is used.
     include_gitignored : bool
         If ``True``, also ingest files matched by ``.gitignore`` or ``.gitingestignore`` (default: ``False``).
+    include_submodules : bool
+        If ``True``, recursively include and analyze all Git submodules within the repository.
+        Set to ``False`` to ignore submodules during analysis (default is ``False``).
     token : str | None
         GitHub personal access token (PAT) for accessing private repositories.
         Can also be set via the ``GITHUB_TOKEN`` environment variable.
@@ -160,6 +171,7 @@ async def _async_main(
             include_patterns=include_patterns,
             exclude_patterns=exclude_patterns,
             branch=branch,
+            include_submodules=include_submodules,
             output=output_target,
             include_gitignored=include_gitignored,
             token=token,
