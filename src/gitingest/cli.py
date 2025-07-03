@@ -20,6 +20,7 @@ class _CLIArgs(TypedDict):
     include_pattern: tuple[str, ...]
     branch: str | None
     include_gitignored: bool
+    include_submodules: bool
     token: str | None
     output: str | None
 
@@ -46,6 +47,12 @@ class _CLIArgs(TypedDict):
     is_flag=True,
     default=False,
     help="Include files matched by .gitignore and .gitingestignore",
+)
+@click.option(
+    "--include-submodules",
+    is_flag=True,
+    help="Include repository's submodules in the analysis",
+    default=False,
 )
 @click.option(
     "--token",
@@ -94,6 +101,9 @@ def main(**cli_kwargs: Unpack[_CLIArgs]) -> None:
         $ gitingest https://github.com/user/private-repo -t ghp_token
         $ GITHUB_TOKEN=ghp_token gitingest https://github.com/user/private-repo
 
+    Include submodules:
+        $ gitingest https://github.com/user/repo --include-submodules
+
     """
     asyncio.run(_async_main(**cli_kwargs))
 
@@ -106,6 +116,7 @@ async def _async_main(
     include_pattern: tuple[str, ...] | None = None,
     branch: str | None = None,
     include_gitignored: bool = False,
+    include_submodules: bool = False,
     token: str | None = None,
     output: str | None = None,
 ) -> None:
@@ -129,6 +140,8 @@ async def _async_main(
         Git branch to ingest. If ``None``, the repository's default branch is used.
     include_gitignored : bool
         If ``True``, also ingest files matched by ``.gitignore`` or ``.gitingestignore`` (default: ``False``).
+    include_submodules : bool
+        If ``True``, recursively include all Git submodules within the repository (default: ``False``).
     token : str | None
         GitHub personal access token (PAT) for accessing private repositories.
         Can also be set via the ``GITHUB_TOKEN`` environment variable.
@@ -155,14 +168,15 @@ async def _async_main(
             click.echo(f"Analyzing source, output will be written to '{output_target}'...", err=True)
 
         summary, _, _ = await ingest_async(
-            source=source,
+            source,
             max_file_size=max_size,
             include_patterns=include_patterns,
             exclude_patterns=exclude_patterns,
             branch=branch,
-            output=output_target,
             include_gitignored=include_gitignored,
+            include_submodules=include_submodules,
             token=token,
+            output=output_target,
         )
     except Exception as exc:
         # Convert any exception into Click.Abort so that exit status is non-zero
