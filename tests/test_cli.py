@@ -27,19 +27,10 @@ from gitingest.config import MAX_FILE_SIZE, OUTPUT_FILE_NAME
                 "tests/",
                 "--include-pattern",
                 "src/",
-            ],
-            True,
-            id="custom-options",
-        ),
-        pytest.param(
-            [
-                "./",
-                "--output",
-                str(OUTPUT_FILE_NAME),
                 "--include-submodules",
             ],
             True,
-            id="with-include-submodules",
+            id="custom-options",
         ),
     ],
 )

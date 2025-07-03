@@ -54,7 +54,7 @@ async def ingest_async(
     include_gitignored : bool
         If ``True``, include files ignored by ``.gitignore`` and ``.gitingestignore`` (default: ``False``).
     include_submodules : bool
-        If ``True``, recursively include and analyze all Git submodules within the repository (default: ``False``).
+        If ``True``, recursively include all Git submodules within the repository (default: ``False``).
     token : str | None
         GitHub personal access token (PAT) for accessing private repositories.
         Can also be set via the ``GITHUB_TOKEN`` environment variable.
@@ -133,7 +133,7 @@ def ingest(
     include_gitignored : bool
         If ``True``, include files ignored by ``.gitignore`` and ``.gitingestignore`` (default: ``False``).
     include_submodules : bool
-        If ``True``, recursively include and analyze all Git submodules within the repository (default: ``False``).
+        If ``True``, recursively include all Git submodules within the repository (default: ``False``).
     token : str | None
         GitHub personal access token (PAT) for accessing private repositories.
         Can also be set via the ``GITHUB_TOKEN`` environment variable.

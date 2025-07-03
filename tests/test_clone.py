@@ -181,10 +181,10 @@ async def test_clone_default_shallow_clone(run_command_mock: AsyncMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_clone_commit_without_branch(run_command_mock: AsyncMock) -> None:
-    """Test cloning when a commit hash is provided but no branch is specified.
+async def test_clone_commit(run_command_mock: AsyncMock) -> None:
+    """Test cloning when a commit hash is provided.
 
-    Given a valid URL and a commit hash (but no branch):
+    Given a valid URL and a commit hash:
     When ``clone_repo`` is called,
     Then the repository should be cloned and checked out at that commit.
     """
@@ -420,19 +420,22 @@ async def test_clone_with_commit_and_subpath(run_command_mock: AsyncMock) -> Non
 async def test_clone_with_include_submodules(run_command_mock: AsyncMock) -> None:
     """Test cloning a repository with submodules included.
 
-    Given a valid URL and include_submodules=True:
-    When `clone_repo` is called,
-    Then the repository should be cloned with --recurse-submodules in the git command.
+    Given a valid URL and ``include_submodules=True``:
+    When ``clone_repo`` is called,
+    Then the repository should be cloned with ``--recurse-submodules`` in the git command.
     """
+    expected_call_count = 1  # No commit and no partial clone
     clone_config = CloneConfig(url=DEMO_URL, local_path=LOCAL_REPO_PATH, branch="main", include_submodules=True)
 
     await clone_repo(clone_config)
 
-    # Check that --recurse-submodules is in the clone command
-    found = False
-    for call in run_command_mock.call_args_list:
-        args = call[0]
-        if "clone" in args and "--recurse-submodules" in args:
-            found = True
-            break
-    assert found, "--recurse-submodules not found in git clone command when include_submodules=True"
+    assert run_command_mock.call_count == expected_call_count
+    run_command_mock.assert_called_once_with(
+        "git",
+        "clone",
+        "--single-branch",
+        "--recurse-submodules",
+        "--depth=1",
+        clone_config.url,
+        clone_config.local_path,
+    )

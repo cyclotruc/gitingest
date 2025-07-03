@@ -11,7 +11,7 @@ from gitingest.config import MAX_FILE_SIZE
 
 
 @dataclass
-class CloneConfig:  # pylint: disable=too-many-instance-attributes, too-many-arguments
+class CloneConfig:  # pylint: disable=too-many-instance-attributes
     """Configuration for cloning a Git repository.
 
     This class holds the necessary parameters for cloning a repository to a local path, including
@@ -82,7 +82,7 @@ class IngestionQuery(BaseModel):  # pylint: disable=too-many-instance-attributes
     include_patterns : set[str] | None
         The patterns to include.
     include_submodules : bool
-        The flag whether to include Git submodules in the analysis. (default: ``False``)
+        Whether to include all Git submodules within the repository. (default: ``False``)
 
     """
 
