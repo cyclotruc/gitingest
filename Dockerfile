@@ -8,9 +8,12 @@ RUN npm ci
 
 # Tailwind source --> final CSS
 #   (adjust the paths if you store Tailwind input elsewhere)
-COPY tailwind.config.js ./               # Tailwind config
-COPY src/static/css/ ./src/static/css/   # Tailwind input file(s)
-RUN npm run build:css                    # writes ./src/static/css/site.css
+# Tailwind config
+COPY tailwind.config.js ./
+# Tailwind input file(s)
+COPY src/static/css/ ./src/static/css/
+# writes ./src/static/css/site.css
+RUN npm run build:css
 
 
 # ---------- Stage 2:  Install Python dependencies -----------------
