@@ -190,8 +190,21 @@ function handleSubmit(event, showLoading = false) {
             // Set plain text content for summary, tree, and content
             document.getElementById('result-summary').value = data.summary || '';
             document.getElementById('directory-structure-content').value = data.tree || '';
-            document.getElementById('directory-structure-pre').textContent = data.tree || '';
             document.getElementById('result-content').value = data.content || '';
+
+            // Populate directory structure lines as clickable <pre> elements
+            const dirPre = document.getElementById('directory-structure-pre');
+            if (dirPre && data.tree) {
+                dirPre.innerHTML = '';
+                data.tree.split('\n').forEach(line => {
+                    const pre = document.createElement('pre');
+                    pre.setAttribute('name', 'tree-line');
+                    pre.className = 'cursor-pointer hover:line-through hover:text-gray-500';
+                    pre.textContent = line;
+                    pre.onclick = function() { toggleFile(this); };
+                    dirPre.appendChild(pre);
+                });
+            }
 
             // Scroll to results
             resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
