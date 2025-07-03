@@ -122,6 +122,9 @@ gitingest https://github.com/username/private-repo --token github_pat_...
 # Or set it as an environment variable
 export GITHUB_TOKEN=github_pat_...
 gitingest https://github.com/username/private-repo
+
+# Include repository submodules
+gitingest https://github.com/username/repo-with-submodules --include-submodules
 ```
 
 By default, files listed in `.gitignore` are skipped. Use `--include-gitignored` if you
@@ -163,6 +166,9 @@ summary, tree, content = ingest("https://github.com/username/private-repo", toke
 import os
 os.environ["GITHUB_TOKEN"] = "github_pat_..."
 summary, tree, content = ingest("https://github.com/username/private-repo")
+
+# Include repository submodules
+summary, tree, content = ingest("https://github.com/username/repo-with-submodules", include_submodules=True)
 ```
 
 By default, this won't write a file but can be enabled with the `output` argument.

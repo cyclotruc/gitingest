@@ -68,6 +68,7 @@ async def test_parse_query_without_host(
         "commit": None,
         "max_file_size": 50,
         "include_patterns": None,
+        "include_submodules": False,
     }
 
     assert actual == expected
