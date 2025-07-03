@@ -1,19 +1,19 @@
-{% from 'components/_macros.jinja' import icon_link %}
+{% from 'components/_macros.jinja' import footer_icon_link %}
 <footer class="w-full border-t-[3px] border-gray-900 mt-auto">
     <div class="max-w-4xl mx-auto px-4 py-4">
         <div class="grid grid-cols-2 items-center text-gray-900 text-sm">
             {# Left column — Chrome + PyPI #}
             <div class="flex items-center space-x-4">
-                {{ icon_link('https://chromewebstore.google.com/detail/adfjahbijlkjfoicpjkhjicpjpjfaood',
+                {{ footer_icon_link('https://chromewebstore.google.com/detail/adfjahbijlkjfoicpjkhjicpjpjfaood',
                                 'icons/chrome.svg',
                                 'Chrome Extension') }}
-                {{ icon_link('https://pypi.org/project/gitingest',
+                {{ footer_icon_link('https://pypi.org/project/gitingest',
                                 'icons/python.svg',
                                 'Python Package') }}
             </div>
             {# Right column - Discord #}
             <div class="flex justify-end">
-                {{ icon_link('https://discord.gg/zerRaGK9EC',
+                {{ footer_icon_link('https://discord.gg/zerRaGK9EC',
                                 'icons/discord.svg',
                                 'Discord') }}
             </div>
