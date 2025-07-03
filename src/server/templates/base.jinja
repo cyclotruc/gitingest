@@ -50,9 +50,8 @@
                 {% endif %}
             {% endblock %}
         </title>
-        {# Style sheets #}
-        <link rel="preload" href="/static/css/site.css" as="style">
-        {% block css %}<link rel="stylesheet" href="/static/css/site.css">{% endblock %}
+        <script src="https://cdn.tailwindcss.com"></script>
+        {% include 'components/tailwind_components.html' %}
     </head>
     <body class="bg-[#FFFDF8] min-h-screen flex flex-col">
         {% include 'components/navbar.jinja' %}

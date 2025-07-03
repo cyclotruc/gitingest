@@ -10,10 +10,7 @@ from gitingest.ingestion import ingest_query
 from gitingest.query_parser import IngestionQuery, parse_query
 from gitingest.utils.git_utils import validate_github_token
 from server.models import IngestErrorResponse, IngestResponse, IngestSuccessResponse
-from server.server_config import (
-    DEFAULT_MAX_FILE_SIZE_KB,
-    MAX_DISPLAY_SIZE,
-)
+from server.server_config import MAX_DISPLAY_SIZE
 from server.server_utils import Colors, log_slider_to_size
 
 
@@ -148,10 +145,11 @@ def _print_query(url: str, max_file_size: int, pattern_type: str, pattern: str) 
         The actual pattern string to include or exclude in the query.
 
     """
+    default_max_file_kb = 50
     print(f"{Colors.WHITE}{url:<20}{Colors.END}", end="")
-    if int(max_file_size / 1024) != DEFAULT_MAX_FILE_SIZE_KB:
+    if int(max_file_size / 1024) != default_max_file_kb:
         print(
-            f" | {Colors.YELLOW}Size: {int(max_file_size / 1024)}kb{Colors.END}",
+            f" | {Colors.YELLOW}Size: {int(max_file_size / 1024)}kB{Colors.END}",
             end="",
         )
     if pattern_type == "include" and pattern != "":

@@ -65,7 +65,7 @@ def ingest_query(query: IngestionQuery) -> tuple[str, str, str]:
             msg = f"File {file_node.name} has no content"
             raise ValueError(msg)
 
-        return format_node(file_node, query)
+        return format_node(file_node, query=query)
 
     root_node = FileSystemNode(
         name=path.name,
@@ -76,13 +76,9 @@ def ingest_query(query: IngestionQuery) -> tuple[str, str, str]:
 
     stats = FileSystemStats()
 
-    _process_node(
-        node=root_node,
-        query=query,
-        stats=stats,
-    )
+    _process_node(node=root_node, query=query, stats=stats)
 
-    return format_node(root_node, query)
+    return format_node(root_node, query=query)
 
 
 def _process_node(node: FileSystemNode, query: IngestionQuery, stats: FileSystemStats) -> None:
@@ -101,7 +97,7 @@ def _process_node(node: FileSystemNode, query: IngestionQuery, stats: FileSystem
         Statistics tracking object for the total file count and size.
 
     """
-    if limit_exceeded(stats, node.depth):
+    if limit_exceeded(stats, depth=node.depth):
         return
 
     for sub_path in node.path.iterdir():
@@ -114,6 +110,9 @@ def _process_node(node: FileSystemNode, query: IngestionQuery, stats: FileSystem
         if sub_path.is_symlink():
             _process_symlink(path=sub_path, parent_node=node, stats=stats, local_path=query.local_path)
         elif sub_path.is_file():
+            if sub_path.stat().st_size > query.max_file_size:
+                print(f"Skipping file {sub_path}: would exceed max file size limit")
+                continue
             _process_file(path=sub_path, parent_node=node, stats=stats, local_path=query.local_path)
         elif sub_path.is_dir():
             child_directory_node = FileSystemNode(
@@ -124,11 +123,7 @@ def _process_node(node: FileSystemNode, query: IngestionQuery, stats: FileSystem
                 depth=node.depth + 1,
             )
 
-            _process_node(
-                node=child_directory_node,
-                query=query,
-                stats=stats,
-            )
+            _process_node(node=child_directory_node, query=query, stats=stats)
 
             if not child_directory_node.children:
                 continue
@@ -190,6 +185,10 @@ def _process_file(path: Path, parent_node: FileSystemNode, stats: FileSystemStat
         The base path of the repository or directory being processed.
 
     """
+    if stats.total_files + 1 > MAX_FILES:
+        print(f"Maximum file limit ({MAX_FILES}) reached")
+        return
+
     file_size = path.stat().st_size
     if stats.total_size + file_size > MAX_TOTAL_SIZE_BYTES:
         print(f"Skipping file {path}: would exceed total size limit")
@@ -197,10 +196,6 @@ def _process_file(path: Path, parent_node: FileSystemNode, stats: FileSystemStat
 
     stats.total_files += 1
     stats.total_size += file_size
-
-    if stats.total_files > MAX_FILES:
-        print(f"Maximum file limit ({MAX_FILES}) reached")
-        return
 
     child = FileSystemNode(
         name=path.name,

@@ -1,60 +1,42 @@
-# ---------- Stage 1:  Build CSS with Node -------------------------
-FROM node:20-alpine AS css-builder
-WORKDIR /frontend
-
-# Copy only files that affect the CSS build to leverage Docker cache
-COPY package*.json ./
-RUN npm ci
-
-# Tailwind source --> final CSS
-#   (adjust the paths if you store Tailwind input elsewhere)
-COPY tailwind.config.js ./               # Tailwind config
-COPY src/static/css/ ./src/static/css/   # Tailwind input file(s)
-RUN npm run build:css                    # writes ./src/static/css/site.css
-
-
-# ---------- Stage 2:  Install Python dependencies -----------------
-FROM python:3.12-slim AS python-builder
+# Stage 1: Install Python dependencies
+FROM python:3.13-slim AS python-builder
 WORKDIR /build
 
-# System build tools first (so later layers are cached if unchanged)
+# System build tools
 RUN apt-get update \
     && apt-get install -y --no-install-recommends gcc python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Python dependencies
+# Metadata and code that setuptools needs
 COPY pyproject.toml .
+COPY src/ ./src/
+
+
+# Install runtime dependencies defined in pyproject.toml
 RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir --timeout 1000 "."
+    && pip install --no-cache-dir --timeout 1000 .
 
 
-# ---------- Stage 3:  Final runtime image -------------------------
-FROM python:3.12-slim
+# Stage 2: Runtime image
+FROM python:3.13-slim
 LABEL org.opencontainers.image.source="https://github.com/cyclotruc/gitingest"
 
 # Minimal runtime utilities
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git curl \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
-
+ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 WORKDIR /app
-
-# Create non-root user (uid 1000 == common default on Linux host)
 RUN useradd -m -u 1000 appuser
 
-# ── Copy Python site-packages & app code ───────────────────────────
-COPY --from=python-builder /usr/local/lib/python3.12/site-packages/ \
-                           /usr/local/lib/python3.12/site-packages/
-COPY src/ ./
+# Copy Python site-packages and code
+COPY --from=python-builder /usr/local/lib/python3.13/site-packages/ \
+                           /usr/local/lib/python3.13/site-packages/
+COPY src/ ./src/
 
-# ── Copy the freshly-built CSS ────────────────────────────────────
-COPY --from=css-builder /frontend/src/static/css/site.css \
-                        src/static/css/site.css
-
-# Fix permissions
+# Set permissions
 RUN chown -R appuser:appuser /app
 USER appuser
 

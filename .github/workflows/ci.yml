@@ -48,27 +48,3 @@ jobs:
     - name: Run pre-commit hooks
       uses: pre-commit/action@v3.0.1
       if: ${{ matrix.python-version == '3.13' && matrix.os == 'ubuntu-latest' }}
-
-  frontend:
-    needs: test # Builds Tailwind CSS only if tests pass
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install Node deps
-        run: npm ci
-
-      - name: Build CSS
-        run: npm run build:css  # Creates src/static/css/site.css
-
-      - name: Upload artefact
-        uses: actions/upload-artifact@v4
-        with:
-          name: static-css
-          path: src/static/css/site.css

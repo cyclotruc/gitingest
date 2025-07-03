@@ -10,16 +10,6 @@ updates:
         dependency-type: "development"
         update-types: ["minor", "patch"]
 
-  # ─── Node (npm) ───────────────────────────────
-  - package-ecosystem: "npm"
-    directory: "/"
-    schedule: { interval: "weekly" }
-    labels: [ "dependencies", "npm" ]
-    cooldown:  # wait before opening PRs
-      semver-major-days: 30
-      semver-minor-days: 7
-      semver-patch-days: 3
-
   # ─── GitHub Actions ───────────────────────────
   - package-ecosystem: "github-actions"
     directory: "/"
