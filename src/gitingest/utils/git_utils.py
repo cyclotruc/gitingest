@@ -98,7 +98,7 @@ async def ensure_git_installed() -> None:
         raise RuntimeError(msg) from exc
     if sys.platform == "win32":
         try:
-            stdout, _ = await run_command("git", "config", "--global", "core.longpaths")
+            stdout, _ = await run_command("git", "config", "core.longpaths")
             if stdout.decode().strip().lower() != "true":
                 print(
                     f"{Colors.BROWN}WARN{Colors.END}: {Colors.RED}Git clone may fail on Windows "
