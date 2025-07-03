@@ -40,9 +40,9 @@
                         <!-- Pattern type selector -->
                         <div class="relative flex items-center">
                             <select id="pattern_type"
-                                    onchange="changePattern()"
                                     name="pattern_type"
-                                    class="w-21 py-2 pl-2 pr-6 appearance-none bg-[#e6e8eb] focus:outline-none border-r-[3px] border-gray-900 cursor-pointer">
+                                    onchange="changePattern()"
+                                    class="pattern-select">
                                 <option value="exclude"
                                         {% if pattern_type == 'exclude' or not pattern_type %}selected{% endif %}>
                                     Exclude

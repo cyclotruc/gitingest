@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@layer utilities {
+@layer components {
   .badge-new {
     @apply inline-block -rotate-6 -translate-y-1 mx-1 px-1
            bg-[#FE4A60] border border-gray-900 text-white
@@ -36,9 +36,24 @@
            translate-y-4 sm:translate-y-10 md:translate-y-2 lg:translate-y-4;
   }
 
+  .pattern-select {
+    @apply min-w-max appearance-none pr-6 pl-2 py-2
+           bg-[#e6e8eb] border-r-[3px] border-gray-900
+           cursor-pointer focus:outline-none;
+  }
+
+}
+
+@layer utilities {
+
   .no-drag {
     @apply pointer-events-none select-none;
            -webkit-user-drag: none;
+  }
+
+  .link-bounce {
+    @apply transition-transform
+           hover:-translate-y-0.5;
   }
 
 }
