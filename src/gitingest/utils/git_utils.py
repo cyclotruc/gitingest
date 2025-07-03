@@ -105,7 +105,7 @@ async def ensure_git_installed() -> None:
                     f"due to long file paths:{Colors.END}",
                 )
                 print(f"{Colors.RED}To avoid this issue, consider enabling long path support with:{Colors.END}")
-                print(f"{Colors.RED}    git config --system core.longpaths true{Colors.END}")
+                print(f"{Colors.RED}    git config --global core.longpaths true{Colors.END}")
                 print(f"{Colors.RED}Note: This command may require administrator privileges.{Colors.END}")
         except RuntimeError:
             # Ignore if checking 'core.longpaths' fails.
