@@ -18,6 +18,7 @@ from starlette.status import (
     HTTP_404_NOT_FOUND,
 )
 
+from gitingest.utils.compat_func import removesuffix
 from gitingest.utils.exceptions import InvalidGitHubTokenError
 
 # GitHub Personal-Access tokens (classic + fine-grained).
@@ -117,11 +118,10 @@ async def check_repo_exists(url: str, token: str | None = None) -> bool:
     # TODO: use `requests` instead of `curl`
     cmd: list[str] = [
         "curl",
-        "--silent",
-        "--location",
-        "--head",
+        "--silent",  # Suppress output
+        "--location",  # Follow redirects
         "--write-out",
-        "%{http_code}",
+        "%{http_code}",  # Write the HTTP status code to stdout
         "-o",
         os.devnull,
     ]
@@ -131,7 +131,7 @@ async def check_repo_exists(url: str, token: str | None = None) -> bool:
         # Public GitHub vs. GitHub Enterprise
         base_api = "https://api.github.com" if host == "github.com" else f"https://{host}/api/v3"
         url = f"{base_api}/repos/{owner}/{repo}"
-        cmd += [f"Authorization: Bearer {token}"]
+        cmd += ["--header", f"Authorization: Bearer {token}"]
 
     cmd.append(url)
 
@@ -185,7 +185,7 @@ def _parse_github_url(url: str) -> tuple[str, str, str]:
         msg = f"Un-recognised GitHub hostname: {parsed.hostname!r}"
         raise ValueError(msg)
 
-    parts = parsed.path.strip("/").removesuffix(".git").split("/")
+    parts = removesuffix(parsed.path, ".git").strip("/").split("/")
     expected_path_length = 2
     if len(parts) != expected_path_length:
         msg = f"Path must look like /<owner>/<repo>: {parsed.path!r}"
@@ -195,13 +195,15 @@ def _parse_github_url(url: str) -> tuple[str, str, str]:
     return parsed.hostname, owner, repo
 
 
-async def fetch_remote_branch_list(url: str, token: str | None = None) -> list[str]:
-    """Fetch the list of branches from a remote Git repository.
+async def fetch_remote_branches_or_tags(url: str, *, ref_type: str, token: str | None = None) -> list[str]:
+    """Fetch the list of branches or tags from a remote Git repository.
 
     Parameters
     ----------
     url : str
-        The URL of the Git repository to fetch branches from.
+        The URL of the Git repository to fetch branches or tags from.
+    ref_type: str
+        The type of reference to fetch. Can be "branches" or "tags".
     token : str | None
         GitHub personal access token (PAT) for accessing private repositories.
 
@@ -210,22 +212,45 @@ async def fetch_remote_branch_list(url: str, token: str | None = None) -> list[s
     list[str]
         A list of branch names available in the remote repository.
 
+    Raises
+    ------
+    ValueError
+        If the ``ref_type`` parameter is not "branches" or "tags".
+
     """
+    if ref_type not in ("branches", "tags"):
+        msg = f"Invalid fetch type: {ref_type}"
+        raise ValueError(msg)
+
     cmd = ["git"]
 
     # Add authentication if needed
     if token and is_github_host(url):
         cmd += ["-c", create_git_auth_header(token, url=url)]
 
-    cmd += ["ls-remote", "--heads", url]
+    cmd += ["ls-remote"]
+
+    fetch_tags = ref_type == "tags"
+    to_fetch = "tags" if fetch_tags else "heads"
+
+    cmd += [f"--{to_fetch}"]
+
+    # `--refs` filters out the peeled tag objects (those ending with "^{}") (for tags)
+    if fetch_tags:
+        cmd += ["--refs"]
+
+    cmd += [url]
 
     await ensure_git_installed()
     stdout, _ = await run_command(*cmd)
 
+    # For each line in the output:
+    # - Skip empty lines and lines that don't contain "refs/{to_fetch}/"
+    # - Extract the branch or tag name after "refs/{to_fetch}/"
     return [
-        line.split("refs/heads/", 1)[1]
+        line.split(f"refs/{to_fetch}/", 1)[1]
         for line in stdout.decode().splitlines()
-        if line.strip() and "refs/heads/" in line
+        if line.strip() and f"refs/{to_fetch}/" in line
     ]
 
 

@@ -26,7 +26,7 @@ async def clone_repo(config: CloneConfig, *, token: str | None = None) -> None:
     """Clone a repository to a local path based on the provided configuration.
 
     This function handles the process of cloning a Git repository to the local file system.
-    It can clone a specific branch or commit if provided, and it raises exceptions if
+    It can clone a specific branch, tag, or commit if provided, and it raises exceptions if
     any errors occur during the cloning process.
 
     Parameters
@@ -47,6 +47,7 @@ async def clone_repo(config: CloneConfig, *, token: str | None = None) -> None:
     local_path: str = config.local_path
     commit: str | None = config.commit
     branch: str | None = config.branch
+    tag: str | None = config.tag
     partial_clone: bool = config.subpath != "/"
 
     # Create parent directory if it doesn't exist
@@ -67,9 +68,14 @@ async def clone_repo(config: CloneConfig, *, token: str | None = None) -> None:
     if partial_clone:
         clone_cmd += ["--filter=blob:none", "--sparse"]
 
+    # Shallow clone unless a specific commit is requested
     if not commit:
         clone_cmd += ["--depth=1"]
-        if branch and branch.lower() not in ("main", "master"):
+
+        # Prefer tag over branch when both are provided
+        if tag:
+            clone_cmd += ["--branch", tag]
+        elif branch and branch.lower() not in ("main", "master"):
             clone_cmd += ["--branch", branch]
 
     clone_cmd += [url, local_path]

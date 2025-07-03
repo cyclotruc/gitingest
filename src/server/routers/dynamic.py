@@ -3,16 +3,12 @@
 from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import HTMLResponse
 
-from gitingest.utils.compat_typing import Annotated
-from server.models import QueryForm
-from server.query_processor import process_query
 from server.server_config import templates
-from server.server_utils import limiter
 
 router = APIRouter()
 
 
-@router.get("/{full_path:path}")
+@router.get("/{full_path:path}", include_in_schema=False)
 async def catch_all(request: Request, full_path: str) -> HTMLResponse:
     """Render a page with a Git URL based on the provided path.
 
@@ -30,7 +26,7 @@ async def catch_all(request: Request, full_path: str) -> HTMLResponse:
     -------
     HTMLResponse
         An HTML response containing the rendered template, with the Git URL
-        and other default parameters such as loading state and file size.
+        and other default parameters such as file size.
 
     """
     if full_path.startswith("api/"):
@@ -40,40 +36,6 @@ async def catch_all(request: Request, full_path: str) -> HTMLResponse:
         {
             "request": request,
             "repo_url": full_path,
-            "loading": True,
-            "default_file_size": 243,
+            "default_max_file_size": 243,
         },
-    )
-
-
-@router.post("/{full_path:path}", response_class=HTMLResponse)
-@limiter.limit("10/minute")
-async def process_catch_all(request: Request, form: Annotated[QueryForm, Depends(QueryForm.as_form)]) -> HTMLResponse:
-    """Process the form submission with user input for query parameters.
-
-    This endpoint handles POST requests, processes the input parameters (e.g., text, file size, pattern),
-    and calls the ``process_query`` function to handle the query logic, returning the result as an HTML response.
-
-    Parameters
-    ----------
-    request : Request
-        FastAPI request context.
-    form : Annotated[QueryForm, Depends(QueryForm.as_form)]
-        The form data submitted by the user.
-
-    Returns
-    -------
-    HTMLResponse
-        Rendered HTML with the query results.
-
-    """
-    resolved_token = form.token if form.token else None
-    return await process_query(
-        request,
-        input_text=form.input_text,
-        slider_position=form.max_file_size,
-        pattern_type=form.pattern_type,
-        pattern=form.pattern,
-        is_index=False,
-        token=resolved_token,
     )

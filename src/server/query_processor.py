@@ -2,37 +2,28 @@
 
 from __future__ import annotations
 
-from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
 from gitingest.clone import clone_repo
 from gitingest.ingestion import ingest_query
 from gitingest.query_parser import IngestionQuery, parse_query
 from gitingest.utils.git_utils import validate_github_token
+from server.models import IngestErrorResponse, IngestResponse, IngestSuccessResponse
 from server.server_config import (
-    DEFAULT_FILE_SIZE_KB,
-    EXAMPLE_REPOS,
+    DEFAULT_MAX_FILE_SIZE_KB,
     MAX_DISPLAY_SIZE,
-    templates,
 )
 from server.server_utils import Colors, log_slider_to_size
 
-if TYPE_CHECKING:
-    from fastapi import Request
-    from starlette.templating import _TemplateResponse
-
 
 async def process_query(
-    request: Request,
-    *,
     input_text: str,
     slider_position: int,
     pattern_type: str = "exclude",
     pattern: str = "",
-    is_index: bool = False,
     token: str | None = None,
-) -> _TemplateResponse:
+) -> IngestResponse:
     """Process a query by parsing input, cloning a repository, and generating a summary.
 
     Handle user input, process Git repository data, and prepare
@@ -40,8 +31,6 @@ async def process_query(
 
     Parameters
     ----------
-    request : Request
-        The HTTP request object.
     input_text : str
         Input text provided by the user, typically a Git repository URL or slug.
     slider_position : int
@@ -50,15 +39,13 @@ async def process_query(
         Type of pattern to use (either "include" or "exclude") (default: ``"exclude"``).
     pattern : str
         Pattern to include or exclude in the query, depending on the pattern type.
-    is_index : bool
-        Flag indicating whether the request is for the index page (default: ``False``).
     token : str | None
         GitHub personal access token (PAT) for accessing private repositories.
 
     Returns
     -------
-    _TemplateResponse
-        Rendered template response containing the processed results or an error message.
+    IngestResponse
+        A union type, corresponding to IngestErrorResponse or IngestSuccessResponse
 
     Raises
     ------
@@ -79,21 +66,10 @@ async def process_query(
     if token:
         validate_github_token(token)
 
-    template = "index.jinja" if is_index else "git.jinja"
-    template_response = partial(templates.TemplateResponse, name=template)
     max_file_size = log_slider_to_size(slider_position)
 
-    context = {
-        "request": request,
-        "repo_url": input_text,
-        "examples": EXAMPLE_REPOS if is_index else [],
-        "default_file_size": slider_position,
-        "pattern_type": pattern_type,
-        "pattern": pattern,
-        "token": token,
-    }
-
     query: IngestionQuery | None = None
+    short_repo_url = ""
 
     try:
         query = await parse_query(
@@ -107,7 +83,7 @@ async def process_query(
         query.ensure_url()
 
         # Sets the "<user>/<repo>" for the page title
-        context["short_repo_url"] = f"{query.user_name}/{query.repo_name}"
+        short_repo_url = f"{query.user_name}/{query.repo_name}"
 
         clone_config = query.extract_clone_config()
         await clone_repo(clone_config, token=token)
@@ -126,10 +102,7 @@ async def process_query(
             print(f"{Colors.BROWN}WARN{Colors.END}: {Colors.RED}<-  {Colors.END}", end="")
             print(f"{Colors.RED}{exc}{Colors.END}")
 
-        context["error_message"] = f"Error: {exc}"
-        if "405" in str(exc):
-            context["error_message"] = "Repository not found. Please make sure it is public."
-        return template_response(context=context)
+        return IngestErrorResponse(error=str(exc), repo_url=short_repo_url)
 
     if len(content) > MAX_DISPLAY_SIZE:
         content = (
@@ -148,17 +121,16 @@ async def process_query(
         summary=summary,
     )
 
-    context.update(
-        {
-            "result": True,
-            "summary": summary,
-            "tree": tree,
-            "content": content,
-            "ingest_id": query.id,
-        },
+    return IngestSuccessResponse(
+        repo_url=input_text,
+        short_repo_url=short_repo_url,
+        summary=summary,
+        tree=tree,
+        content=content,
+        default_max_file_size=slider_position,
+        pattern_type=pattern_type,
+        pattern=pattern,
     )
-
-    return template_response(context=context)
 
 
 def _print_query(url: str, max_file_size: int, pattern_type: str, pattern: str) -> None:
@@ -177,7 +149,7 @@ def _print_query(url: str, max_file_size: int, pattern_type: str, pattern: str) 
 
     """
     print(f"{Colors.WHITE}{url:<20}{Colors.END}", end="")
-    if int(max_file_size / 1024) != DEFAULT_FILE_SIZE_KB:
+    if int(max_file_size / 1024) != DEFAULT_MAX_FILE_SIZE_KB:
         print(
             f" | {Colors.YELLOW}Size: {int(max_file_size / 1024)}kb{Colors.END}",
             end="",

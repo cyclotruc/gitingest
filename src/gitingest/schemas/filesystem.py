@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import TYPE_CHECKING
 
+from gitingest.utils.compat_func import readlink
 from gitingest.utils.file_utils import _decodes, _get_preferred_encodings, _read_chunk
 from gitingest.utils.notebook import process_notebook
 
@@ -96,7 +97,7 @@ class FileSystemNode:  # pylint: disable=too-many-instance-attributes
         parts = [
             SEPARATOR,
             f"{self.type.name}: {str(self.path_str).replace(os.sep, '/')}"
-            + (f" -> {self.path.readlink().name}" if self.type == FileSystemNodeType.SYMLINK else ""),
+            + (f" -> {readlink(self.path).name}" if self.type == FileSystemNodeType.SYMLINK else ""),
             SEPARATOR,
             f"{self.content}",
         ]

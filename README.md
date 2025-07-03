@@ -1,6 +1,6 @@
 # Gitingest
 
-[![Screenshot of Gitingest front page](./docs/frontpage.png)](https://gitingest.com)
+[![Screenshot of Gitingest front page](https://raw.githubusercontent.com/cyclotruc/gitingest/refs/heads/main/docs/frontpage.png)](https://gitingest.com)
 
 <!-- Badges -->
 <!-- markdownlint-disable MD033 -->

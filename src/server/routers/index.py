@@ -1,6 +1,7 @@
 """Module defining the FastAPI router for the home page of the application."""
 
 from fastapi import APIRouter, Depends, Request, Form, HTTPException
+
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from autotiktokenizer import AutoTikTokenizer
@@ -10,9 +11,10 @@ from typing import Optional
 from gitingest.utils.compat_typing import Annotated
 from server.models import QueryForm
 from server.query_processor import process_query
-from server.server_config import EXAMPLE_REPOS
+from server.server_config import EXAMPLE_REPOS, templates
 from server.server_utils import limiter
 from pydantic import BaseModel, Field
+
 
 router = APIRouter()
 
@@ -60,7 +62,7 @@ def count_tokens(input_text, model_id):
         tokenizer = AutoTikTokenizer.from_pretrained(model_id)
         return len(tokenizer.encode(input_text))
 
-@router.get("/", response_class=HTMLResponse)
+@router.get("/", response_class=HTMLResponse, include_in_schema=False)
 async def home(request: Request) -> HTMLResponse:
     """Render the home page with example repositories and default parameters.
 
@@ -84,7 +86,7 @@ async def home(request: Request) -> HTMLResponse:
         {
             "request": request,
             "examples": EXAMPLE_REPOS,
-            "default_file_size": 243,
+            "default_max_file_size": 243,
         },
     )
 

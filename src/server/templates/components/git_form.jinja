@@ -1,42 +1,10 @@
-<script>
-    function changePattern(element) {
-        console.log('Pattern changed', element.value);
-        let patternType = element.value;
-        const files = document.getElementsByName('tree-line');
-
-        Array.from(files).forEach((element) => {
-            if (element.textContent.includes('Directory structure:')) {
-                return;
-            }
-
-            element.classList.toggle('line-through');
-            element.classList.toggle('text-gray-500');
-            element.classList.toggle('hover:text-inherit');
-            element.classList.toggle('hover:no-underline');
-            element.classList.toggle('hover:line-through');
-            element.classList.toggle('hover:text-gray-500');
-        });
-    }
-
-    function toggleAccessSettings() {
-        const container = document.getElementById('accessSettingsContainer');
-        const checkbox = document.getElementById('showAccessSettings');
-        const examples = document.getElementById('exampleRepositories')
-        const show = checkbox.checked;
-
-        container.classList.toggle('hidden', !show);
-        examples.classList.toggle('lg:mt-0', show);
-    }
-</script>
 <div class="relative">
     <div class="w-full h-full absolute inset-0 bg-gray-900 rounded-xl translate-y-2 translate-x-2"></div>
     <div class="rounded-xl relative z-20 p-8 sm:p-10 border-[3px] border-gray-900 bg-[#fff4da]">
         <img src="https://cdn.devdojo.com/images/january2023/shape-1.png"
              class="absolute md:block hidden left-0 h-[4.5rem] w-[4.5rem] bottom-0 -translate-x-full ml-3">
         <!-- Ingest Form -->
-        <form id="ingestForm"
-              method="post"
-              onsubmit="handleSubmit(event{% if is_index %}, true{% endif %})">
+        <form id="ingestForm" method="post" onsubmit="handleSubmit(event, true)">
             <!-- Top row: repo URL + Ingest button -->
             <div class="flex md:flex-row flex-col w-full h-full justify-center items-stretch space-y-5 md:space-y-0 md:space-x-5">
                 <!-- Repository URL Input -->
@@ -48,7 +16,7 @@
                            placeholder="https://github.com/..."
                            value="{{ repo_url if repo_url else '' }}"
                            required
-                           class="border-[3px] w-full relative z-20 border-gray-900 placeholder-gray-600 text-lg font-medium focus:outline-none py-3.5 px-6 rounded">
+                           class="border-[3px] w-full relative z-20 border-gray-900 placeholder-gray-600 text-lg font-medium focus:outline-none py-3.5 px-6 rounded bg-[#E8F0FE]">
                 </div>
                 <!-- Ingest button -->
                 <div class="relative w-auto flex-shrink-0 h-full group">
@@ -72,9 +40,9 @@
                         <!-- Pattern type selector -->
                         <div class="relative flex items-center">
                             <select id="pattern_type"
-                                    onchange="changePattern(this)"
                                     name="pattern_type"
-                                    class="w-21 py-2 pl-2 pr-6 appearance-none bg-[#e6e8eb] focus:outline-none border-r-[3px] border-gray-900 cursor-pointer">
+                                    onchange="changePattern()"
+                                    class="pattern-select">
                                 <option value="exclude"
                                         {% if pattern_type == 'exclude' or not pattern_type %}selected{% endif %}>
                                     Exclude
@@ -112,7 +80,7 @@
                            min="0"
                            max="500"
                            required
-                           value="{{ default_file_size }}"
+                           value="{{ default_max_file_size }}"
                            class="w-full h-3 bg-[#FAFAFA] bg-no-repeat bg-[length:50%_100%] bg-[#ebdbb7] appearance-none border-[3px] border-gray-900 rounded-sm focus:outline-none bg-gradient-to-r from-[#FE4A60] to-[#FE4A60] [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-7 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-sm [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-solid [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-gray-900 [&::-webkit-slider-thumb]:shadow-[3px_3px_0_#000]">
                 </div>
                 <!-- PAT checkbox with PAT field below -->
@@ -132,7 +100,7 @@
                             </div>
                             Private Repository
                         </label>
-                        {% include "components/badge_new.jinja" %}
+                        <span class="badge-new">NEW</span>
                     </div>
                     <!-- PAT field -->
                     <div id="accessSettingsContainer"
@@ -207,3 +175,5 @@
         {% endif %}
     </div>
 </div>
+<script defer src="/static/js/git.js"></script>
+<script defer src="/static/js/git_form.js"></script>

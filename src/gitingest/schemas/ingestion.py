@@ -27,6 +27,8 @@ class CloneConfig:
         The specific commit hash to check out after cloning.
     branch : str | None
         The branch to clone.
+    tag: str | None
+        The tag to clone.
     subpath : str
         The subpath to clone from the repository (default: ``"/"``).
     blob: bool
@@ -38,6 +40,7 @@ class CloneConfig:
     local_path: str
     commit: str | None = None
     branch: str | None = None
+    tag: str | None = None
     subpath: str = "/"
     blob: bool = False
 
@@ -67,6 +70,8 @@ class IngestionQuery(BaseModel):  # pylint: disable=too-many-instance-attributes
         The branch of the repository.
     commit : str | None
         The commit of the repository.
+    tag: str | None
+        The tag of the repository.
     max_file_size : int
         The maximum file size to ingest (default: 10 MB).
     ignore_patterns : set[str]
@@ -86,6 +91,7 @@ class IngestionQuery(BaseModel):  # pylint: disable=too-many-instance-attributes
     type: str | None = None
     branch: str | None = None
     commit: str | None = None
+    tag: str | None = None
     max_file_size: int = Field(default=MAX_FILE_SIZE)
     ignore_patterns: set[str] = set()  # TODO: ignore_patterns and include_patterns have the same type
     include_patterns: set[str] | None = None
@@ -113,6 +119,7 @@ class IngestionQuery(BaseModel):  # pylint: disable=too-many-instance-attributes
             local_path=str(self.local_path),
             commit=self.commit,
             branch=self.branch,
+            tag=self.tag,
             subpath=self.subpath,
             blob=self.type == "blob",
         )
