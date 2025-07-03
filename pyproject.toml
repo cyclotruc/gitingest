@@ -57,7 +57,6 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools]
 packages = {find = {where = ["src"]}}
 include-package-data = true
-package-data = {"gitingest" = ["static/css/*.css"]}
 
 # Linting configuration
 [tool.pylint.format]
