@@ -1,40 +1,72 @@
-# Git
-.git
+# -------------------------------------------------
+# Base: reuse patterns from .gitignore
+# -------------------------------------------------
+
+# Operating-system
+.DS_Store
+Thumbs.db
+
+# Editor / IDE settings
+.vscode/
+!.vscode/launch.json
+.idea/
+*.swp
+
+# Python virtual-envs & tooling
+.venv*/
+.python-version
+__pycache__/
+*.egg-info/
+*.egg
+.ruff_cache/
+
+# Test artifacts & coverage
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Build, distribution & docs
+build/
+dist/
+*.wheel
+
+# Logs & runtime output
+*.log
+logs/
+*.tmp
+tmp/
+
+# Project-specific files
+history.txt
+digest.txt
+
+
+# -------------------------------------------------
+# Extra for Docker
+# -------------------------------------------------
+
+# Git history
+.git/
 .gitignore
 
-# Python
-__pycache__
-*.pyc
-*.pyo
-*.pyd
-.Python
-env
-pip-log.txt
-pip-delete-this-directory.txt
-.tox
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.log
-
-# Virtual environment
-venv
-.env
-.venv
-ENV
-
-# IDE
-.idea
-.vscode
-*.swp
-*.swo
-
-# Project specific
-docs/
+# Tests
 tests/
+
+# Docs
+docs/
 *.md
 LICENSE
-setup.py
+
+# Local overrides & secrets
+.env
+
+# Docker files
+.dockerignore
+Dockerfile*
+
+# -------------------------------------------------
+# Files required during build
+# -------------------------------------------------
+!pyproject.toml
+!src/
