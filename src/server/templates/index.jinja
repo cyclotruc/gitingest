@@ -1,5 +1,4 @@
 {% extends "base.jinja" %}
-{% from 'components/_macros.jinja' import results_container %}
 {% block content %}
     <div class="mb-8">
         <div class="relative w-full flex sm:flex-row flex-col justify-center sm:items-center">
@@ -26,5 +25,5 @@
     <p class="text-gray-600 text-sm max-w-2xl mx-auto text-center mt-4">
         You can also replace 'hub' with 'ingest' in any GitHub URL.
     </p>
-    {{ results_container() }}
+    {% include 'components/result.jinja' %}
 {% endblock %}

@@ -1,5 +1,4 @@
 {% extends "base.jinja" %}
-{% from 'components/_macros.jinja' import results_container %}
 {% block content %}
     {% if error_message %}
         <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700"
@@ -9,5 +8,5 @@
     {% with show_examples=false %}
         {% include 'components/git_form.jinja' %}
     {% endwith %}
-    {{ results_container() }}
+    {% include 'components/result.jinja' %}
 {% endblock content %}
