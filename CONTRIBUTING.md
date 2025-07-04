@@ -17,7 +17,6 @@ If you ever get stuck, reach out on [Discord](https://discord.com/invite/zerRaGK
 ## How to submit a Pull Request
 
 > **Prerequisites**: The project uses **Python 3.9+** and `pre-commit` for development.
-> If you plan to touch the frontend, you'll also need **Node ≥18** (for Tailwind).
 
 1. **Fork** the repository.
 
@@ -63,22 +62,7 @@ If you ever get stuck, reach out on [Discord](https://discord.com/invite/zerRaGK
    pre-commit run --all-files
    ```
 
-9. **If you edited templates or CSS** rebuild Tailwind:
-
-   ```bash
-   # one-time install
-   npm ci
-
-   # build once
-   npm run build:css
-
-   # or watch & rebuild on every save
-   npm run dev:css
-   ```
-
-   *Skip this step if your PR only touches Python code.*
-
-10. **Run the local server** to sanity-check:
+9. **Run the local server** to sanity-check:
 
     ```bash
     cd src
@@ -87,23 +71,23 @@ If you ever get stuck, reach out on [Discord](https://discord.com/invite/zerRaGK
 
     Open [http://localhost:8000](http://localhost:8000) to confirm everything works.
 
-11. **Commit** (signed):
+10. **Commit** (signed):
 
     ```bash
     git commit -S -m "Your commit message"
     ```
 
-    If *pre-commit* complains, fix the problems and repeat **6 – 10**.
+    If *pre-commit* complains, fix the problems and repeat **5 – 9**.
 
-12. **Push** your branch:
+11. **Push** your branch:
 
     ```bash
     git push origin your-branch
     ```
 
-13. **Open a pull request** on GitHub with a clear description.
+12. **Open a pull request** on GitHub with a clear description.
 
-14. **Iterate** on any review feedback—update your branch and repeat **6 – 13** as needed.
+13. **Iterate** on any review feedback—update your branch and repeat **6 – 11** as needed.
 
 *(Optional) Invite a maintainer to your branch for easier collaboration.*
 
@@ -120,4 +104,3 @@ If you ever get stuck, reach out on [Discord](https://discord.com/invite/zerRaGK
 ## Dependency Management
 
 When you add a new import from an external package, make sure to add it to both `requirements.txt` and `pyproject.toml` (if applicable). This ensures all environments and CI/CD pipelines have the correct dependencies installed.
-

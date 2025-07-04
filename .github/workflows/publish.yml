@@ -8,46 +8,12 @@ on:
 permissions:
   contents: read
 
-# ── Build the Tailwind CSS bundle ───────────────────────────────
 jobs:
-  frontend-build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: package-lock.json
-
-      - name: Install deps + build Tailwind
-        run: |
-          npm ci
-          npm run build:css
-
-      - name: Upload built CSS
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-assets
-          path: src/static/css/site.css
-          if-no-files-found: error
-
-# ── Build wheel/sdist (needs CSS) and upload “dist/” ────────────
   release-build:
-    needs: frontend-build
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
-
-      # Grab site.css produced above
-      - uses: actions/download-artifact@v4
-        with:
-          name: frontend-assets
-          path: src/static/css/
 
       - name: Set up Python 3.13
         uses: actions/setup-python@v5
@@ -56,11 +22,10 @@ jobs:
           cache: pip
           cache-dependency-path: pyproject.toml
 
-      - name: Install build backend
+      - name: Build package
         run: |
           python -m pip install --upgrade pip
           python -m pip install build twine
-          python -m build
           twine check dist/*
       - name: Upload dist artefact
         uses: actions/upload-artifact@v4
@@ -68,11 +33,11 @@ jobs:
           name: dist
           path: dist/
 
-# ── Publish to PyPI (only if “dist/” succeeded) ─────────────────
+# Publish to PyPI (only if “dist/” succeeded)
   pypi-publish:
     needs: release-build
     runs-on: ubuntu-latest
-    environment: pypi # Creates the “pypi” environment in repo-settings
+    environment: pypi
 
     permissions:
       id-token: write # OIDC token for trusted publishing

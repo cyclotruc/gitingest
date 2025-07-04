@@ -53,6 +53,8 @@ DEFAULT_IGNORE_PATTERNS: set[str] = {
     "*.out",
     "*.a",
     "*.pdb",
+    # Binary
+    "*.bin",
     # Swift/Xcode
     ".build/",
     "*.xcodeproj/",
@@ -147,6 +149,10 @@ DEFAULT_IGNORE_PATTERNS: set[str] = {
     ".docusaurus",
     ".next",
     ".nuxt",
+    # Database
+    "*.db",
+    "*.sqlite",
+    "*.sqlite3",
     # Other common patterns
     ## Minified files
     "*.min.js",
