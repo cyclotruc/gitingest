@@ -3,19 +3,22 @@ function copyText(className) {
     let textToCopy;
 
     if (className === 'directory-structure') {
-        // For directory structure, get the hidden input value
+    // For directory structure, get the hidden input value
         const hiddenInput = document.getElementById('directory-structure-content');
-        if (!hiddenInput) return;
+
+        if (!hiddenInput) {return;}
         textToCopy = hiddenInput.value;
     } else {
-        // For other elements, get the textarea value
-        const textarea = document.querySelector('.' + className);
-        if (!textarea) return;
+    // For other elements, get the textarea value
+        const textarea = document.querySelector(`.${ className }`);
+
+        if (!textarea) {return;}
         textToCopy = textarea.value;
     }
 
     const button = document.querySelector(`button[onclick="copyText('${className}')"]`);
-    if (!button) return;
+
+    if (!button) {return;}
 
     // Copy text
     navigator.clipboard.writeText(textToCopy)
@@ -31,9 +34,10 @@ function copyText(className) {
                 button.innerHTML = originalContent;
             }, 1000);
         })
-        .catch(err => {
-            // Show error in button
+        .catch((err) => {
+            console.error('Failed to copy text:', err);
             const originalContent = button.innerHTML;
+
             button.innerHTML = 'Failed to copy';
             setTimeout(() => {
                 button.innerHTML = originalContent;
@@ -41,17 +45,74 @@ function copyText(className) {
         });
 }
 
+function getFileName(element) {
+    const indentSize = 4;
+    let path = '';
+    let prevIndentLevel = null;
+
+    while (element) {
+        const line = element.textContent;
+        const index = line.search(/[a-zA-Z0-9_.-]/);
+        const indentLevel = index / indentSize;
+
+        // Stop when we reach or go above the top-level directory
+        if (indentLevel <= 1) {
+            break;
+        }
+        if (prevIndentLevel === null || indentLevel === prevIndentLevel - 1) {
+            const fileName = line.substring(index).trim();
+
+            path = fileName + path;
+            prevIndentLevel = indentLevel;
+        }
+        element = element.previousElementSibling;
+    }
+
+    return path;
+}
+
+function toggleFile(element) {
+    const patternInput = document.getElementById('pattern');
+    const patternFiles = patternInput.value
+        ? patternInput.value.split(',').map((item) => item.trim())
+        : [];
+
+    const directoryContainer = document.getElementById('directory-structure-container');
+    const treeLineElements = Array.from(directoryContainer.children).filter(
+        (child) => child.tagName === 'PRE',
+    );
+
+    // Skip header and repository name
+    if (treeLineElements.slice(0, 2).includes(element)) {
+        return;
+    }
+
+    element.classList.toggle('line-through');
+    element.classList.toggle('text-gray-500');
+
+    const fileName = getFileName(element);
+    const idx = patternFiles.indexOf(fileName);
+
+    if (idx !== -1) {
+        patternFiles.splice(idx, 1);
+    } else {
+        patternFiles.push(fileName);
+    }
+
+    patternInput.value = patternFiles.join(', ');
+}
 
 function handleSubmit(event, showLoading = false) {
     event.preventDefault();
     const form = event.target || document.getElementById('ingestForm');
-    if (!form) return;
+
+    if (!form) {return;}
 
     // Declare resultsSection before use
     const resultsSection = document.querySelector('[data-results]');
 
     if (resultsSection) {
-        // Show in-content loading spinner
+    // Show in-content loading spinner
         resultsSection.innerHTML = `
             <div class="relative mt-10">
                 <div class="w-full h-full absolute inset-0 bg-black rounded-xl translate-y-2 translate-x-2"></div>
@@ -64,12 +125,14 @@ function handleSubmit(event, showLoading = false) {
     }
 
     const submitButton = form.querySelector('button[type="submit"]');
-    if (!submitButton) return;
+
+    if (!submitButton) {return;}
 
     const formData = new FormData(form);
 
     // Update file size
     const slider = document.getElementById('file_size');
+
     if (slider) {
         formData.delete('max_file_size');
         formData.append('max_file_size', slider.value);
@@ -78,6 +141,7 @@ function handleSubmit(event, showLoading = false) {
     // Update pattern type and pattern
     const patternType = document.getElementById('pattern_type');
     const pattern = document.getElementById('pattern');
+
     if (patternType && pattern) {
         formData.delete('pattern_type');
         formData.delete('pattern');
@@ -102,19 +166,20 @@ function handleSubmit(event, showLoading = false) {
     }
 
     // Submit the form to /api/ingest
-    fetch('/api/ingest', {method: 'POST', body: formData})
-        .then(response => response.json())
-        .then(data => {
+    fetch('/api/ingest', { method: 'POST', body: formData })
+        .then((response) => response.json())
+        .then((data) => {
             // Hide loading overlay
-            if (resultsSection) resultsSection.innerHTML = '';
+            if (resultsSection) {resultsSection.innerHTML = '';}
             submitButton.disabled = false;
             submitButton.innerHTML = originalContent;
 
-            if (!resultsSection) return;
+            if (!resultsSection) {return;}
 
             // Handle error
             if (data.error) {
                 resultsSection.innerHTML = `<div class='mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700'>${data.error}</div>`;
+
                 return;
             }
 
@@ -194,14 +259,16 @@ function handleSubmit(event, showLoading = false) {
 
             // Populate directory structure lines as clickable <pre> elements
             const dirPre = document.getElementById('directory-structure-pre');
+
             if (dirPre && data.tree) {
                 dirPre.innerHTML = '';
-                data.tree.split('\n').forEach(line => {
+                data.tree.split('\n').forEach((line) => {
                     const pre = document.createElement('pre');
+
                     pre.setAttribute('name', 'tree-line');
                     pre.className = 'cursor-pointer hover:line-through hover:text-gray-500';
                     pre.textContent = line;
-                    pre.onclick = function() { toggleFile(this); };
+                    pre.onclick = function () { toggleFile(this); };
                     dirPre.appendChild(pre);
                 });
             }
@@ -209,14 +276,17 @@ function handleSubmit(event, showLoading = false) {
             // Scroll to results
             resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         })
-        .catch(error => {
+        .catch((error) => {
             // Hide loading overlay
-            if (resultsSection) resultsSection.innerHTML = '';
+            if (resultsSection) {
+                resultsSection.innerHTML = '';
+            }
             submitButton.disabled = false;
             submitButton.innerHTML = originalContent;
-            const resultsSection = document.querySelector('[data-results]');
-            if (resultsSection) {
-                resultsSection.innerHTML = `<div class='mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700'>${error}</div>`;
+            const errorContainer = document.querySelector('[data-results]');
+
+            if (errorContainer) {
+                errorContainer.innerHTML = `<div class='mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700'>${error}</div>`;
             }
         });
 }
@@ -239,9 +309,10 @@ function copyFullDigest() {
         setTimeout(() => {
             button.innerHTML = originalText;
         }, 2000);
-    }).catch(err => {
-        console.error('Failed to copy text: ', err);
-    });
+    })
+        .catch((err) => {
+            console.error('Failed to copy text: ', err);
+        });
 }
 
 function downloadFullDigest() {
@@ -258,8 +329,9 @@ function downloadFullDigest() {
     // Create a download link
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
+
     a.href = url;
-    a.download = 'codebase-digest.txt';
+    a.download = 'digest.txt';
     document.body.appendChild(a);
     a.click();
 
@@ -288,7 +360,8 @@ function logSliderToSize(position) {
     const maxPosition = 500;
     const maxValue = Math.log(102400); // 100 MB
 
-    const value = Math.exp(maxValue * Math.pow(position / maxPosition, 1.5));
+    const value = Math.exp(maxValue * (position / maxPosition)**1.5);
+
     return Math.round(value);
 }
 
@@ -297,10 +370,11 @@ function initializeSlider() {
     const slider = document.getElementById('file_size');
     const sizeValue = document.getElementById('size_value');
 
-    if (!slider || !sizeValue) return;
+    if (!slider || !sizeValue) {return;}
 
     function updateSlider() {
         const value = logSliderToSize(slider.value);
+
         sizeValue.textContent = formatSize(value);
         slider.style.backgroundSize = `${(slider.value / slider.max) * 100}% 100%`;
     }
@@ -315,24 +389,18 @@ function initializeSlider() {
 // Add helper function for formatting size
 function formatSize(sizeInKB) {
     if (sizeInKB >= 1024) {
-        return Math.round(sizeInKB / 1024) + 'MB';
+        return `${ Math.round(sizeInKB / 1024) }MB`;
     }
-    return Math.round(sizeInKB) + 'kB';
+
+    return `${ Math.round(sizeInKB) }kB`;
 }
-
-// Make sure these are available globally
-window.copyText = copyText;
-
-window.handleSubmit = handleSubmit;
-window.initializeSlider = initializeSlider;
-window.formatSize = formatSize;
-window.downloadFullDigest = downloadFullDigest;
 
 // Add this new function
 function setupGlobalEnterHandler() {
-    document.addEventListener('keydown', function (event) {
+    document.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' && !event.target.matches('textarea')) {
             const form = document.getElementById('ingestForm');
+
             if (form) {
                 handleSubmit(new Event('submit'), true);
             }
@@ -345,3 +413,11 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeSlider();
     setupGlobalEnterHandler();
 });
+
+
+// Make sure these are available globally
+window.handleSubmit = handleSubmit;
+window.toggleFile = toggleFile;
+window.copyText = copyText;
+window.copyFullDigest = copyFullDigest;
+window.downloadFullDigest = downloadFullDigest;

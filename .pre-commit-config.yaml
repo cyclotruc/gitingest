@@ -2,65 +2,82 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
-      # Files
       - id: check-added-large-files
-        description: "Prevent large files from being committed."
-        args: ["--maxkb=10000"]
+        description: 'Prevent large files from being committed.'
+        args: ['--maxkb=10000']
+
       - id: check-case-conflict
-        description: "Check for files that would conflict in case-insensitive filesystems."
+        description: 'Check for files that would conflict in case-insensitive filesystems.'
+
       - id: fix-byte-order-marker
-        description: "Remove utf-8 byte order marker."
+        description: 'Remove utf-8 byte order marker.'
+
       - id: mixed-line-ending
-        description: "Replace mixed line ending."
+        description: 'Replace mixed line ending.'
 
-      # Links
       - id: destroyed-symlinks
-        description: "Detect symlinks which are changed to regular files with a content of a path which that symlink was pointing to."
+        description: 'Detect symlinks which are changed to regular files with a content of a path which that symlink was pointing to.'
 
-      # File files for parseable syntax: python
       - id: check-ast
+        description: 'Check for parseable syntax.'
 
-      # File and line endings
       - id: end-of-file-fixer
-        description: "Ensure that a file is either empty, or ends with one newline."
-      - id: trailing-whitespace
-        description: "Trim trailing whitespace."
+        description: 'Ensure that a file is either empty, or ends with one newline.'
 
-      # Python
+      - id: trailing-whitespace
+        description: 'Trim trailing whitespace.'
+
       - id: check-docstring-first
-        description: "Check a common error of defining a docstring after code."
+        description: 'Check a common error of defining a docstring after code.'
+
       - id: requirements-txt-fixer
-        description: "Sort entries in requirements.txt."
+        description: 'Sort entries in requirements.txt.'
 
   - repo: https://github.com/MarcoGorelli/absolufy-imports
     rev: v0.3.1
     hooks:
       - id: absolufy-imports
-        description: "Automatically convert relative imports to absolute. (Use `args: [--never]` to revert.)"
+        description: 'Automatically convert relative imports to absolute. (Use `args: [--never]` to revert.)'
 
   - repo: https://github.com/asottile/pyupgrade
     rev: v3.20.0
     hooks:
       - id: pyupgrade
-        description: "Automatically upgrade syntax for newer versions."
+        description: 'Automatically upgrade syntax for newer versions.'
         args: [--py3-plus, --py36-plus]
 
   - repo: https://github.com/pre-commit/pygrep-hooks
     rev: v1.10.0
     hooks:
       - id: python-check-blanket-noqa
-        description: "Enforce that `noqa` annotations always occur with specific codes. Sample annotations: `# noqa: F401`, `# noqa: F401,W203`."
+        description: 'Enforce that `# noqa` annotations always occur with specific codes.'
+
       - id: python-check-blanket-type-ignore
-        description: "Enforce that `# type: ignore` annotations always occur with specific codes. Sample annotations: `# type: ignore[attr-defined]`, `# type: ignore[attr-defined, name-defined]`."
+        description: 'Enforce that `# type: ignore` annotations always occur with specific codes.'
+
       - id: python-use-type-annotations
-        description: "Enforce that python3.6+ type annotations are used instead of type comments."
+        description: 'Enforce that python3.6+ type annotations are used instead of type comments.'
 
   - repo: https://github.com/PyCQA/isort
     rev: 6.0.1
     hooks:
       - id: isort
-        description: "Sort imports alphabetically, and automatically separated into sections and by type."
+        description: 'Sort imports alphabetically, and automatically separated into sections and by type.'
 
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v9.30.1
+    hooks:
+      - id: eslint
+        description: 'Lint javascript files.'
+        files: \.js$
+        args: [--max-warnings=0, --fix]
+        additional_dependencies:
+          [
+            'eslint@9.30.1',
+            '@eslint/js@9.30.1',
+            'eslint-plugin-import@2.32.0',
+            'globals@16.3.0',
+          ]
 
   - repo: https://github.com/djlint/djLint
     rev: v1.36.4
@@ -71,11 +88,11 @@ repos:
     rev: v0.45.0
     hooks:
       - id: markdownlint
-        description: "Lint markdown files."
-        args: ["--disable=line-length"]
+        description: 'Lint markdown files.'
+        args: ['--disable=line-length']
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.12.1
+    rev: v0.12.2
     hooks:
       - id: ruff-check
       - id: ruff-format
@@ -97,17 +114,19 @@ repos:
         additional_dependencies:
           [
             click>=8.0.0,
-            "fastapi[standard]>=0.109.1",
+            'fastapi[standard]>=0.109.1',
+            httpx,
+            pathspec>=0.12.1,
             pydantic,
             pytest-asyncio,
             pytest-mock,
             python-dotenv,
             slowapi,
             starlette>=0.40.0,
-            tiktoken,
-            pathspec,
+            tiktoken>=0.7.0,
             uvicorn>=0.11.7,
           ]
+
       - id: pylint
         name: pylint for tests
         files: ^tests/
@@ -116,15 +135,16 @@ repos:
         additional_dependencies:
           [
             click>=8.0.0,
-            "fastapi[standard]>=0.109.1",
+            'fastapi[standard]>=0.109.1',
+            httpx,
+            pathspec>=0.12.1,
             pydantic,
             pytest-asyncio,
             pytest-mock,
             python-dotenv,
             slowapi,
             starlette>=0.40.0,
-            tiktoken,
-            pathspec,
+            tiktoken>=0.7.0,
             uvicorn>=0.11.7,
           ]
 
