@@ -11,7 +11,6 @@ RUN apt-get update \
 COPY pyproject.toml .
 COPY src/ ./src/
 
-
 # Install runtime dependencies defined in pyproject.toml
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir --timeout 1000 .
@@ -34,7 +33,7 @@ RUN useradd -m -u 1000 appuser
 # Copy Python site-packages and code
 COPY --from=python-builder /usr/local/lib/python3.13/site-packages/ \
                            /usr/local/lib/python3.13/site-packages/
-COPY src/ ./src/
+COPY src/ ./
 
 # Set permissions
 RUN chown -R appuser:appuser /app
