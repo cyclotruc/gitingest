@@ -205,7 +205,7 @@ async def test_parse_query_empty_patterns() -> None:
     When ``parse_query`` is called,
     Then ``include_patterns`` becomes ``None`` and default ignore patterns apply.
     """
-    query = await parse_query(DEMO_URL, max_file_size=50, from_web=True, include_patterns="", ignore_patterns="")
+    query = await parse_query(DEMO_URL, max_file_size=50, from_web=True, ignore_patterns="", include_patterns="")
 
     assert query.include_patterns is None
     assert query.ignore_patterns == DEFAULT_IGNORE_PATTERNS
@@ -223,8 +223,8 @@ async def test_parse_query_include_and_ignore_overlap() -> None:
         DEMO_URL,
         max_file_size=50,
         from_web=True,
-        include_patterns="*.py",
         ignore_patterns={"*.py", "*.txt"},
+        include_patterns="*.py",
     )
 
     assert query.include_patterns == {"*.py"}
