@@ -6,6 +6,7 @@ import asyncio
 import base64
 import os
 import re
+import warnings
 from typing import Final
 from urllib.parse import urlparse
 
@@ -19,7 +20,6 @@ from starlette.status import (
 )
 
 from gitingest.utils.compat_func import removesuffix
-from gitingest.utils.exceptions import InvalidGitHubTokenError
 
 # GitHub Personal-Access tokens (classic + fine-grained).
 #   - ghp_ / gho_ / ghu_ / ghs_ / ghr_  → 36 alphanumerics
@@ -319,11 +319,11 @@ def validate_github_token(token: str) -> None:
     token : str
         GitHub personal access token (PAT) for accessing private repositories.
 
-    Raises
-    ------
-    InvalidGitHubTokenError
-        If the token format is invalid.
-
     """
     if not re.fullmatch(_GITHUB_PAT_PATTERN, token):
-        raise InvalidGitHubTokenError
+        warnings.warn(
+            "Invalid GitHub token format. To generate a token, go to "
+            "https://github.com/settings/tokens/new?description=gitingest&scopes=repo.",
+            UserWarning,
+            stacklevel=2,
+        )
