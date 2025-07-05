@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import string
 
 HEX_DIGITS: set[str] = set(string.hexdigits)
@@ -150,26 +149,3 @@ def _get_user_and_repo_from_path(path: str) -> tuple[str, str]:
         msg = f"Invalid repository URL '{path}'"
         raise ValueError(msg)
     return path_parts[0], path_parts[1]
-
-
-def _normalize_pattern(pattern: str) -> str:
-    """Normalize the given pattern by removing leading separators and appending a wildcard.
-
-    This function processes the pattern string by stripping leading directory separators
-    and appending a wildcard (``*``) if the pattern ends with a separator.
-
-    Parameters
-    ----------
-    pattern : str
-        The pattern to normalize.
-
-    Returns
-    -------
-    str
-        The normalized pattern.
-
-    """
-    pattern = pattern.lstrip(os.sep)
-    if pattern.endswith(os.sep):
-        pattern += "*"
-    return pattern

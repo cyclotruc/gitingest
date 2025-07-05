@@ -18,7 +18,6 @@ from gitingest.utils.query_parser_utils import (
     _get_user_and_repo_from_path,
     _is_valid_git_commit_hash,
     _is_valid_pattern,
-    _normalize_pattern,
     _validate_host,
     _validate_url_scheme,
 )
@@ -311,7 +310,7 @@ def _parse_patterns(pattern: set[str] | str) -> set[str]:
         if not _is_valid_pattern(p):
             raise InvalidPatternError(p)
 
-    return {_normalize_pattern(p) for p in parsed_patterns}
+    return parsed_patterns
 
 
 def _parse_local_dir_path(path_str: str) -> IngestionQuery:
