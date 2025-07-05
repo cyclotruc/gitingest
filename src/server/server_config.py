@@ -2,26 +2,9 @@
 
 from __future__ import annotations
 
-import os
 from fastapi.templating import Jinja2Templates
 
-# Helper function to get environment variables with type conversion
-def _get_env_var(key: str, default, cast_func=None):
-    """Get environment variable with GITINGEST_ prefix and optional type casting."""
-    env_key = f"GITINGEST_{key}"
-    value = os.environ.get(env_key)
-    
-    if value is None:
-        return default
-    
-    if cast_func:
-        try:
-            return cast_func(value)
-        except (ValueError, TypeError):
-            print(f"Warning: Invalid value for {env_key}: {value}. Using default: {default}")
-            return default
-    
-    return value
+from gitingest.utils.config_utils import _get_env_var
 
 MAX_DISPLAY_SIZE: int = _get_env_var("MAX_DISPLAY_SIZE", 300_000, int)
 DELETE_REPO_AFTER: int = _get_env_var("DELETE_REPO_AFTER", 60 * 60, int)  # In seconds (1 hour)

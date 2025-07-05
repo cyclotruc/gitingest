@@ -135,7 +135,7 @@ By default, the digest is written to a text file (`digest.txt`) in your current 
 - Use `--output/-o <filename>` to write to a specific file.
 - Use `--output/-o -` to output directly to `STDOUT` (useful for piping to other tools).
 
-Configure processing limits:
+### 🔧 Configure processing limits
 
 ```bash
 # Set higher limits for large repositories
@@ -157,32 +157,34 @@ See more options and usage details with:
 gitingest --help
 ```
 
-### 🔧 Configuration via Environment Variables
+### Configuration via Environment Variables
 
 You can configure various limits and settings using environment variables. All configuration environment variables start with the `GITINGEST_` prefix:
 
-**File Processing Configuration:**
-- `GITINGEST_MAX_FILE_SIZE` - Maximum size of a single file to process (default: 10485760 bytes, 10MB)
-- `GITINGEST_MAX_FILES` - Maximum number of files to process (default: 10000)
-- `GITINGEST_MAX_TOTAL_SIZE_BYTES` - Maximum size of output file (default: 524288000 bytes, 500MB)
-- `GITINGEST_MAX_DIRECTORY_DEPTH` - Maximum depth of directory traversal (default: 20)
-- `GITINGEST_DEFAULT_TIMEOUT` - Default operation timeout in seconds (default: 60)
-- `GITINGEST_OUTPUT_FILE_NAME` - Default output filename (default: "digest.txt")
-- `GITINGEST_TMP_BASE_PATH` - Base path for temporary files (default: system temp directory)
+#### File Processing Configuration
 
-**Server Configuration (for self-hosting):**
-- `GITINGEST_MAX_DISPLAY_SIZE` - Maximum size of content to display in UI (default: 300000 bytes)
-- `GITINGEST_DELETE_REPO_AFTER` - Repository cleanup timeout in seconds (default: 3600, 1 hour)
-- `GITINGEST_MAX_FILE_SIZE_KB` - Maximum file size for UI slider in KB (default: 102400, 100MB)
-- `GITINGEST_MAX_SLIDER_POSITION` - Maximum slider position in UI (default: 500)
+- `GITINGEST_MAX_FILE_SIZE` - Maximum size of a single file to process *(default: 10485760 bytes, 10 MB)*
+- `GITINGEST_MAX_FILES` - Maximum number of files to process *(default: 10000)*
+- `GITINGEST_MAX_TOTAL_SIZE_BYTES` - Maximum size of output file *(default: 524288000 bytes, 500 MB)*
+- `GITINGEST_MAX_DIRECTORY_DEPTH` - Maximum depth of directory traversal *(default: 20)*
+- `GITINGEST_DEFAULT_TIMEOUT` - Default operation timeout in seconds *(default: 60)*
+- `GITINGEST_OUTPUT_FILE_NAME` - Default output filename *(default: "digest.txt")*
+- `GITINGEST_TMP_BASE_PATH` - Base path for temporary files *(default: system temp directory)*
 
-**Example usage:**
+#### Server Configuration (for self-hosting)
+
+- `GITINGEST_MAX_DISPLAY_SIZE` - Maximum size of content to display in UI *(default: 300000 bytes)*
+- `GITINGEST_DELETE_REPO_AFTER` - Repository cleanup timeout in seconds *(default: 3600, 1 hour)*
+- `GITINGEST_MAX_FILE_SIZE_KB` - Maximum file size for UI slider in kB *(default: 102400, 100 MB)*
+- `GITINGEST_MAX_SLIDER_POSITION` - Maximum slider position in UI *(default: 500)*
+
+#### Example usage
 
 ```bash
 # Configure for large scientific repositories
 export GITINGEST_MAX_FILES=50000
-export GITINGEST_MAX_FILE_SIZE=20971520  # 20MB
-export GITINGEST_MAX_TOTAL_SIZE_BYTES=1073741824  # 1GB
+export GITINGEST_MAX_FILE_SIZE=20971520           # 20 MB
+export GITINGEST_MAX_TOTAL_SIZE_BYTES=1073741824  #  1 GB
 
 gitingest https://github.com/some/large-repo
 ```
@@ -219,9 +221,9 @@ summary, tree, content = ingest("https://github.com/username/repo-with-submodule
 # Configure limits programmatically
 summary, tree, content = ingest(
     "https://github.com/username/large-repo",
-    max_file_size=20 * 1024 * 1024,  # 20MB per file
+    max_file_size=20 * 1024 * 1024,   # 20 MB per file
     max_files=50000,                  # 50k files max
-    max_total_size_bytes=1024**3,     # 1GB total
+    max_total_size_bytes=1024**3,     # 1 GB total
     max_directory_depth=30            # 30 levels deep
 )
 ```

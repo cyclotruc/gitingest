@@ -7,7 +7,7 @@ from pathlib import Path  # noqa: TC003 (typing-only-standard-library-import) ne
 
 from pydantic import BaseModel, Field
 
-from gitingest.config import MAX_FILE_SIZE, MAX_FILES, MAX_TOTAL_SIZE_BYTES, MAX_DIRECTORY_DEPTH
+from gitingest.config import MAX_DIRECTORY_DEPTH, MAX_FILE_SIZE, MAX_FILES, MAX_TOTAL_SIZE_BYTES
 
 
 @dataclass
@@ -54,39 +54,39 @@ class IngestionQuery(BaseModel):  # pylint: disable=too-many-instance-attributes
     Attributes
     ----------
     user_name : str | None
-        The username or owner of the repository.
+        Username or owner of the repository.
     repo_name : str | None
-        The name of the repository.
+        Name of the repository.
     local_path : Path
-        The local path to the repository or file.
+        Local path to the repository or file.
     url : str | None
-        The URL of the repository.
+        URL of the repository.
     slug : str
-        The slug of the repository.
+        Slug of the repository.
     id : str
-        The ID of the repository.
+        ID of the repository.
     subpath : str
-        The subpath to the repository or file (default: ``"/"``).
+        Subpath to the repository or file (default: ``"/"``).
     type : str | None
-        The type of the repository or file.
+        Type of the repository or file.
     branch : str | None
-        The branch of the repository.
+        Branch of the repository.
     commit : str | None
-        The commit of the repository.
+        Commit of the repository.
     tag: str | None
-        The tag of the repository.
+        Tag of the repository.
     max_file_size : int
-        The maximum file size to ingest (default: 10 MB).
+        Maximum file size in bytes to ingest (default: 10 MB).
     max_files : int
-        The maximum number of files to process (default: 10,000).
+        Maximum number of files to ingest (default: 10,000).
     max_total_size_bytes : int
-        The maximum total size of all files in bytes (default: 500 MB).
+        Maximum total size of output file in bytes (default: 500 MB).
     max_directory_depth : int
-        The maximum depth of directory traversal (default: 20).
+        Maximum depth of directory traversal (default: 20).
     ignore_patterns : set[str]
-        The patterns to ignore (default: ``set()``).
+        Patterns to ignore.
     include_patterns : set[str] | None
-        The patterns to include.
+        Patterns to include.
     include_submodules : bool
         Whether to include all Git submodules within the repository. (default: ``False``)
 

@@ -97,9 +97,9 @@ per-file-ignores = { "tests/**/*.py" = ["S101"] } # Skip the "assert used" warni
 [tool.ruff.lint.pylint]
 max-returns = 10
 
-[tool.ruff.lint.isort]
-order-by-type = true
-case-sensitive = true
+# [tool.ruff.lint.isort]
+# order-by-type = true
+# case-sensitive = true
 
 [tool.pycln]
 all = true
