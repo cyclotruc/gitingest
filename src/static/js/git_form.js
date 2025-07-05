@@ -1,21 +1,19 @@
 // Strike-through / un-strike file lines when the pattern-type menu flips.
 function changePattern() {
-    const files = document.getElementsByName('tree-line');
+    const dirPre = document.getElementById('directory-structure-pre');
 
-    files.forEach((el) => {
-        if (el.textContent.includes('Directory structure:')) {return;}
-        [
-            'line-through',
-            'text-gray-500',
-            'hover:text-inherit',
-            'hover:no-underline',
-            'hover:line-through',
-            'hover:text-gray-500',
-        ].forEach((cls) => el.classList.toggle(cls));
+    if (!dirPre) {return;}
+
+    const treeLineElements = Array.from(dirPre.querySelectorAll('pre[name="tree-line"]'));
+
+    // Skip the first tree line element
+    treeLineElements.slice(2).forEach((element) => {
+        element.classList.toggle('line-through');
+        element.classList.toggle('text-gray-500');
     });
 }
 
-// Show/hide the Personal-Access-Token section when the “Private repository” checkbox is toggled.
+// Show/hide the Personal-Access-Token section when the "Private repository" checkbox is toggled.
 function toggleAccessSettings() {
     const container = document.getElementById('accessSettingsContainer');
     const examples = document.getElementById('exampleRepositories');
@@ -28,15 +26,6 @@ function toggleAccessSettings() {
 
 
 document.addEventListener('DOMContentLoaded', () => {
-    document
-        .getElementById('pattern_type')
-        ?.addEventListener('change', () => changePattern());
-
-    document
-        .getElementById('showAccessSettings')
-        ?.addEventListener('change', toggleAccessSettings);
-
-    // Initial UI sync
     toggleAccessSettings();
     changePattern();
 });

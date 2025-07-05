@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 value: form,
                 enumerable: true
             });
-            handleSubmit(submitEvent, false);
+            handleSubmit(submitEvent, true);
         });
     }
 });
