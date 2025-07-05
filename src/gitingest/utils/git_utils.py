@@ -4,19 +4,12 @@ from __future__ import annotations
 
 import asyncio
 import base64
-import os
 import re
 from typing import Final
 from urllib.parse import urlparse
 
-from starlette.status import (
-    HTTP_200_OK,
-    HTTP_301_MOVED_PERMANENTLY,
-    HTTP_302_FOUND,
-    HTTP_401_UNAUTHORIZED,
-    HTTP_403_FORBIDDEN,
-    HTTP_404_NOT_FOUND,
-)
+import httpx
+from starlette.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
 
 from gitingest.utils.compat_func import removesuffix
 from gitingest.utils.exceptions import InvalidGitHubTokenError
@@ -115,45 +108,28 @@ async def check_repo_exists(url: str, token: str | None = None) -> bool:
         If the host returns an unrecognised status code.
 
     """
-    # TODO: use `requests` instead of `curl`
-    cmd: list[str] = [
-        "curl",
-        "--silent",  # Suppress output
-        "--location",  # Follow redirects
-        "--write-out",
-        "%{http_code}",  # Write the HTTP status code to stdout
-        "-o",
-        os.devnull,
-    ]
+    headers = {}
 
     if token and is_github_host(url):
         host, owner, repo = _parse_github_url(url)
         # Public GitHub vs. GitHub Enterprise
         base_api = "https://api.github.com" if host == "github.com" else f"https://{host}/api/v3"
         url = f"{base_api}/repos/{owner}/{repo}"
-        cmd += ["--header", f"Authorization: Bearer {token}"]
+        headers["Authorization"] = f"Bearer {token}"
 
-    cmd.append(url)
+    async with httpx.AsyncClient(follow_redirects=True) as client:
+        try:
+            response = await client.head(url, headers=headers)
+        except httpx.RequestError:
+            return False
 
-    proc = await asyncio.create_subprocess_exec(
-        *cmd,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    stdout, _ = await proc.communicate()
+    status_code = response.status_code
 
-    if proc.returncode != 0:
-        return False
-
-    status = int(stdout.decode().strip())
-    if status in {HTTP_200_OK, HTTP_301_MOVED_PERMANENTLY}:
+    if status_code == HTTP_200_OK:
         return True
-    # TODO: handle 302 redirects
-    if status in {HTTP_404_NOT_FOUND, HTTP_302_FOUND}:
+    if status_code in {HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND}:
         return False
-    if status in {HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN}:
-        return False
-    msg = f"Unexpected HTTP status {status} for {url}"
+    msg = f"Unexpected HTTP status {status_code} for {url}"
     raise RuntimeError(msg)
 
 
