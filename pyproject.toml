@@ -44,7 +44,7 @@ dev = [
 ]
 
 [project.scripts]
-gitingest = "gitingest.cli:main"
+gitingest = "gitingest.__main__:main"
 
 [project.urls]
 homepage = "https://gitingest.com"
