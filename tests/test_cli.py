@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner, Result
 
-from gitingest.cli import main
+from gitingest.__main__ import main
 from gitingest.config import MAX_FILE_SIZE, OUTPUT_FILE_NAME
 
 
@@ -72,8 +72,8 @@ def test_cli_with_stdout_output() -> None:
         # ─── core expectations (stdout) ────────────────────────────────────-
         assert result.exit_code == 0, f"CLI exited with code {result.exit_code}, stderr: {result.stderr}"
         assert "---" in result.stdout, "Expected file separator '---' not found in STDOUT"
-        assert "src/gitingest/cli.py" in result.stdout, (
-            "Expected content (e.g., src/gitingest/cli.py) not found in STDOUT"
+        assert "src/gitingest/__main__.py" in result.stdout, (
+            "Expected content (e.g., src/gitingest/__main__.py) not found in STDOUT"
         )
         assert not output_file.exists(), f"Output file {output_file} was unexpectedly created."
 
