@@ -22,6 +22,9 @@ async def ingest_async(
     source: str,
     *,
     max_file_size: int = MAX_FILE_SIZE,
+    max_files: int | None = None,
+    max_total_size_bytes: int | None = None,
+    max_directory_depth: int | None = None,
     include_patterns: str | set[str] | None = None,
     exclude_patterns: str | set[str] | None = None,
     branch: str | None = None,
@@ -77,6 +80,9 @@ async def ingest_async(
     query: IngestionQuery = await parse_query(
         source=source,
         max_file_size=max_file_size,
+        max_files=max_files,
+        max_total_size_bytes=max_total_size_bytes,
+        max_directory_depth=max_directory_depth,
         from_web=False,
         include_patterns=include_patterns,
         ignore_patterns=exclude_patterns,
@@ -101,6 +107,9 @@ def ingest(
     source: str,
     *,
     max_file_size: int = MAX_FILE_SIZE,
+    max_files: int | None = None,
+    max_total_size_bytes: int | None = None,
+    max_directory_depth: int | None = None,
     include_patterns: str | set[str] | None = None,
     exclude_patterns: str | set[str] | None = None,
     branch: str | None = None,
@@ -122,6 +131,12 @@ def ingest(
         The source to analyze, which can be a URL (for a Git repository) or a local directory path.
     max_file_size : int
         Maximum allowed file size for file ingestion. Files larger than this size are ignored (default: 10 MB).
+    max_files : int | None
+        Maximum number of files to process. If ``None``, uses the default from config (default: 10,000).
+    max_total_size_bytes : int | None
+        Maximum total size of all files to process in bytes. If ``None``, uses the default from config (default: 500 MB).
+    max_directory_depth : int | None
+        Maximum depth of directory traversal. If ``None``, uses the default from config (default: 20).
     include_patterns : str | set[str] | None
         Pattern or set of patterns specifying which files to include. If ``None``, all files are included.
     exclude_patterns : str | set[str] | None
@@ -159,6 +174,9 @@ def ingest(
         ingest_async(
             source=source,
             max_file_size=max_file_size,
+            max_files=max_files,
+            max_total_size_bytes=max_total_size_bytes,
+            max_directory_depth=max_directory_depth,
             include_patterns=include_patterns,
             exclude_patterns=exclude_patterns,
             branch=branch,

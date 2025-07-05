@@ -28,6 +28,9 @@ async def parse_query(
     source: str,
     *,
     max_file_size: int,
+    max_files: int | None = None,
+    max_total_size_bytes: int | None = None,
+    max_directory_depth: int | None = None,
     from_web: bool,
     include_patterns: set[str] | str | None = None,
     ignore_patterns: set[str] | str | None = None,
@@ -41,6 +44,12 @@ async def parse_query(
         The source URL or file path to parse.
     max_file_size : int
         The maximum file size in bytes to include.
+    max_files : int | None
+        The maximum number of files to process. If None, uses default from config.
+    max_total_size_bytes : int | None
+        The maximum total size of all files in bytes. If None, uses default from config.
+    max_directory_depth : int | None
+        The maximum depth of directory traversal. If None, uses default from config.
     from_web : bool
         Flag indicating whether the source is a web URL.
     include_patterns : set[str] | str | None
@@ -89,6 +98,9 @@ async def parse_query(
         branch=query.branch,
         commit=query.commit,
         max_file_size=max_file_size,
+        max_files=max_files if max_files is not None else query.max_files,
+        max_total_size_bytes=max_total_size_bytes if max_total_size_bytes is not None else query.max_total_size_bytes,
+        max_directory_depth=max_directory_depth if max_directory_depth is not None else query.max_directory_depth,
         ignore_patterns=ignore_patterns_set,
         include_patterns=parsed_include,
     )

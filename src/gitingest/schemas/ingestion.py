@@ -7,7 +7,7 @@ from pathlib import Path  # noqa: TC003 (typing-only-standard-library-import) ne
 
 from pydantic import BaseModel, Field
 
-from gitingest.config import MAX_FILE_SIZE
+from gitingest.config import MAX_FILE_SIZE, MAX_FILES, MAX_TOTAL_SIZE_BYTES, MAX_DIRECTORY_DEPTH
 
 
 @dataclass
@@ -77,6 +77,12 @@ class IngestionQuery(BaseModel):  # pylint: disable=too-many-instance-attributes
         The tag of the repository.
     max_file_size : int
         The maximum file size to ingest (default: 10 MB).
+    max_files : int
+        The maximum number of files to process (default: 10,000).
+    max_total_size_bytes : int
+        The maximum total size of all files in bytes (default: 500 MB).
+    max_directory_depth : int
+        The maximum depth of directory traversal (default: 20).
     ignore_patterns : set[str]
         The patterns to ignore (default: ``set()``).
     include_patterns : set[str] | None
@@ -98,6 +104,9 @@ class IngestionQuery(BaseModel):  # pylint: disable=too-many-instance-attributes
     commit: str | None = None
     tag: str | None = None
     max_file_size: int = Field(default=MAX_FILE_SIZE)
+    max_files: int = Field(default=MAX_FILES)
+    max_total_size_bytes: int = Field(default=MAX_TOTAL_SIZE_BYTES)
+    max_directory_depth: int = Field(default=MAX_DIRECTORY_DEPTH)
     ignore_patterns: set[str] = set()  # TODO: ignore_patterns and include_patterns have the same type
     include_patterns: set[str] | None = None
     include_submodules: bool = False

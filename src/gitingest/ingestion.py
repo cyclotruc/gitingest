@@ -97,7 +97,7 @@ def _process_node(node: FileSystemNode, query: IngestionQuery, stats: FileSystem
         Statistics tracking object for the total file count and size.
 
     """
-    if limit_exceeded(stats, depth=node.depth):
+    if limit_exceeded(stats, depth=node.depth, query=query):
         return
 
     for sub_path in node.path.iterdir():
@@ -113,7 +113,7 @@ def _process_node(node: FileSystemNode, query: IngestionQuery, stats: FileSystem
             if sub_path.stat().st_size > query.max_file_size:
                 print(f"Skipping file {sub_path}: would exceed max file size limit")
                 continue
-            _process_file(path=sub_path, parent_node=node, stats=stats, local_path=query.local_path)
+            _process_file(path=sub_path, parent_node=node, stats=stats, local_path=query.local_path, query=query)
         elif sub_path.is_dir():
             child_directory_node = FileSystemNode(
                 name=sub_path.name,
@@ -167,7 +167,7 @@ def _process_symlink(path: Path, parent_node: FileSystemNode, stats: FileSystemS
     parent_node.file_count += 1
 
 
-def _process_file(path: Path, parent_node: FileSystemNode, stats: FileSystemStats, local_path: Path) -> None:
+def _process_file(path: Path, parent_node: FileSystemNode, stats: FileSystemStats, local_path: Path, query: IngestionQuery) -> None:
     """Process a file in the file system.
 
     This function checks the file's size, increments the statistics, and reads its content.
@@ -183,14 +183,16 @@ def _process_file(path: Path, parent_node: FileSystemNode, stats: FileSystemStat
         Statistics tracking object for the total file count and size.
     local_path : Path
         The base path of the repository or directory being processed.
+    query : IngestionQuery
+        The query object containing the limit configurations.
 
     """
-    if stats.total_files + 1 > MAX_FILES:
-        print(f"Maximum file limit ({MAX_FILES}) reached")
+    if stats.total_files + 1 > query.max_files:
+        print(f"Maximum file limit ({query.max_files}) reached")
         return
 
     file_size = path.stat().st_size
-    if stats.total_size + file_size > MAX_TOTAL_SIZE_BYTES:
+    if stats.total_size + file_size > query.max_total_size_bytes:
         print(f"Skipping file {path}: would exceed total size limit")
         return
 
@@ -212,7 +214,7 @@ def _process_file(path: Path, parent_node: FileSystemNode, stats: FileSystemStat
     parent_node.file_count += 1
 
 
-def limit_exceeded(stats: FileSystemStats, depth: int) -> bool:
+def limit_exceeded(stats: FileSystemStats, depth: int, query: IngestionQuery) -> bool:
     """Check if any of the traversal limits have been exceeded.
 
     This function checks if the current traversal has exceeded any of the configured limits:
@@ -224,6 +226,8 @@ def limit_exceeded(stats: FileSystemStats, depth: int) -> bool:
         Statistics tracking object for the total file count and size.
     depth : int
         The current depth of directory traversal.
+    query : IngestionQuery
+        The query object containing the limit configurations.
 
     Returns
     -------
@@ -231,16 +235,16 @@ def limit_exceeded(stats: FileSystemStats, depth: int) -> bool:
         ``True`` if any limit has been exceeded, ``False`` otherwise.
 
     """
-    if depth > MAX_DIRECTORY_DEPTH:
-        print(f"Maximum depth limit ({MAX_DIRECTORY_DEPTH}) reached")
+    if depth > query.max_directory_depth:
+        print(f"Maximum depth limit ({query.max_directory_depth}) reached")
         return True
 
-    if stats.total_files >= MAX_FILES:
-        print(f"Maximum file limit ({MAX_FILES}) reached")
+    if stats.total_files >= query.max_files:
+        print(f"Maximum file limit ({query.max_files}) reached")
         return True  # TODO: end recursion
 
-    if stats.total_size >= MAX_TOTAL_SIZE_BYTES:
-        print(f"Maxumum total size limit ({MAX_TOTAL_SIZE_BYTES / 1024 / 1024:.1f}MB) reached")
+    if stats.total_size >= query.max_total_size_bytes:
+        print(f"Maxumum total size limit ({query.max_total_size_bytes / 1024 / 1024:.1f}MB) reached")
         return True  # TODO: end recursion
 
     return False
