@@ -3,25 +3,22 @@
 from __future__ import annotations
 
 import os
-from typing import Callable
 
 
-def _get_env_var(key: str, default: int | str, cast_func: Callable[[str], int | str] | None = None) -> int | str:
-    """Get environment variable with ``GITINGEST_`` prefix and optional type casting.
+def _get_env_var(key: str, default: str) -> str:
+    """Get environment variable with ``GITINGEST_`` prefix.
 
     Parameters
     ----------
     key : str
         The name of the environment variable.
-    default : int | str
+    default : str
         The default value to return if the environment variable is not set.
-    cast_func : Callable[[str], int  |  str] | None
-        The function to cast the environment variable to the desired type.
 
     Returns
     -------
-    int | str
-        The value of the environment variable, cast to the desired type if provided.
+    str
+        The value of the environment variable as a string.
 
     """
     env_key = f"GITINGEST_{key}"
@@ -29,12 +26,5 @@ def _get_env_var(key: str, default: int | str, cast_func: Callable[[str], int | 
 
     if value is None:
         return default
-
-    if cast_func:
-        try:
-            return cast_func(value)
-        except (ValueError, TypeError):
-            print(f"Warning: Invalid value for {env_key}: {value}. Using default: {default}")
-            return default
 
     return value
