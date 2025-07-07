@@ -4,22 +4,17 @@ from __future__ import annotations
 
 import asyncio
 import base64
-import os
 import re
+import sys
 from typing import Final
 from urllib.parse import urlparse
 
-from starlette.status import (
-    HTTP_200_OK,
-    HTTP_301_MOVED_PERMANENTLY,
-    HTTP_302_FOUND,
-    HTTP_401_UNAUTHORIZED,
-    HTTP_403_FORBIDDEN,
-    HTTP_404_NOT_FOUND,
-)
+import httpx
+from starlette.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
 
 from gitingest.utils.compat_func import removesuffix
 from gitingest.utils.exceptions import InvalidGitHubTokenError
+from server.server_utils import Colors
 
 # GitHub Personal-Access tokens (classic + fine-grained).
 #   - ghp_ / gho_ / ghu_ / ghs_ / ghr_  → 36 alphanumerics
@@ -81,6 +76,8 @@ async def run_command(*args: str) -> tuple[bytes, bytes]:
 async def ensure_git_installed() -> None:
     """Ensure Git is installed and accessible on the system.
 
+    On Windows, this also checks whether Git is configured to support long file paths.
+
     Raises
     ------
     RuntimeError
@@ -92,6 +89,20 @@ async def ensure_git_installed() -> None:
     except RuntimeError as exc:
         msg = "Git is not installed or not accessible. Please install Git first."
         raise RuntimeError(msg) from exc
+    if sys.platform == "win32":
+        try:
+            stdout, _ = await run_command("git", "config", "core.longpaths")
+            if stdout.decode().strip().lower() != "true":
+                print(
+                    f"{Colors.BROWN}WARN{Colors.END}: {Colors.RED}Git clone may fail on Windows "
+                    f"due to long file paths:{Colors.END}",
+                )
+                print(f"{Colors.RED}To avoid this issue, consider enabling long path support with:{Colors.END}")
+                print(f"{Colors.RED}    git config --global core.longpaths true{Colors.END}")
+                print(f"{Colors.RED}Note: This command may require administrator privileges.{Colors.END}")
+        except RuntimeError:
+            # Ignore if checking 'core.longpaths' fails.
+            pass
 
 
 async def check_repo_exists(url: str, token: str | None = None) -> bool:
@@ -115,45 +126,28 @@ async def check_repo_exists(url: str, token: str | None = None) -> bool:
         If the host returns an unrecognised status code.
 
     """
-    # TODO: use `requests` instead of `curl`
-    cmd: list[str] = [
-        "curl",
-        "--silent",  # Suppress output
-        "--location",  # Follow redirects
-        "--write-out",
-        "%{http_code}",  # Write the HTTP status code to stdout
-        "-o",
-        os.devnull,
-    ]
+    headers = {}
 
     if token and is_github_host(url):
         host, owner, repo = _parse_github_url(url)
         # Public GitHub vs. GitHub Enterprise
         base_api = "https://api.github.com" if host == "github.com" else f"https://{host}/api/v3"
         url = f"{base_api}/repos/{owner}/{repo}"
-        cmd += ["--header", f"Authorization: Bearer {token}"]
+        headers["Authorization"] = f"Bearer {token}"
 
-    cmd.append(url)
+    async with httpx.AsyncClient(follow_redirects=True) as client:
+        try:
+            response = await client.head(url, headers=headers)
+        except httpx.RequestError:
+            return False
 
-    proc = await asyncio.create_subprocess_exec(
-        *cmd,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    stdout, _ = await proc.communicate()
+    status_code = response.status_code
 
-    if proc.returncode != 0:
-        return False
-
-    status = int(stdout.decode().strip())
-    if status in {HTTP_200_OK, HTTP_301_MOVED_PERMANENTLY}:
+    if status_code == HTTP_200_OK:
         return True
-    # TODO: handle 302 redirects
-    if status in {HTTP_404_NOT_FOUND, HTTP_302_FOUND}:
+    if status_code in {HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND}:
         return False
-    if status in {HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN}:
-        return False
-    msg = f"Unexpected HTTP status {status} for {url}"
+    msg = f"Unexpected HTTP status {status_code} for {url}"
     raise RuntimeError(msg)
 
 
