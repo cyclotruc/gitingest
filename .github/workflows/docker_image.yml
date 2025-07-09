@@ -50,6 +50,7 @@ jobs:
           flavor: |
             latest=false
           tags: |
+            type=ref,event=branch,branch=main
             type=ref,event=branch,branch=main,suffix=-${{ steps.vars.outputs.sha_short }}-${{ steps.vars.outputs.timestamp }}
             type=pep440,pattern={{raw}}
             type=ref,event=pr
