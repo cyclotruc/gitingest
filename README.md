@@ -1,6 +1,6 @@
 # Gitingest
 
-[![Screenshot of Gitingest front page](https://raw.githubusercontent.com/cyclotruc/gitingest/refs/heads/main/docs/frontpage.png)](https://gitingest.com)
+[![Screenshot of Gitingest front page](https://raw.githubusercontent.com/coderamp-labs/gitingest/refs/heads/main/docs/frontpage.png)](https://gitingest.com)
 
 <!-- Badges -->
 <!-- markdownlint-disable MD033 -->
@@ -10,13 +10,13 @@
   <a href="https://pypi.org/project/gitingest"><img src="https://img.shields.io/pypi/pyversions/gitingest.svg" alt="Python Versions"></a>
   <br>
   <!-- row 2 — quality & community -->
-  <a href="https://github.com/cyclotruc/gitingest/actions/workflows/ci.yml?query=branch%3Amain"><img src="https://github.com/cyclotruc/gitingest/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
+  <a href="https://github.com/coderamp-labs/gitingest/actions/workflows/ci.yml?query=branch%3Amain"><img src="https://github.com/coderamp-labs/gitingest/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
   <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"></a>
-  <a href="https://scorecard.dev/viewer/?uri=github.com/cyclotruc/gitingest"><img src="https://api.scorecard.dev/projects/github.com/cyclotruc/gitingest/badge" alt="OpenSSF Scorecard"></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/coderamp-labs/gitingest"><img src="https://api.scorecard.dev/projects/github.com/coderamp-labs/gitingest/badge" alt="OpenSSF Scorecard"></a>
   <br>
-  <a href="https://github.com/cyclotruc/gitingest/blob/main/LICENSE"><img src="https://img.shields.io/github/license/cyclotruc/gitingest.svg" alt="License"></a>
+  <a href="https://github.com/coderamp-labs/gitingest/blob/main/LICENSE"><img src="https://img.shields.io/github/license/coderamp-labs/gitingest.svg" alt="License"></a>
   <a href="https://pepy.tech/project/gitingest"><img src="https://pepy.tech/badge/gitingest" alt="Downloads"></a>
-  <a href="https://github.com/cyclotruc/gitingest"><img src="https://img.shields.io/github/stars/cyclotruc/gitingest" alt="GitHub Stars"></a>
+  <a href="https://github.com/coderamp-labs/gitingest"><img src="https://img.shields.io/github/stars/coderamp-labs/gitingest" alt="GitHub Stars"></a>
   <a href="https://discord.com/invite/zerRaGK9EC"><img src="https://img.shields.io/badge/Discord-Join_chat-5865F2?logo=discord&logoColor=white" alt="Discord"></a>
   <br>
   <a href="https://trendshift.io/repositories/13519"><img src="https://trendshift.io/api/badge/repositories/13519" alt="Trendshift" height="50"></a>
@@ -31,14 +31,14 @@ You can also replace `hub` with `ingest` in any GitHub URL to access the corresp
 [gitingest.com](https://gitingest.com) · [Chrome Extension](https://chromewebstore.google.com/detail/adfjahbijlkjfoicpjkhjicpjpjfaood) · [Firefox Add-on](https://addons.mozilla.org/firefox/addon/gitingest)
 
 <!-- Languages -->
-[Deutsch](https://www.readme-i18n.com/cyclotruc/gitingest?lang=de) |
-[Español](https://www.readme-i18n.com/cyclotruc/gitingest?lang=es) |
-[Français](https://www.readme-i18n.com/cyclotruc/gitingest?lang=fr) |
-[日本語](https://www.readme-i18n.com/cyclotruc/gitingest?lang=ja) |
-[한국어](https://www.readme-i18n.com/cyclotruc/gitingest?lang=ko) |
-[Português](https://www.readme-i18n.com/cyclotruc/gitingest?lang=pt) |
-[Русский](https://www.readme-i18n.com/cyclotruc/gitingest?lang=ru) |
-[中文](https://www.readme-i18n.com/cyclotruc/gitingest?lang=zh)
+[Deutsch](https://www.readme-i18n.com/coderamp-labs/gitingest?lang=de) |
+[Español](https://www.readme-i18n.com/coderamp-labs/gitingest?lang=es) |
+[Français](https://www.readme-i18n.com/coderamp-labs/gitingest?lang=fr) |
+[日本語](https://www.readme-i18n.com/coderamp-labs/gitingest?lang=ja) |
+[한국어](https://www.readme-i18n.com/coderamp-labs/gitingest?lang=ko) |
+[Português](https://www.readme-i18n.com/coderamp-labs/gitingest?lang=pt) |
+[Русский](https://www.readme-i18n.com/coderamp-labs/gitingest?lang=ru) |
+[中文](https://www.readme-i18n.com/coderamp-labs/gitingest?lang=zh)
 
 ## 🚀 Features
 
@@ -107,10 +107,10 @@ The `gitingest` command line tool allows you to analyze codebases and create a t
 gitingest /path/to/directory
 
 # From URL
-gitingest https://github.com/cyclotruc/gitingest
+gitingest https://github.com/coderamp-labs/gitingest
 
 # or from specific subdirectory
-gitingest https://github.com/cyclotruc/gitingest/tree/main/src/gitingest/utils
+gitingest https://github.com/coderamp-labs/gitingest/tree/main/src/gitingest/utils
 ```
 
 For private repositories, use the `--token/-t` option.
@@ -150,10 +150,10 @@ from gitingest import ingest
 summary, tree, content = ingest("path/to/directory")
 
 # or from URL
-summary, tree, content = ingest("https://github.com/cyclotruc/gitingest")
+summary, tree, content = ingest("https://github.com/coderamp-labs/gitingest")
 
 # or from a specific subdirectory
-summary, tree, content = ingest("https://github.com/cyclotruc/gitingest/tree/main/src/gitingest/utils")
+summary, tree, content = ingest("https://github.com/coderamp-labs/gitingest/tree/main/src/gitingest/utils")
 ```
 
 For private repositories, you can pass a token:
@@ -220,9 +220,9 @@ If you are hosting it on a domain, you can specify the allowed hostnames via env
 
 ### Non-technical ways to contribute
 
-- **Create an Issue**: If you find a bug or have an idea for a new feature, please [create an issue](https://github.com/cyclotruc/gitingest/issues/new) on GitHub. This will help us track and prioritize your request.
+- **Create an Issue**: If you find a bug or have an idea for a new feature, please [create an issue](https://github.com/coderamp-labs/gitingest/issues/new) on GitHub. This will help us track and prioritize your request.
 - **Spread the Word**: If you like Gitingest, please share it with your friends, colleagues, and on social media. This will help us grow the community and make Gitingest even better.
-- **Use Gitingest**: The best feedback comes from real-world usage! If you encounter any issues or have ideas for improvement, please let us know by [creating an issue](https://github.com/cyclotruc/gitingest/issues/new) on GitHub or by reaching out to us on [Discord](https://discord.com/invite/zerRaGK9EC).
+- **Use Gitingest**: The best feedback comes from real-world usage! If you encounter any issues or have ideas for improvement, please let us know by [creating an issue](https://github.com/coderamp-labs/gitingest/issues/new) on GitHub or by reaching out to us on [Discord](https://discord.com/invite/zerRaGK9EC).
 
 ### Technical ways to contribute
 
@@ -242,4 +242,4 @@ Check out the NPM alternative 📦 Repomix: <https://github.com/yamadashy/repomi
 
 ## 🚀 Project Growth
 
-[![Star History Chart](https://api.star-history.com/svg?repos=cyclotruc/gitingest&type=Date)](https://star-history.com/#cyclotruc/gitingest&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=coderamp-labs/gitingest&type=Date)](https://star-history.com/#coderamp-labs/gitingest&Date)

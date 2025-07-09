@@ -12,7 +12,7 @@ MAX_FILE_SIZE_KB: int = 100 * 1024  # 100 MB
 MAX_SLIDER_POSITION: int = 500  # Maximum slider position
 
 EXAMPLE_REPOS: list[dict[str, str]] = [
-    {"name": "Gitingest", "url": "https://github.com/cyclotruc/gitingest"},
+    {"name": "Gitingest", "url": "https://github.com/coderamp-labs/gitingest"},
     {"name": "FastAPI", "url": "https://github.com/tiangolo/fastapi"},
     {"name": "Flask", "url": "https://github.com/pallets/flask"},
     {"name": "Excalidraw", "url": "https://github.com/excalidraw/excalidraw"},

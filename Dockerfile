@@ -18,7 +18,7 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 # Stage 2: Runtime image
 FROM python:3.13-slim
-LABEL org.opencontainers.image.source="https://github.com/cyclotruc/gitingest"
+LABEL org.opencontainers.image.source="https://github.com/coderamp-labs/gitingest"
 
 # Minimal runtime utilities
 RUN apt-get update \
