@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from server.routers import dynamic, index, ingest
+from server.routers import dynamic, index, ingest, metrics
 from server.server_config import templates
 from server.server_utils import lifespan, limiter, rate_limit_exception_handler
 
@@ -159,6 +159,8 @@ def openapi_json() -> JSONResponse:
 
 
 # Include routers for modular endpoints
+if os.getenv("GITINGEST_PROMETHEUS_TOKEN") is not None:
+    app.include_router(metrics)
 app.include_router(index)
 app.include_router(ingest)
 app.include_router(dynamic)
