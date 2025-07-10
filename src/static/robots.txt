@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 Allow: /api/
-Allow: /cyclotruc/gitingest/
+Allow: /coderamp-labs/gitingest/

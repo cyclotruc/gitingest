@@ -1,0 +1,38 @@
+{% extends "base.jinja" %}
+{% block title %}GitIngest API{% endblock %}
+{% block content %}
+    <div class="mb-8">
+        <div class="relative w-full flex sm:flex-row flex-col justify-center sm:items-center">
+            {# Title & Sparkles #}
+            <h1 class="landing-page-title">
+                GitIngest
+                <br>
+                API&nbsp;
+            </h1>
+            <img src="/static/svg/sparkle-red.svg" class="sparkle-red no-drag">
+            <img src="/static/svg/sparkle-green.svg" class="sparkle-green no-drag">
+        </div>
+        <p class="intro-text mt-8">Turn any Git repository into a simple text digest of its codebase.</p>
+        <p class="intro-text mt-0">This is useful for feeding a codebase into any LLM.</p>
+    </div>
+    <div class="bg-[#fff4da] rounded-xl border-[3px] border-gray-900 p-4 md:p-8 relative z-20">
+        <div id="swagger-ui"></div>
+    </div>
+    <link rel="stylesheet"
+          href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
+    <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+    <script>
+  window.onload = function() {
+    SwaggerUIBundle({
+      url: "/openapi.json",
+      dom_id: '#swagger-ui',
+      presets: [
+        SwaggerUIBundle.presets.apis,
+        SwaggerUIBundle.SwaggerUIStandalonePreset
+      ],
+      layout: "BaseLayout",
+      deepLinking: true,
+    });
+  }
+    </script>
+{% endblock %}

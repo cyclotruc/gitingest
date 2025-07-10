@@ -355,7 +355,7 @@ def ingest_with_token_rotation(repo_url: str, token_manager):
 ---
 ## 7. Support & Resources for AI Developers
 * **Web UI official instance**: https://gitingest.com
-* **GitHub Repository**: https://github.com/cyclotruc/gitingest
+* **GitHub Repository**: https://github.com/coderamp-labs/gitingest
 * **Python Package**: https://pypi.org/project/gitingest/
 * **Community Support**: https://discord.gg/zerRaGK9EC
 

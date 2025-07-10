@@ -8,7 +8,7 @@ If you ever get stuck, reach out on [Discord](https://discord.com/invite/zerRaGK
 ## How to Contribute (non-technical)
 
 - **Create an Issue** – found a bug or have a feature idea?
-  [Open an issue](https://github.com/cyclotruc/gitingest/issues/new).
+  [Open an issue](https://github.com/coderamp-labs/gitingest/issues/new).
 - **Spread the Word** – tweet, blog, or tell a friend.
 - **Use Gitingest** – real-world usage gives the best feedback. File issues or ping us on [Discord](https://discord.com/invite/zerRaGK9EC) with anything you notice.
 
@@ -23,7 +23,7 @@ If you ever get stuck, reach out on [Discord](https://discord.com/invite/zerRaGK
 2. **Clone** your fork:
 
    ```bash
-   git clone https://github.com/cyclotruc/gitingest.git
+   git clone https://github.com/coderamp-labs/gitingest.git
    cd gitingest
    ```
 

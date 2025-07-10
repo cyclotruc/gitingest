@@ -233,7 +233,7 @@ async def test_clone_specific_branch(tmp_path: Path) -> None:
     When ``clone_repo`` is called,
     Then the repository should be cloned and checked out at that branch.
     """
-    repo_url = "https://github.com/cyclotruc/gitingest.git"
+    repo_url = "https://github.com/coderamp-labs/gitingest.git"
     branch_name = "main"
     local_path = tmp_path / "gitingest"
     clone_config = CloneConfig(url=repo_url, local_path=str(local_path), branch=branch_name)
