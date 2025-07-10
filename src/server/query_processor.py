@@ -99,7 +99,7 @@ async def process_query(
             print(f"{Colors.BROWN}WARN{Colors.END}: {Colors.RED}<-  {Colors.END}", end="")
             print(f"{Colors.RED}{exc}{Colors.END}")
 
-        return IngestErrorResponse(error=str(exc), repo_url=short_repo_url)
+        return IngestErrorResponse(error=str(exc))
 
     if len(content) > MAX_DISPLAY_SIZE:
         content = (
@@ -122,6 +122,7 @@ async def process_query(
         repo_url=input_text,
         short_repo_url=short_repo_url,
         summary=summary,
+        ingest_id=query.id,
         tree=tree,
         content=content,
         default_max_file_size=slider_position,

@@ -56,7 +56,7 @@ async def test_remote_repository_analysis(request: pytest.FixtureRequest) -> Non
         "token": "",
     }
 
-    response = client.post("/api/ingest", data=form_data)
+    response = client.post("/api/ingest", json=form_data)
     assert response.status_code == status.HTTP_200_OK, f"Form submission failed: {response.text}"
 
     # Check that response is JSON
@@ -81,14 +81,13 @@ async def test_invalid_repository_url(request: pytest.FixtureRequest) -> None:
         "token": "",
     }
 
-    response = client.post("/api/ingest", data=form_data)
+    response = client.post("/api/ingest", json=form_data)
     # Should return 400 for invalid repository
     assert response.status_code == status.HTTP_400_BAD_REQUEST, f"Request failed: {response.text}"
 
     # Check that response is JSON error
     response_data = response.json()
     assert "error" in response_data
-    assert "repo_url" in response_data
 
 
 @pytest.mark.asyncio
@@ -104,7 +103,7 @@ async def test_large_repository(request: pytest.FixtureRequest) -> None:
         "token": "",
     }
 
-    response = client.post("/api/ingest", data=form_data)
+    response = client.post("/api/ingest", json=form_data)
     assert response.status_code == status.HTTP_200_OK, f"Request failed: {response.text}"
 
     response_data = response.json()
@@ -128,7 +127,7 @@ async def test_concurrent_requests(request: pytest.FixtureRequest) -> None:
             "pattern": "",
             "token": "",
         }
-        response = client.post("/api/ingest", data=form_data)
+        response = client.post("/api/ingest", json=form_data)
         assert response.status_code == status.HTTP_200_OK, f"Request failed: {response.text}"
 
         response_data = response.json()
@@ -156,7 +155,7 @@ async def test_large_file_handling(request: pytest.FixtureRequest) -> None:
         "token": "",
     }
 
-    response = client.post("/api/ingest", data=form_data)
+    response = client.post("/api/ingest", json=form_data)
     assert response.status_code == status.HTTP_200_OK, f"Request failed: {response.text}"
 
     response_data = response.json()
@@ -179,7 +178,7 @@ async def test_repository_with_patterns(request: pytest.FixtureRequest) -> None:
         "token": "",
     }
 
-    response = client.post("/api/ingest", data=form_data)
+    response = client.post("/api/ingest", json=form_data)
     assert response.status_code == status.HTTP_200_OK, f"Request failed: {response.text}"
 
     response_data = response.json()

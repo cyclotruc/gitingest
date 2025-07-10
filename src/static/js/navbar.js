@@ -7,7 +7,7 @@ function formatStarCount(count) {
 
 async function fetchGitHubStars() {
     try {
-        const res = await fetch('https://api.github.com/repos/cyclotruc/gitingest');
+        const res = await fetch('https://api.github.com/repos/coderamp-labs/gitingest');
 
         if (!res.ok) {throw new Error(`${res.status} ${res.statusText}`);}
         const data = await res.json();
