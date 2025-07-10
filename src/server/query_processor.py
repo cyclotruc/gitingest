@@ -73,8 +73,8 @@ async def process_query(
             source=input_text,
             max_file_size=max_file_size,
             from_web=True,
-            include_patterns=include_patterns,
             ignore_patterns=exclude_patterns,
+            include_patterns=include_patterns,
             token=token,
         )
         query.ensure_url()
