@@ -52,7 +52,8 @@ body:
         - Web UI
         - CLI
         - PyPI package
-        - All / multiple
+        - CLI + PyPI package
+        - All
     validations:
       required: true
 
