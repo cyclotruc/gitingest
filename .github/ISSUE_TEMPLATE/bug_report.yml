@@ -100,10 +100,10 @@ body:
       default: 0
       options:
         - "Select one..."
+        - Not relevant (Web UI)
         - macOS
         - Windows
         - Linux
-        - Not relevant (Web UI)
     validations:
       required: true
 
@@ -114,12 +114,12 @@ body:
       default: 0
       options:
         - "Select one..."
+        - Not relevant (CLI / PyPI)
         - Chrome
         - Firefox
         - Safari
         - Edge
         - Other (specify below)
-        - Not relevant (CLI / PyPI)
     validations:
       required: true
 
