@@ -107,6 +107,28 @@ body:
     validations:
       required: true
 
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser (Web UI only)
+      default: 0
+      options:
+        - "Select one..."
+        - Chrome
+        - Firefox
+        - Safari
+        - Edge
+        - Other (specify below)
+        - Not relevant (CLI / PyPI)
+    validations:
+      required: true
+
+  - type: input
+    id: browser_other
+    attributes:
+      label: Other browser
+      placeholder: If you selected "Other", please specify the browser here.
+
   - type: input
     id: gitingest_version
     attributes:
