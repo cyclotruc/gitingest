@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import threading
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -12,7 +13,8 @@ from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from server.routers import dynamic, index, ingest, metrics
+from server.metrics_server import start_metrics_server
+from server.routers import dynamic, index, ingest
 from server.server_config import templates
 from server.server_utils import lifespan, limiter, rate_limit_exception_handler
 
@@ -25,6 +27,17 @@ app.state.limiter = limiter
 
 # Register the custom exception handler for rate limits
 app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
+
+# Start metrics server in a separate thread if enabled
+if os.getenv("GITINGEST_METRICS_ENABLED", "false").lower() == "true":
+    metrics_host = os.getenv("GITINGEST_METRICS_HOST", "127.0.0.1")
+    metrics_port = int(os.getenv("GITINGEST_METRICS_PORT", "9090"))
+    metrics_thread = threading.Thread(
+        target=start_metrics_server,
+        args=(metrics_host, metrics_port),
+        daemon=True,
+    )
+    metrics_thread.start()
 
 
 # Mount static files dynamically to serve CSS, JS, and other static assets
@@ -159,8 +172,6 @@ def openapi_json() -> JSONResponse:
 
 
 # Include routers for modular endpoints
-if os.getenv("GITINGEST_PROMETHEUS_TOKEN") is not None:
-    app.include_router(metrics)
 app.include_router(index)
 app.include_router(ingest)
 app.include_router(dynamic)
