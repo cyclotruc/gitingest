@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi.templating import Jinja2Templates
 
 MAX_DISPLAY_SIZE: int = 300_000
@@ -19,4 +21,7 @@ EXAMPLE_REPOS: list[dict[str, str]] = [
     {"name": "ApiAnalytics", "url": "https://github.com/tom-draper/api-analytics"},
 ]
 
-templates = Jinja2Templates(directory="server/templates")
+
+# Use absolute path to templates directory
+templates_dir = Path(__file__).parent / "templates"
+templates = Jinja2Templates(directory=templates_dir)
