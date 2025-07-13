@@ -38,3 +38,6 @@ tmp/
 # Project-specific files
 history.txt
 digest.txt
+
+# Environment variables
+.env
