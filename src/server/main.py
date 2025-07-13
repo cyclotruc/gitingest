@@ -29,7 +29,7 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
 
 # Start metrics server in a separate thread if enabled
-if os.getenv("GITINGEST_METRICS_ENABLED", "false").lower() == "true":
+if os.getenv("GITINGEST_METRICS_ENABLED") is not None:
     metrics_host = os.getenv("GITINGEST_METRICS_HOST", "127.0.0.1")
     metrics_port = int(os.getenv("GITINGEST_METRICS_PORT", "9090"))
     metrics_thread = threading.Thread(
