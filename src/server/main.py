@@ -33,6 +33,7 @@ if os.getenv("GITINGEST_SENTRY_ENABLED") is not None:
         profile_session_sample_rate = float(os.getenv("GITINGEST_SENTRY_PROFILE_SESSION_SAMPLE_RATE", "1.0"))
         profile_lifecycle = os.getenv("GITINGEST_SENTRY_PROFILE_LIFECYCLE", "trace")
         send_default_pii = os.getenv("GITINGEST_SENTRY_SEND_DEFAULT_PII", "true").lower() == "true"
+        sentry_environment = os.getenv("GITINGEST_SENTRY_ENVIRONMENT", "")
 
         sentry_sdk.init(
             dsn=sentry_dsn,
@@ -44,6 +45,8 @@ if os.getenv("GITINGEST_SENTRY_ENABLED") is not None:
             profile_session_sample_rate=profile_session_sample_rate,
             # Set profile_lifecycle to automatically run the profiler
             profile_lifecycle=profile_lifecycle,
+            # Set environment name
+            environment=sentry_environment,
         )
 
 # Initialize the FastAPI application with lifespan
