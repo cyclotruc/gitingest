@@ -6,6 +6,7 @@ import os
 import threading
 from pathlib import Path
 
+import sentry_sdk
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
@@ -20,6 +21,30 @@ from server.server_utils import lifespan, limiter, rate_limit_exception_handler
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Initialize Sentry SDK if enabled
+if os.getenv("GITINGEST_SENTRY_ENABLED") is not None:
+    sentry_dsn = os.getenv("GITINGEST_SENTRY_DSN")
+
+    # Only initialize Sentry if DSN is provided
+    if sentry_dsn:
+        # Configure Sentry options from environment variables
+        traces_sample_rate = float(os.getenv("GITINGEST_SENTRY_TRACES_SAMPLE_RATE", "1.0"))
+        profile_session_sample_rate = float(os.getenv("GITINGEST_SENTRY_PROFILE_SESSION_SAMPLE_RATE", "1.0"))
+        profile_lifecycle = os.getenv("GITINGEST_SENTRY_PROFILE_LIFECYCLE", "trace")
+        send_default_pii = os.getenv("GITINGEST_SENTRY_SEND_DEFAULT_PII", "true").lower() == "true"
+
+        sentry_sdk.init(
+            dsn=sentry_dsn,
+            # Add data like request headers and IP for users
+            send_default_pii=send_default_pii,
+            # Set traces_sample_rate to capture transactions for tracing
+            traces_sample_rate=traces_sample_rate,
+            # Set profile_session_sample_rate to profile sessions
+            profile_session_sample_rate=profile_session_sample_rate,
+            # Set profile_lifecycle to automatically run the profiler
+            profile_lifecycle=profile_lifecycle,
+        )
 
 # Initialize the FastAPI application with lifespan
 app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None)

@@ -217,6 +217,21 @@ If you are hosting it on a domain, you can specify the allowed hostnames via env
    ALLOWED_HOSTS="example.com, localhost, 127.0.0.1"
    ```
 
+### Environment Variables
+
+The application can be configured using the following environment variables:
+
+- **ALLOWED_HOSTS**: Comma-separated list of allowed hostnames (default: "gitingest.com, *.gitingest.com, localhost, 127.0.0.1")
+- **GITINGEST_METRICS_ENABLED**: Enable Prometheus metrics server (set to any value to enable)
+- **GITINGEST_METRICS_HOST**: Host for the metrics server (default: "127.0.0.1")
+- **GITINGEST_METRICS_PORT**: Port for the metrics server (default: "9090")
+- **GITINGEST_SENTRY_ENABLED**: Enable Sentry error tracking (set to any value to enable)
+- **GITINGEST_SENTRY_DSN**: Sentry DSN (required if Sentry is enabled)
+- **GITINGEST_SENTRY_TRACES_SAMPLE_RATE**: Sampling rate for performance data (default: "1.0", range: 0.0-1.0)
+- **GITINGEST_SENTRY_PROFILE_SESSION_SAMPLE_RATE**: Sampling rate for profile sessions (default: "1.0", range: 0.0-1.0)
+- **GITINGEST_SENTRY_PROFILE_LIFECYCLE**: Profile lifecycle mode (default: "trace")
+- **GITINGEST_SENTRY_SEND_DEFAULT_PII**: Send default personally identifiable information (default: "true")
+
 ## 🤝 Contributing
 
 ### Non-technical ways to contribute
@@ -236,6 +251,7 @@ Gitingest aims to be friendly for first time contributors, with a simple Python 
 - [Jinja2](https://jinja.palletsprojects.com) - HTML templating
 - [tiktoken](https://github.com/openai/tiktoken) - Token estimation
 - [posthog](https://github.com/PostHog/posthog) - Amazing analytics
+- [Sentry](https://sentry.io) - Error tracking and performance monitoring
 
 ### Looking for a JavaScript/FileSystemNode package?
 
