@@ -7,7 +7,7 @@ on:
       - '*'
   merge_group:
   pull_request:
-    types: [assigned, opened, synchronize, reopened]
+    types: [labeled, synchronize, reopened, ready_for_review, opened]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
@@ -16,6 +16,8 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  # Set to 'true' to allow pushing container from pull requests with the label 'push-container'
+  PUSH_FROM_PR: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'push-container') }}
 
 jobs:
   docker-build:
@@ -53,7 +55,7 @@ jobs:
             type=ref,event=branch,branch=main
             type=ref,event=branch,branch=main,suffix=-${{ steps.vars.outputs.sha_short }}-${{ steps.vars.outputs.timestamp }}
             type=pep440,pattern={{raw}}
-            type=ref,event=pr
+            type=ref,event=pr,suffix=-${{ steps.vars.outputs.sha_short }}-${{ steps.vars.outputs.timestamp }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -67,14 +69,14 @@ jobs:
         with:
           context: .
           platforms: linux/amd64, linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
+          push: ${{ github.event_name != 'pull_request' || env.PUSH_FROM_PR == 'true' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Generate artifact attestation
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' || env.PUSH_FROM_PR == 'true'
         uses: actions/attest-build-provenance@v2
         with:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}

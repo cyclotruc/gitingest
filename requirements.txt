@@ -2,8 +2,10 @@ click>=8.0.0
 fastapi[standard]>=0.109.1  # Vulnerable to https://osv.dev/vulnerability/PYSEC-2024-38
 httpx
 pathspec>=0.12.1
+prometheus-client
 pydantic
 python-dotenv
+sentry-sdk[fastapi]
 slowapi
 starlette>=0.40.0  # Vulnerable to https://osv.dev/vulnerability/GHSA-f96h-pmfr-66vw
 tiktoken>=0.7.0  # Support for o200k_base encoding

@@ -2,12 +2,15 @@
 
 from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import FileResponse, JSONResponse
+from prometheus_client import Counter
 
 from gitingest.config import TMP_BASE_PATH
 from server.models import IngestRequest
 from server.routers_utils import COMMON_INGEST_RESPONSES, _perform_ingestion
 from server.server_config import MAX_DISPLAY_SIZE
 from server.server_utils import limiter
+
+ingest_counter = Counter("gitingest_ingest_total", "Number of ingests", ["status", "url"])
 
 router = APIRouter()
 
@@ -33,13 +36,16 @@ async def api_ingest(
     - **JSONResponse**: Success response with ingestion results or error response with appropriate HTTP status code
 
     """
-    return await _perform_ingestion(
+    response = await _perform_ingestion(
         input_text=ingest_request.input_text,
         max_file_size=ingest_request.max_file_size,
         pattern_type=ingest_request.pattern_type,
         pattern=ingest_request.pattern,
         token=ingest_request.token,
     )
+    # limit URL to 255 characters
+    ingest_counter.labels(status=response.status_code, url=ingest_request.input_text[:255]).inc()
+    return response
 
 
 @router.get("/api/{user}/{repository}", responses=COMMON_INGEST_RESPONSES)
@@ -72,13 +78,16 @@ async def api_ingest_get(
     **Returns**
     - **JSONResponse**: Success response with ingestion results or error response with appropriate HTTP status code
     """
-    return await _perform_ingestion(
+    response = await _perform_ingestion(
         input_text=f"{user}/{repository}",
         max_file_size=max_file_size,
         pattern_type=pattern_type,
         pattern=pattern,
         token=token or None,
     )
+    # limit URL to 255 characters
+    ingest_counter.labels(status=response.status_code, url=f"{user}/{repository}"[:255]).inc()
+    return response
 
 
 @router.get("/api/download/file/{ingest_id}", response_class=FileResponse)

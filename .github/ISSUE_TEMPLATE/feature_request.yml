@@ -1,0 +1,102 @@
+name: Feature request 💡
+description: Suggest a new feature or improvement for Gitingest
+title: "(feat): "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to help us improve **Gitingest**! :sparkles:
+
+        Please fill in the sections below to describe your idea. The more detail you provide, the easier it is for us to evaluate and plan the work. :point_down:
+
+  - type: input
+    id: summary
+    attributes:
+      label: Feature summary
+      placeholder: One-sentence description of the feature.
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What problem does this feature solve? How does it affect your workflow?
+      placeholder: Why is this feature important? Describe the pain point or limitation you're facing.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      placeholder: Describe what you would like to see happen.
+      description: Outline the feature as you imagine it. *(optional)*
+
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      placeholder: List other approaches you've considered or work-arounds you use today.
+      description: Feel free to mention why those alternatives don't fully solve the problem.
+
+  - type: dropdown
+    id: interface
+    attributes:
+      label: Which interface would this affect?
+      default: 0
+      options:
+        - "Select one..."
+        - Web UI
+        - CLI
+        - PyPI package
+        - CLI + PyPI package
+        - All
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: How important is this to you?
+      default: 0
+      options:
+        - "Select one..."
+        - Nice to have
+        - Important
+        - Critical
+    validations:
+      required: true
+
+  - type: dropdown
+    id: willingness
+    attributes:
+      label: Would you like to work on this feature yourself?
+      default: 0
+      options:
+        - "Select one..."
+        - Yes, I'd like to implement it
+        - Maybe, if I get some guidance
+        - No, just requesting (absolutely fine!)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: support_needed
+    attributes:
+      label: Would you need support from the maintainers (if you're implementing it yourself)?
+      default: 0
+      options:
+        - "Select one..."
+        - No, I can handle it solo
+        - Yes, I'd need some guidance
+        - Not sure yet
+        - This is just a suggestion, I'm not planning to implement it myself (absolutely fine!)
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional context, screenshots, or examples
+      placeholder: Add links, sketches, or any other context that would help us understand and implement the feature.
