@@ -114,7 +114,7 @@ async def download_ingest(ingest_id: str) -> FileResponse:
     """
     # Normalize and validate the directory path
     directory = (TMP_BASE_PATH / ingest_id).resolve()
-    if not str(directory).startswith(str(TMP_BASE_PATH)):
+    if not str(directory).startswith(str(TMP_BASE_PATH.resolve())):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Invalid ingest ID: {ingest_id!r}")
 
     if not directory.is_dir():
