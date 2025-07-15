@@ -112,7 +112,11 @@ async def download_ingest(ingest_id: str) -> FileResponse:
     - **HTTPException**: **403** - the process lacks permission to read the directory or file
 
     """
+    # Normalize and validate the directory path
     directory = TMP_BASE_PATH / ingest_id
+    directory = directory.resolve()
+    if not str(directory).startswith(str(TMP_BASE_PATH)):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Invalid ingest ID: {ingest_id!r}")
 
     if not directory.is_dir():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Digest {ingest_id!r} not found")
