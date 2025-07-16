@@ -1,4 +1,11 @@
-"""Define the schema for the filesystem representation."""
+"""Define the schema for the filesystem representation.
+
+Memory optimization:
+- Lazy loading: File content is only loaded when the content property is accessed
+- Content caching: Content is cached to avoid repeated file reads
+- Cache clearing: The clear_content_cache method allows freeing memory when content is no longer needed
+- Chunked reading: Large files are read in chunks to avoid loading everything at once
+"""
 
 from __future__ import annotations
 
@@ -49,6 +56,7 @@ class FileSystemNode:  # pylint: disable=too-many-instance-attributes
     dir_count: int = 0
     depth: int = 0
     children: list[FileSystemNode] = field(default_factory=list)
+    _content_cache: str | None = field(default=None, repr=False)
 
     def sort_children(self) -> None:
         """Sort the children nodes of a directory according to a specific order.
@@ -83,6 +91,18 @@ class FileSystemNode:  # pylint: disable=too-many-instance-attributes
 
         self.children.sort(key=_sort_key)
 
+    def clear_content_cache(self) -> None:
+        """Clear the cached content to free up memory.
+
+        This method clears the content cache of this node and all its children recursively,
+        allowing the garbage collector to reclaim memory used by file contents.
+        """
+        self._content_cache = None
+
+        # Recursively clear cache for all children
+        for child in self.children:
+            child.clear_content_cache()
+
     @property
     def content_string(self) -> str:
         """Return the content of the node as a string, including path and content.
@@ -104,11 +124,14 @@ class FileSystemNode:  # pylint: disable=too-many-instance-attributes
         return "\n".join(parts) + "\n\n"
 
     @property
-    def content(self) -> str:  # pylint: disable=too-many-return-statements
+    def content(self) -> str:  # pylint: disable=too-many-return-statements,too-many-branches  # noqa: C901, PLR0912
         """Return file content (if text / notebook) or an explanatory placeholder.
 
         Heuristically decides whether the file is text or binary by decoding a small chunk of the file
         with multiple encodings and checking for common binary markers.
+
+        Uses lazy loading to avoid loading the entire file into memory until needed,
+        and caches the result to avoid repeated file reads.
 
         Returns
         -------
@@ -121,29 +144,38 @@ class FileSystemNode:  # pylint: disable=too-many-instance-attributes
             If the node is a directory.
 
         """
+        # Return cached content if available
+        if self._content_cache is not None:
+            return self._content_cache
+
         if self.type == FileSystemNodeType.DIRECTORY:
             msg = "Cannot read content of a directory node"
             raise ValueError(msg)
 
         if self.type == FileSystemNodeType.SYMLINK:
-            return ""  # TODO: are we including the empty content of symlinks?
+            self._content_cache = ""  # TODO: are we including the empty content of symlinks?
+            return self._content_cache
 
         if self.path.suffix == ".ipynb":  # Notebook
             try:
-                return process_notebook(self.path)
+                self._content_cache = process_notebook(self.path)
             except Exception as exc:
-                return f"Error processing notebook: {exc}"
+                self._content_cache = f"Error processing notebook: {exc}"
+            return self._content_cache
 
         chunk = _read_chunk(self.path)
 
         if chunk is None:
-            return "Error reading file"
+            self._content_cache = "Error reading file"
+            return self._content_cache
 
         if chunk == b"":
-            return "[Empty file]"
+            self._content_cache = "[Empty file]"
+            return self._content_cache
 
         if not _decodes(chunk, "utf-8"):
-            return "[Binary file]"
+            self._content_cache = "[Binary file]"
+            return self._content_cache
 
         # Find the first encoding that decodes the sample
         good_enc: str | None = next(
@@ -152,10 +184,37 @@ class FileSystemNode:  # pylint: disable=too-many-instance-attributes
         )
 
         if good_enc is None:
-            return "Error: Unable to decode file with available encodings"
+            self._content_cache = "Error: Unable to decode file with available encodings"
+            return self._content_cache
 
         try:
-            with self.path.open(encoding=good_enc) as fp:
-                return fp.read()
+            # Read file in chunks to avoid loading large files entirely into memory
+            # For very large files, we'll read and process in smaller chunks
+            chunk_size = 1024 * 1024  # 1MB chunks
+            file_size = self.path.stat().st_size
+
+            # For files larger than 10MB, use a more memory-efficient approach
+            if file_size > 10 * 1024 * 1024:
+                # Read just enough to give a meaningful preview
+                preview_size = 1024 * 100  # 100KB preview
+                with self.path.open(encoding=good_enc) as fp:
+                    preview = fp.read(preview_size)
+
+                self._content_cache = (
+                    f"{preview}\n\n[... File truncated (total size: {file_size / (1024 * 1024):.1f} MB) ...]"
+                )
+            else:
+                # For smaller files, read in chunks but still load into memory
+                content_chunks = []
+                with self.path.open(encoding=good_enc) as fp:
+                    while True:
+                        chunk = fp.read(chunk_size)
+                        if not chunk:
+                            break
+                        content_chunks.append(chunk)
+
+                self._content_cache = "".join(content_chunks)
         except (OSError, UnicodeDecodeError) as exc:
-            return f"Error reading file with {good_enc!r}: {exc}"
+            self._content_cache = f"Error reading file with {good_enc!r}: {exc}"
+
+        return self._content_cache

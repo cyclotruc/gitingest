@@ -259,10 +259,28 @@ async def _write_output(tree: str, content: str, target: str | None) -> None:
         The path to the output file. If ``None``, the results are not written to a file.
 
     """
-    data = f"{tree}\n{content}"
     loop = asyncio.get_running_loop()
+
     if target == "-":
-        await loop.run_in_executor(None, sys.stdout.write, data)
+        # Write to stdout in chunks to avoid large memory allocation
+        await loop.run_in_executor(None, sys.stdout.write, tree)
+        await loop.run_in_executor(None, sys.stdout.write, "\n")
+        await loop.run_in_executor(None, sys.stdout.write, content)
         await loop.run_in_executor(None, sys.stdout.flush)
     elif target is not None:
-        await loop.run_in_executor(None, Path(target).write_text, data, "utf-8")
+        # Write to file in chunks to avoid large memory allocation
+        target_path = Path(target)
+
+        # Define synchronous functions for file operations
+        def write_tree() -> None:
+            with target_path.open("w", encoding="utf-8") as f:
+                f.write(tree)
+                f.write("\n")
+
+        def append_content() -> None:
+            with target_path.open("a", encoding="utf-8") as f:
+                f.write(content)
+
+        # Execute file operations
+        await loop.run_in_executor(None, write_tree)
+        await loop.run_in_executor(None, append_content)

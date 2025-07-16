@@ -1,4 +1,12 @@
-"""Functions to ingest and analyze a codebase directory or single file."""
+"""Functions to ingest and analyze a codebase directory or single file.
+
+Memory optimization:
+- Lazy loading: File content is only loaded when accessed and cached to avoid repeated reads
+- Chunked reading: Large files are read in chunks to avoid loading everything at once
+- Content cache clearing: Periodically clears content cache to free memory during processing
+- Memory limits: Skips files that would cause excessive memory usage
+- Early termination: Stops processing when limits are reached
+"""
 
 from __future__ import annotations
 
@@ -65,7 +73,12 @@ def ingest_query(query: IngestionQuery) -> tuple[str, str, str]:
             msg = f"File {file_node.name} has no content"
             raise ValueError(msg)
 
-        return format_node(file_node, query=query)
+        result = format_node(file_node, query=query)
+
+        # Clear content cache to free memory
+        file_node.clear_content_cache()
+
+        return result
 
     root_node = FileSystemNode(
         name=path.name,
@@ -78,7 +91,12 @@ def ingest_query(query: IngestionQuery) -> tuple[str, str, str]:
 
     _process_node(node=root_node, query=query, stats=stats)
 
-    return format_node(root_node, query=query)
+    result = format_node(root_node, query=query)
+
+    # Clear content cache to free memory after formatting
+    root_node.clear_content_cache()
+
+    return result
 
 
 def _process_node(node: FileSystemNode, query: IngestionQuery, stats: FileSystemStats) -> None:
@@ -173,6 +191,8 @@ def _process_file(path: Path, parent_node: FileSystemNode, stats: FileSystemStat
     This function checks the file's size, increments the statistics, and reads its content.
     If the file size exceeds the maximum allowed, it raises an error.
 
+    Implements memory optimization by checking limits before processing files.
+
     Parameters
     ----------
     path : Path
@@ -194,6 +214,11 @@ def _process_file(path: Path, parent_node: FileSystemNode, stats: FileSystemStat
         print(f"Skipping file {path}: would exceed total size limit")
         return
 
+    # Skip very large files that would consume too much memory
+    if file_size > MAX_TOTAL_SIZE_BYTES / 10:  # Limit single file to 10% of total limit
+        print(f"Skipping file {path}: file is too large for memory-efficient processing")
+        return
+
     stats.total_files += 1
     stats.total_size += file_size
 
@@ -210,6 +235,12 @@ def _process_file(path: Path, parent_node: FileSystemNode, stats: FileSystemStat
     parent_node.children.append(child)
     parent_node.size += file_size
     parent_node.file_count += 1
+
+    # If we've processed a lot of files, clear any cached content to free memory
+    if stats.total_files % 100 == 0:
+        for sibling in parent_node.children[:-10]:  # Keep the 10 most recent files cached
+            if sibling.type == FileSystemNodeType.FILE:
+                sibling.clear_content_cache()
 
 
 def limit_exceeded(stats: FileSystemStats, depth: int) -> bool:
