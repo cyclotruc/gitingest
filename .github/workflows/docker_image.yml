@@ -1,4 +1,5 @@
 name: Build & Push Container
+
 on:
   push:
     branches:
@@ -16,8 +17,14 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  # Set to 'true' to allow pushing container from pull requests with the label 'push-container'
-  PUSH_FROM_PR: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'push-container') }}
+  # Now allow pushing from PRs when either 'push-container' OR 'deploy-pr-temp-env' is present:
+  PUSH_FROM_PR: >-
+    ${{ github.event_name == 'pull_request' &&
+       (
+         contains(github.event.pull_request.labels.*.name, 'push-container') ||
+         contains(github.event.pull_request.labels.*.name, 'deploy-pr-temp-env')
+       )
+    }}
 
 jobs:
   docker-build:
