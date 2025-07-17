@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 import uuid
 import warnings
@@ -326,8 +327,17 @@ def _parse_local_dir_path(path_str: str) -> IngestionQuery:
     IngestionQuery
         A dictionary containing the parsed details of the file path.
 
+    Raises
+    ------
+    InvalidPatternError
+        If the path escapes the allowed root directory.
+
     """
+    root_path = TMP_BASE_PATH.resolve()
     path_obj = Path(path_str).resolve()
+    if os.path.commonpath([root_path, path_obj]) != str(root_path):
+        msg = f"Path {path_str} escapes the allowed root directory."
+        raise InvalidPatternError(msg)
     slug = path_obj.name if path_str == "." else path_str.strip("/")
     return IngestionQuery(local_path=path_obj, slug=slug, id=str(uuid.uuid4()))
 
