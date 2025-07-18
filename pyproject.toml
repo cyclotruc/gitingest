@@ -5,6 +5,7 @@ description="CLI tool to analyze and create text dumps of codebases for LLMs"
 readme = {file = "README.md", content-type = "text/markdown" }
 requires-python = ">= 3.8"
 dependencies = [
+    "boto3>=1.28.0",
     "click>=8.0.0",
     "fastapi[standard]>=0.109.1",  # Minimum safe release (https://osv.dev/vulnerability/PYSEC-2024-38)
     "httpx",

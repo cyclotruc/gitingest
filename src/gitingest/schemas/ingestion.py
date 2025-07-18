@@ -83,6 +83,8 @@ class IngestionQuery(BaseModel):  # pylint: disable=too-many-instance-attributes
         The patterns to include.
     include_submodules : bool
         Whether to include all Git submodules within the repository. (default: ``False``)
+    s3_url : str | None
+        The S3 URL where the digest is stored if S3 is enabled (default: ``None``).
 
     """
 
@@ -101,6 +103,7 @@ class IngestionQuery(BaseModel):  # pylint: disable=too-many-instance-attributes
     ignore_patterns: set[str] = set()  # TODO: ignore_patterns and include_patterns have the same type
     include_patterns: set[str] | None = None
     include_submodules: bool = False
+    s3_url: str | None = None
 
     def extract_clone_config(self) -> CloneConfig:
         """Extract the relevant fields for the CloneConfig object.

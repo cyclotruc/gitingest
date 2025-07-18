@@ -54,7 +54,7 @@ async def test_parse_query_without_host(
     query = await parse_query(url, max_file_size=50, from_web=True)
 
     # Compare against the canonical dict while ignoring unpredictable fields.
-    actual = query.model_dump(exclude={"id", "local_path", "ignore_patterns"})
+    actual = query.model_dump(exclude={"id", "local_path", "ignore_patterns", "s3_url"})
 
     expected = {
         "user_name": user,

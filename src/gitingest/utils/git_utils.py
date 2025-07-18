@@ -305,6 +305,33 @@ def create_git_auth_header(token: str, url: str = "https://github.com") -> str:
     return f"http.https://{hostname}/.extraheader=Authorization: Basic {basic}"
 
 
+async def get_current_commit_hash(local_path: str) -> str:
+    """Get the current commit hash from a cloned repository.
+
+    Parameters
+    ----------
+    local_path : str
+        The local path to the cloned repository.
+
+    Returns
+    -------
+    str
+        The current commit hash (SHA).
+
+    Raises
+    ------
+    RuntimeError
+        If unable to get the commit hash.
+
+    """
+    try:
+        stdout, _ = await run_command("git", "-C", local_path, "rev-parse", "HEAD")
+        return stdout.decode().strip()
+    except RuntimeError as exc:
+        msg = f"Failed to get commit hash from {local_path}: {exc}"
+        raise RuntimeError(msg) from exc
+
+
 def validate_github_token(token: str) -> None:
     """Validate the format of a GitHub Personal Access Token.
 
