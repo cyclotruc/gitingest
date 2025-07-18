@@ -8,7 +8,8 @@ from typing import cast
 from gitingest.clone import clone_repo
 from gitingest.ingestion import ingest_query
 from gitingest.query_parser import IngestionQuery, parse_query
-from gitingest.utils.git_utils import validate_github_token
+from gitingest.utils.git_utils import get_current_commit_hash, validate_github_token
+from gitingest.utils.s3_utils import generate_s3_file_path, is_s3_enabled, upload_to_s3
 from server.models import IngestErrorResponse, IngestResponse, IngestSuccessResponse
 from server.server_config import MAX_DISPLAY_SIZE
 from server.server_utils import Colors, log_slider_to_size
@@ -85,12 +86,39 @@ async def process_query(
         clone_config = query.extract_clone_config()
         await clone_repo(clone_config, token=token)
 
+        # Get the current commit hash if not already available
+        if not query.commit:
+            try:
+                query.commit = await get_current_commit_hash(clone_config.local_path)
+            except RuntimeError:
+                # If we can't get the commit hash, use a default
+                query.commit = "HEAD"
+
         summary, tree, content = ingest_query(query)
 
-        local_txt_file = Path(clone_config.local_path).with_suffix(".txt")
+        # Prepare the digest content
+        digest_content = tree + "\n" + content
 
-        with local_txt_file.open("w", encoding="utf-8") as f:
-            f.write(tree + "\n" + content)
+        # Store digest based on S3 configuration
+        if is_s3_enabled():
+            # Upload to S3 instead of storing locally
+            s3_file_path = generate_s3_file_path(
+                source=query.url or "",
+                user_name=query.user_name or "",
+                repo_name=query.repo_name or "",
+                branch=query.branch,
+                commit=query.commit,
+                include_patterns=query.include_patterns,
+                ignore_patterns=query.ignore_patterns,
+            )
+            s3_url = upload_to_s3(digest_content, s3_file_path, query.id)
+            # Store S3 URL in query for later use
+            query.s3_url = s3_url
+        else:
+            # Store locally as before
+            local_txt_file = Path(clone_config.local_path).with_suffix(".txt")
+            with local_txt_file.open("w", encoding="utf-8") as f:
+                f.write(digest_content)
 
     except Exception as exc:
         if query and query.url:
