@@ -22,8 +22,11 @@ async def ingest_async(
     source: str,
     *,
     max_file_size: int = MAX_FILE_SIZE,
-    include_patterns: str | set[str] | None = None,
+    max_files: int | None = None,
+    max_total_size_bytes: int | None = None,
+    max_directory_depth: int | None = None,
     exclude_patterns: str | set[str] | None = None,
+    include_patterns: str | set[str] | None = None,
     branch: str | None = None,
     tag: str | None = None,
     include_gitignored: bool = False,
@@ -40,17 +43,23 @@ async def ingest_async(
     Parameters
     ----------
     source : str
-        The source to analyze, which can be a URL (for a Git repository) or a local directory path.
+        A directory path or a Git repository URL.
     max_file_size : int
-        Maximum allowed file size for file ingestion. Files larger than this size are ignored (default: 10 MB).
-    include_patterns : str | set[str] | None
-        Pattern or set of patterns specifying which files to include. If ``None``, all files are included.
+        Maximum file size in bytes to ingest (default: 10 MB).
+    max_files : int | None
+        Maximum number of files to ingest (default: 10,000).
+    max_total_size_bytes : int | None
+        Maximum total size of output file in bytes (default: 500 MB).
+    max_directory_depth : int | None
+        Maximum depth of directory traversal (default: 20).
     exclude_patterns : str | set[str] | None
-        Pattern or set of patterns specifying which files to exclude. If ``None``, no files are excluded.
+        Glob patterns for pruning the file set.
+    include_patterns : str | set[str] | None
+        Glob patterns for including files in the output.
     branch : str | None
-        The branch to clone and ingest (default: the default branch).
+        Git branch to clone and ingest (default: the default branch).
     tag : str | None
-        The tag to clone and ingest. If ``None``, no tag is used.
+        Git tag to to clone and ingest. If ``None``, no tag is used.
     include_gitignored : bool
         If ``True``, include files ignored by ``.gitignore`` and ``.gitingestignore`` (default: ``False``).
     include_submodules : bool
@@ -59,7 +68,7 @@ async def ingest_async(
         GitHub personal access token (PAT) for accessing private repositories.
         Can also be set via the ``GITHUB_TOKEN`` environment variable.
     output : str | None
-        File path where the summary and content should be written.
+        File path where the summary and content is written.
         If ``"-"`` (dash), the results are written to ``stdout``.
         If ``None``, the results are not written to a file.
 
@@ -77,9 +86,12 @@ async def ingest_async(
     query: IngestionQuery = await parse_query(
         source=source,
         max_file_size=max_file_size,
+        max_files=max_files,
+        max_total_size_bytes=max_total_size_bytes,
+        max_directory_depth=max_directory_depth,
         from_web=False,
-        include_patterns=include_patterns,
         ignore_patterns=exclude_patterns,
+        include_patterns=include_patterns,
         token=token,
     )
 
@@ -100,8 +112,11 @@ def ingest(
     source: str,
     *,
     max_file_size: int = MAX_FILE_SIZE,
-    include_patterns: str | set[str] | None = None,
+    max_files: int | None = None,
+    max_total_size_bytes: int | None = None,
+    max_directory_depth: int | None = None,
     exclude_patterns: str | set[str] | None = None,
+    include_patterns: str | set[str] | None = None,
     branch: str | None = None,
     tag: str | None = None,
     include_gitignored: bool = False,
@@ -118,17 +133,23 @@ def ingest(
     Parameters
     ----------
     source : str
-        The source to analyze, which can be a URL (for a Git repository) or a local directory path.
+        A directory path or a Git repository URL.
     max_file_size : int
-        Maximum allowed file size for file ingestion. Files larger than this size are ignored (default: 10 MB).
-    include_patterns : str | set[str] | None
-        Pattern or set of patterns specifying which files to include. If ``None``, all files are included.
+        Maximum file size in bytes to ingest (default: 10 MB).
+    max_files : int | None
+        Maximum number of files to ingest (default: 10,000).
+    max_total_size_bytes : int | None
+        Maximum total size of output file in bytes (default: 500 MB).
+    max_directory_depth : int | None
+        Maximum depth of directory traversal (default: 20).
     exclude_patterns : str | set[str] | None
-        Pattern or set of patterns specifying which files to exclude. If ``None``, no files are excluded.
+        Glob patterns for pruning the file set.
+    include_patterns : str | set[str] | None
+        Glob patterns for including files in the output.
     branch : str | None
-        The branch to clone and ingest (default: the default branch).
+        Git branch to clone and ingest (default: the default branch).
     tag : str | None
-        The tag to clone and ingest. If ``None``, no tag is used.
+        Git tag to to clone and ingest. If ``None``, no tag is used.
     include_gitignored : bool
         If ``True``, include files ignored by ``.gitignore`` and ``.gitingestignore`` (default: ``False``).
     include_submodules : bool
@@ -137,7 +158,7 @@ def ingest(
         GitHub personal access token (PAT) for accessing private repositories.
         Can also be set via the ``GITHUB_TOKEN`` environment variable.
     output : str | None
-        File path where the summary and content should be written.
+        File path where the summary and content is written.
         If ``"-"`` (dash), the results are written to ``stdout``.
         If ``None``, the results are not written to a file.
 
@@ -158,8 +179,11 @@ def ingest(
         ingest_async(
             source=source,
             max_file_size=max_file_size,
-            include_patterns=include_patterns,
+            max_files=max_files,
+            max_total_size_bytes=max_total_size_bytes,
+            max_directory_depth=max_directory_depth,
             exclude_patterns=exclude_patterns,
+            include_patterns=include_patterns,
             branch=branch,
             tag=tag,
             include_gitignored=include_gitignored,

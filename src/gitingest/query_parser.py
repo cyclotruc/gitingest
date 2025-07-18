@@ -27,9 +27,12 @@ async def parse_query(
     source: str,
     *,
     max_file_size: int,
+    max_files: int | None = None,
+    max_total_size_bytes: int | None = None,
+    max_directory_depth: int | None = None,
     from_web: bool,
-    include_patterns: set[str] | str | None = None,
     ignore_patterns: set[str] | str | None = None,
+    include_patterns: set[str] | str | None = None,
     token: str | None = None,
 ) -> IngestionQuery:
     """Parse the input source to extract details for the query and process the include and ignore patterns.
@@ -37,15 +40,21 @@ async def parse_query(
     Parameters
     ----------
     source : str
-        The source URL or file path to parse.
+        A directory path or a Git repository URL.
     max_file_size : int
-        The maximum file size in bytes to include.
+        Maximum file size in bytes to ingest (default: 10 MB).
+    max_files : int | None
+        Maximum number of files to ingest (default: 10,000).
+    max_total_size_bytes : int | None
+        Maximum total size of output file in bytes (default: 500 MB).
+    max_directory_depth : int | None
+        Maximum depth of directory traversal (default: 20).
     from_web : bool
         Flag indicating whether the source is a web URL.
-    include_patterns : set[str] | str | None
-        Patterns to include. Can be a set of strings or a single string.
     ignore_patterns : set[str] | str | None
-        Patterns to ignore. Can be a set of strings or a single string.
+        Glob patterns to ignore. Can be a set of strings or a single string.
+    include_patterns : set[str] | str | None
+        Glob patterns to include. Can be a set of strings or a single string.
     token : str | None
         GitHub personal access token (PAT) for accessing private repositories.
 
@@ -88,6 +97,9 @@ async def parse_query(
         branch=query.branch,
         commit=query.commit,
         max_file_size=max_file_size,
+        max_files=max_files if max_files is not None else query.max_files,
+        max_total_size_bytes=max_total_size_bytes if max_total_size_bytes is not None else query.max_total_size_bytes,
+        max_directory_depth=max_directory_depth if max_directory_depth is not None else query.max_directory_depth,
         ignore_patterns=ignore_patterns_set,
         include_patterns=parsed_include,
     )

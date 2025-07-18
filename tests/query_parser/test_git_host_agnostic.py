@@ -67,6 +67,9 @@ async def test_parse_query_without_host(
         "tag": None,
         "commit": None,
         "max_file_size": 50,
+        "max_directory_depth": 20,
+        "max_files": 10_000,
+        "max_total_size_bytes": 500 * 1024 * 1024,
         "include_patterns": None,
         "include_submodules": False,
     }
