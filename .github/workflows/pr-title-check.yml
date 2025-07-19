@@ -8,8 +8,13 @@ jobs:
   validate-pr-title:
     runs-on: ubuntu-latest
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
+        with:
+          egress-policy: audit
+
       - name: PR Conventional Commit Validation
-        uses:  ytanikin/pr-conventional-commits@1.4.0
+        uses:  ytanikin/pr-conventional-commits@8267db1bacc237419f9ed0228bb9d94e94271a1d # 1.4.1
         with:
           task_types: '["feat","fix","docs","test","ci","refactor","perf","chore","revert"]'
           add_label: 'false'
